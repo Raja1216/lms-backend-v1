@@ -96,3 +96,10 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+
+DATABASE_URL="mysql://root@localhost:3306/lms_db"
+PRISMA_CONN_LIMIT=20
+PRISMA_ACQUIRE_TIMEOUT=30000
+PRISMA_CONNECT_RETRIES=5
+PRISMA_WAIT_FOR_CONNECTIONS=true
