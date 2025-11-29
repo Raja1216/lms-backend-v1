@@ -32,7 +32,8 @@ async function bootstrap() {
 
   // ensure Swagger knows the correct server URL (helps the UI form full request URLs)
   const port = Number(process.env.PORT ?? 3000);
-  document.servers = [{ url: `http://localhost:${port}` }];
+  const app_url = process.env.APP_URL ?? `http://localhost:${port}`;
+  document.servers = [{ url: app_url }];
 
   SwaggerModule.setup('api', app, document);
 
