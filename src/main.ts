@@ -3,7 +3,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
+import { PrismaClientExceptionFilter } from './prisma-client-exception.filter';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -29,7 +29,7 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-
+  app.useGlobalFilters(new PrismaClientExceptionFilter());
   // ensure Swagger knows the correct server URL (helps the UI form full request URLs)
   const port = Number(process.env.PORT ?? 3000);
   const app_url = process.env.APP_URL ?? `http://localhost:${port}`;

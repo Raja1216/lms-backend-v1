@@ -21,7 +21,7 @@ export class UserService {
       data: {
         email,
         name,
-        password_hash: hashed,
+        password: hashed,
       },
       select: {
         id: true,
@@ -49,7 +49,7 @@ export class UserService {
     });
     if (!user) return null;
 
-    const ok = await bcrypt.compare(password, user.password_hash);
+    const ok = await bcrypt.compare(password, user.password);
     if (!ok) return null;
 
     // remove password_hash before returning
