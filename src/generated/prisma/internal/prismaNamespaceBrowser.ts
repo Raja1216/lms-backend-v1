@@ -53,7 +53,8 @@ export const AnyNull = runtime.AnyNull
 export const ModelName = {
   User: 'User',
   Role: 'Role',
-  Permission: 'Permission'
+  Permission: 'Permission',
+  UserOtp: 'UserOtp'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -118,6 +119,23 @@ export const PermissionScalarFieldEnum = {
 export type PermissionScalarFieldEnum = (typeof PermissionScalarFieldEnum)[keyof typeof PermissionScalarFieldEnum]
 
 
+export const UserOtpScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  email: 'email',
+  mobilePrefix: 'mobilePrefix',
+  mobile: 'mobile',
+  code: 'code',
+  resend: 'resend',
+  failedAttempts: 'failedAttempts',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserOtpScalarFieldEnum = (typeof UserOtpScalarFieldEnum)[keyof typeof UserOtpScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -166,4 +184,14 @@ export const PermissionOrderByRelevanceFieldEnum = {
 } as const
 
 export type PermissionOrderByRelevanceFieldEnum = (typeof PermissionOrderByRelevanceFieldEnum)[keyof typeof PermissionOrderByRelevanceFieldEnum]
+
+
+export const UserOtpOrderByRelevanceFieldEnum = {
+  email: 'email',
+  mobilePrefix: 'mobilePrefix',
+  mobile: 'mobile',
+  code: 'code'
+} as const
+
+export type UserOtpOrderByRelevanceFieldEnum = (typeof UserOtpOrderByRelevanceFieldEnum)[keyof typeof UserOtpOrderByRelevanceFieldEnum]
 

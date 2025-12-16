@@ -2,11 +2,13 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
+import { OtpService } from 'src/otp/otp.service';
 @Injectable()
 export class AuthService {
   constructor(
     private readonly users: UserService,
     private readonly jwt: JwtService,
+    private readonly optService:OtpService
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -45,7 +47,19 @@ export class AuthService {
 
   async register(email: string, password: string, name?: string) {
     const user = await this.users.createUser(email, password, name);
-    const access = this.jwt.sign({ sub: (user as any).id, email: user.email });
-    return { user, access_token: access };
+    const jwtPayload = {
+      sub: user.id,
+      email: user.email,
+    };
+    return { user, access_token: await this.jwt.signAsync(jwtPayload) };
+  }
+
+  async resetPassword(email: string, newPassword: string, otp: string) {
+    const isOtpValid=await this.optService.validateOtp(email,otp)
+    if(isOtpValid){
+      const updatedUser = await this.users.updateUser(email, newPassword);
+      return updatedUser;
+    }
+    throw new UnauthorizedException('Invalid OTP');
   }
 }

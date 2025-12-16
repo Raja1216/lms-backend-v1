@@ -7,6 +7,7 @@ import { UserModule } from 'src/user/user.module';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
+import { OtpModule } from 'src/otp/otp.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { AuthController } from './auth.controller';
       }),
     }),
     UserModule,
+    OtpModule
   ],
   // removed PrismaService from here
   providers: [AuthService, JwtStrategy],
