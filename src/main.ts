@@ -4,11 +4,12 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PrismaClientExceptionFilter } from './prisma-client-exception.filter';
+import { ApiValidationPipe } from './validation.pipe';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // validation
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalPipes(new ApiValidationPipe());
 
   // ENABLE CORS (allow everything for dev)
   app.enableCors({
