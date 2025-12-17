@@ -53,3 +53,24 @@ model Permission {
 
   @@map("permissions")
 }
+
+model UserOtp {
+  id             Int      @id @default(autoincrement())
+  type           OtpType  @default(mobile)
+  email          String?  @unique
+  mobilePrefix   String?
+  mobile         String?  @unique
+  code           String   @db.VarChar(20)
+  resend         Int      @default(0)
+  failedAttempts Int      @default(0)
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("user_otps")
+}
+
+enum OtpType {
+  email
+  mobile
+}

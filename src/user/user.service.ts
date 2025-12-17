@@ -58,4 +58,26 @@ export class UserService {
     const { password_hash, ...safe } = user as any;
     return safe;
   }
+
+  async updateUser(
+    email?: string,
+    password?: string,
+    name?: string,
+    level?: string,
+  ) {
+    const saltRounds = 10;
+    let hashed: string | null = null;
+    if (password) {
+      hashed = await bcrypt.hash(password, saltRounds);
+    }
+    const user = await this.prisma.user.update({
+      where: { email },
+      data: {
+        ...(hashed && { password: hashed }),
+        ...(name && { name }),
+        ...(level && { class: level }),
+      },
+    });
+    return user;
+  }
 }

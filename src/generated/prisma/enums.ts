@@ -9,7 +9,9 @@
 * 🟢 You can import this file directly.
 */
 
+export const OtpType = {
+  email: 'email',
+  mobile: 'mobile'
+} as const
 
-
-// This file is empty because there are no enums in the schema.
-export {}
+export type OtpType = (typeof OtpType)[keyof typeof OtpType]

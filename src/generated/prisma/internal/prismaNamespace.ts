@@ -386,7 +386,8 @@ type FieldRefInputType<Model, FieldType> = Model extends never ? never : FieldRe
 export const ModelName = {
   User: 'User',
   Role: 'Role',
-  Permission: 'Permission'
+  Permission: 'Permission',
+  UserOtp: 'UserOtp'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -402,7 +403,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission"
+    modelProps: "user" | "role" | "permission" | "userOtp"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -604,6 +605,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserOtp: {
+      payload: Prisma.$UserOtpPayload<ExtArgs>
+      fields: Prisma.UserOtpFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserOtpFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserOtpFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload>
+        }
+        findFirst: {
+          args: Prisma.UserOtpFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserOtpFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload>
+        }
+        findMany: {
+          args: Prisma.UserOtpFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload>[]
+        }
+        create: {
+          args: Prisma.UserOtpCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload>
+        }
+        createMany: {
+          args: Prisma.UserOtpCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.UserOtpDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload>
+        }
+        update: {
+          args: Prisma.UserOtpUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserOtpDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserOtpUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.UserOtpUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserOtpPayload>
+        }
+        aggregate: {
+          args: Prisma.UserOtpAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserOtp>
+        }
+        groupBy: {
+          args: Prisma.UserOtpGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserOtpGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserOtpCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserOtpCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -689,6 +756,23 @@ export const PermissionScalarFieldEnum = {
 export type PermissionScalarFieldEnum = (typeof PermissionScalarFieldEnum)[keyof typeof PermissionScalarFieldEnum]
 
 
+export const UserOtpScalarFieldEnum = {
+  id: 'id',
+  type: 'type',
+  email: 'email',
+  mobilePrefix: 'mobilePrefix',
+  mobile: 'mobile',
+  code: 'code',
+  resend: 'resend',
+  failedAttempts: 'failedAttempts',
+  expiresAt: 'expiresAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserOtpScalarFieldEnum = (typeof UserOtpScalarFieldEnum)[keyof typeof UserOtpScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -739,6 +823,16 @@ export const PermissionOrderByRelevanceFieldEnum = {
 export type PermissionOrderByRelevanceFieldEnum = (typeof PermissionOrderByRelevanceFieldEnum)[keyof typeof PermissionOrderByRelevanceFieldEnum]
 
 
+export const UserOtpOrderByRelevanceFieldEnum = {
+  email: 'email',
+  mobilePrefix: 'mobilePrefix',
+  mobile: 'mobile',
+  code: 'code'
+} as const
+
+export type UserOtpOrderByRelevanceFieldEnum = (typeof UserOtpOrderByRelevanceFieldEnum)[keyof typeof UserOtpOrderByRelevanceFieldEnum]
+
+
 
 /**
  * Field references
@@ -770,6 +864,13 @@ export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'OtpType'
+ */
+export type EnumOtpTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'OtpType'>
     
 
 
@@ -861,6 +962,7 @@ export type GlobalOmitConfig = {
   user?: Prisma.UserOmit
   role?: Prisma.RoleOmit
   permission?: Prisma.PermissionOmit
+  userOtp?: Prisma.UserOtpOmit
 }
 
 /* Types for Logging */
