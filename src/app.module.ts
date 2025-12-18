@@ -5,6 +5,8 @@ import { UserModule } from './user/user.module';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { OtpModule } from './otp/otp.module';
+import { RoleModule } from './role/role.module';
+import { PermissionModule } from './permission/permission.module';
 
 @Module({
   imports: [
@@ -13,6 +15,8 @@ import { OtpModule } from './otp/otp.module';
     UserModule,
     AuthModule,
     OtpModule,
+    RoleModule,
+    PermissionModule,
   ],
 })
 export class AppModule {}

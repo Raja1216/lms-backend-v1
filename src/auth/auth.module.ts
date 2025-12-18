@@ -8,25 +8,23 @@ import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthController } from './auth.controller';
 import { OtpModule } from 'src/otp/otp.module';
+import { JwtAuthGuard } from './jwt.guard';
 
 @Module({
   imports: [
     ConfigModule,
     PassportModule,
-    JwtModule.registerAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') || 'changeme',
-        signOptions: { expiresIn: '1h' },
-      }),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '30d' },
     }),
     UserModule,
-    OtpModule
+    OtpModule,
   ],
   // removed PrismaService from here
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy,JwtAuthGuard],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService,JwtAuthGuard,
+    JwtModule,],
 })
 export class AuthModule {}
