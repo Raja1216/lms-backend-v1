@@ -30,7 +30,7 @@ export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('create_roles')
+  @Permissions('create-roles')
   @Post()
   async create(
     @Body() createRoleDto: CreateRoleDto,
@@ -51,7 +51,7 @@ export class RoleController {
   }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('read_roles')
+  @Permissions('read-roles')
   @Get()
   async findAll(
     @Res() res: Response,
@@ -59,8 +59,14 @@ export class RoleController {
     @Next() next: NextFunction,
   ) {
     try {
-      const roles = await this.roleService.findAll(paginationDto);
-      return successResponse(res, 200, 'Roles fetched successfully', roles, {});
+      const {roles,total} = await this.roleService.findAll(paginationDto);
+      const pagedRoles = createPagedResponse(
+        roles,
+        paginationDto.limit ?? 10,
+        paginationDto.page ?? 1,
+        total,
+      );
+      return successResponse(res, 200, 'Roles fetched successfully', pagedRoles, {});
     } catch (error) {
       return next(
         new ErrorHandler(
@@ -93,7 +99,7 @@ export class RoleController {
   }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('update_roles')
+  @Permissions('update-roles')
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -115,7 +121,7 @@ export class RoleController {
   }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('delete_roles')
+  @Permissions('delete-roles')
   @Delete(':id')
   async remove(@Param('id') id: string, @Res() res: Response, @Next() next: NextFunction) {
     try {
