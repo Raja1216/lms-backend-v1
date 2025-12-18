@@ -34,16 +34,13 @@ export class AuthController {
   ) {
     try {
       const user = await this.auth.login(dto);
-      const cookieOptions = {
-        expires: new Date(
-          Date.now() +
-            Number(process.env.JWT_EXPIRY || 1) * 24 * 60 * 60 * 1000,
-        ),
+      res.cookie('token', user.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'None',
-      };
-      res.cookie('access_token', cookieOptions);
+        sameSite: 'lax',
+        maxAge: Number(process.env.JWT_EXPIRY || 1) * 24 * 60 * 60 * 1000,
+      });
+
       return successResponse(
         res,
         200,
