@@ -3,6 +3,8 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { OtpService } from 'src/otp/otp.service';
+import { User } from 'src/generated/prisma/browser';
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -61,5 +63,8 @@ export class AuthService {
       return updatedUser;
     }
     throw new UnauthorizedException('Invalid OTP');
+  }
+   async getMyAccess(user: User): Promise<{ slugs: string[]; ids: number[] }> {
+    return await this.users.getUserAccess(user);
   }
 }

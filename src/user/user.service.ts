@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
+import { User } from 'src/generated/prisma/browser';
 
 @Injectable()
 export class UserService {
@@ -80,4 +81,39 @@ export class UserService {
     });
     return user;
   }
+
+  async getUserAccess(
+  user: User
+): Promise<{ slugs: string[]; ids: number[] }> {
+  const loadedUser = await this.prisma.user.findUnique({
+    where: { id: user.id },
+    include: {
+      roles: {
+        include: {
+          permissions: true,
+        },
+      },
+    },
+  });
+
+  if (!loadedUser) {
+    throw new NotFoundException('User not found');
+  }
+
+  const slugSet = new Set<string>();
+  const idSet = new Set<number>();
+
+  for (const role of loadedUser.roles) {
+    for (const permission of role.permissions) {
+      slugSet.add(permission.slug);
+      idSet.add(permission.id);
+    }
+  }
+
+  return {
+    slugs: Array.from(slugSet),
+    ids: Array.from(idSet),
+  };
+}
+
 }

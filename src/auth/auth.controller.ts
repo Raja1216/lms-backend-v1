@@ -1,5 +1,5 @@
 // src/auth/auth.controller.ts
-import { Controller, Post, Body, Req, Res, Next } from '@nestjs/common';
+import { Controller, Post, Body, Req, Res, Next, UseGuards,HttpStatus,Get,Request as NestJsRequest } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
@@ -10,6 +10,8 @@ import { ErrorHandler } from 'src/utils/error-handler';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { ResetPasswordDto} from './dto/reset-password.dto';
 import { OtpService } from 'src/otp/otp.service';
+import { JwtAuthGuard } from './jwt.guard';
+import { User } from 'src/generated/prisma/browser';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -139,5 +141,17 @@ export class AuthController {
         ),
       );
     }
+  }
+  @UseGuards(JwtAuthGuard)
+  @Get('my-access')
+  async getMyAccess(@NestJsRequest() req: { user: User }, @Res() res: Response) {
+    const access = await this.auth.getMyAccess(req.user);
+    return successResponse(
+      res,
+      HttpStatus.OK,
+      'Access retrieved successfully',
+      access,
+      {},
+    );
   }
 }
