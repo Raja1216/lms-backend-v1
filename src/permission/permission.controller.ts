@@ -28,7 +28,7 @@ export class PermissionController {
   constructor(private readonly permissionService: PermissionService) {}
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('create_permissions')
+  @Permissions('create-permissions')
   @Post()
   async create(
     @Body() createPermissionDto: CreatePermissionDto,
@@ -56,7 +56,7 @@ export class PermissionController {
   }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('read_permissions')
+  @Permissions('read-permissions')
   @Get()
   async findAll(
     @Res() res: Response,
@@ -90,7 +90,7 @@ export class PermissionController {
   }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('read_permissions')
+  @Permissions('read-permissions')
   @Get(':id')
   async findOne(
     @Param('id') id: string,
@@ -117,7 +117,7 @@ export class PermissionController {
   }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('update_permissions')
+  @Permissions('update-permissions')
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -147,7 +147,7 @@ export class PermissionController {
     }
   }
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('delete_permissions')
+  @Permissions('delete-permissions')
   @Delete(':id')
   async remove(
     @Param('id') id: string,
