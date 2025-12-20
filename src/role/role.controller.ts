@@ -59,14 +59,20 @@ export class RoleController {
     @Next() next: NextFunction,
   ) {
     try {
-      const {roles,total} = await this.roleService.findAll(paginationDto);
+      const { roles, total } = await this.roleService.findAll(paginationDto);
       const pagedRoles = createPagedResponse(
         roles,
         paginationDto.limit ?? 10,
         paginationDto.page ?? 1,
         total,
       );
-      return successResponse(res, 200, 'Roles fetched successfully', pagedRoles, {});
+      return successResponse(
+        res,
+        200,
+        'Roles fetched successfully',
+        pagedRoles,
+        {},
+      );
     } catch (error) {
       return next(
         new ErrorHandler(
@@ -78,7 +84,7 @@ export class RoleController {
   }
 
   @UseGuards(JwtAuthGuard, PermissionGuard)
-  @Permissions('read_roles')
+  @Permissions('read-roles')
   @Get(':id')
   async findOne(
     @Param('id') id: string,
@@ -123,7 +129,11 @@ export class RoleController {
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @Permissions('delete-roles')
   @Delete(':id')
-  async remove(@Param('id') id: string, @Res() res: Response, @Next() next: NextFunction) {
+  async remove(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
     try {
       const role = await this.roleService.remove(+id);
       return successResponse(res, 200, 'Role deleted successfully', role, {});

@@ -21,4 +21,13 @@ export class UpdateUserDto {
   @IsString()
   @MinLength(6)
   password?: string;
+
+  @ApiPropertyOptional({ example: 'updatedClass' })
+  @IsOptional()
+  @IsString()
+  class?: string;
+
+  @ApiPropertyOptional({ example: [2, 3], description: 'Array of role IDs' })
+  @IsOptional()
+  roles?: number[];
 }

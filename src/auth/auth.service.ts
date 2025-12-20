@@ -59,7 +59,7 @@ export class AuthService {
   async resetPassword(email: string, newPassword: string, otp: string) {
     const isOtpValid=await this.optService.validateOtp(email,otp)
     if(isOtpValid){
-      const updatedUser = await this.users.updateUser(email, newPassword);
+      const updatedUser = await this.users.resetPassword(email, newPassword);
       return updatedUser;
     }
     throw new UnauthorizedException('Invalid OTP');

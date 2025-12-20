@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -65,6 +69,16 @@ export class RoleService {
   async findOne(id: number) {
     const role = await this.prismaService.role.findUnique({
       where: { id },
+      select: {
+        permissions: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+          },
+        },
+      },
     });
     if (!role) {
       throw new NotFoundException('Role not found');
@@ -88,16 +102,17 @@ export class RoleService {
       throw new NotFoundException('Role not found');
     }
     return await this.prismaService.role.update({
-      where:{id:id},
-      data:{
-        name:name,
-        slug:name ? generateSlug(name): role.slug ,
+      where: { id: id },
+      data: {
+        name: name,
+        slug: name ? generateSlug(name) : role.slug,
         description: description,
         permissions: {
+          set: [], // remove old permissions
           connect: permissions.map((permission) => ({ id: permission.id })),
         },
-      }
-    })
+      },
+    });
   }
 
   async remove(id: number) {
