@@ -15,3 +15,23 @@ export const OtpType = {
 } as const
 
 export type OtpType = (typeof OtpType)[keyof typeof OtpType]
+
+
+export const LessonType = {
+  video: 'video',
+  document: 'document',
+  quiz: 'quiz'
+} as const
+
+export type LessonType = (typeof LessonType)[keyof typeof LessonType]
+
+
+export const QuestionType = {
+  MCQ: 'MCQ',
+  FILLINTHEBLANK: 'FILLINTHEBLANK',
+  TRUEORFALSE: 'TRUEORFALSE',
+  SHORTANSWER: 'SHORTANSWER',
+  DECRIPTIVE: 'DECRIPTIVE'
+} as const
+
+export type QuestionType = (typeof QuestionType)[keyof typeof QuestionType]

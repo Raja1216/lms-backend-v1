@@ -57,3 +57,63 @@ export type Permission = Prisma.PermissionModel
  * 
  */
 export type UserOtp = Prisma.UserOtpModel
+/**
+ * Model Course
+ * 
+ */
+export type Course = Prisma.CourseModel
+/**
+ * Model CourseTeacher
+ * 
+ */
+export type CourseTeacher = Prisma.CourseTeacherModel
+/**
+ * Model Subject
+ * 
+ */
+export type Subject = Prisma.SubjectModel
+/**
+ * Model CourseSubject
+ * 
+ */
+export type CourseSubject = Prisma.CourseSubjectModel
+/**
+ * Model Chapter
+ * 
+ */
+export type Chapter = Prisma.ChapterModel
+/**
+ * Model SubjectChapter
+ * 
+ */
+export type SubjectChapter = Prisma.SubjectChapterModel
+/**
+ * Model Lesson
+ * 
+ */
+export type Lesson = Prisma.LessonModel
+/**
+ * Model quiz
+ * 
+ */
+export type quiz = Prisma.quizModel
+/**
+ * Model QuizAttempt
+ * 
+ */
+export type QuizAttempt = Prisma.QuizAttemptModel
+/**
+ * Model QuestionAttempt
+ * 
+ */
+export type QuestionAttempt = Prisma.QuestionAttemptModel
+/**
+ * Model Question
+ * 
+ */
+export type Question = Prisma.QuestionModel
+/**
+ * Model QuestionOption
+ * 
+ */
+export type QuestionOption = Prisma.QuestionOptionModel

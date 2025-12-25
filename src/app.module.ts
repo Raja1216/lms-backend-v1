@@ -7,6 +7,9 @@ import { PrismaModule } from './prisma/prisma.module';
 import { OtpModule } from './otp/otp.module';
 import { RoleModule } from './role/role.module';
 import { PermissionModule } from './permission/permission.module';
+import { CourseModule } from './course/course.module';
+import { SubjectModule } from './subject/subject.module';
+import { LessonModule } from './lesson/lesson.module';
 
 @Module({
   imports: [
@@ -17,6 +20,9 @@ import { PermissionModule } from './permission/permission.module';
     OtpModule,
     RoleModule,
     PermissionModule,
+    CourseModule,
+    SubjectModule,
+    LessonModule,
   ],
 })
 export class AppModule {}

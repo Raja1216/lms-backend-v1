@@ -7,23 +7,44 @@ generator client {
   output   = "../src/generated/prisma"
 }
 
+enum OtpType {
+  email
+  mobile
+}
+
+enum LessonType {
+  video
+  document
+  quiz
+}
+
+enum QuestionType {
+  MCQ
+  FILLINTHEBLANK
+  TRUEORFALSE
+  SHORTANSWER
+  DECRIPTIVE
+}
+
 model User {
-  id            Int       @id @default(autoincrement())
-  uuid          String    @unique @default(uuid())
-  email         String    @unique
-  name          String?
-  username      String?   @unique
-  dateOfBirth   DateTime?
-  avatar        String?
-  classGrade    String?
-  mobile_prefix String    @default("+91")
-  mobile        String?
-  about         String?   @db.Text
-  password      String
-  status        Boolean   @default(true)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  roles         Role[]    @relation("userroles")
+  id             Int             @id @default(autoincrement())
+  uuid           String          @unique @default(uuid())
+  email          String          @unique
+  name           String?
+  username       String?         @unique
+  dateOfBirth    DateTime?
+  avatar         String?
+  classGrade     String?
+  mobile_prefix  String          @default("+91")
+  mobile         String?
+  about          String?         @db.Text
+  password       String
+  status         Boolean         @default(true)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  roles          Role[]          @relation("userroles")
+  teacherCourses CourseTeacher[] @relation("TeacherCourses")
+  quizAttempts   QuizAttempt[]   @relation("UserQuizAttempts")
 
   @@map("users")
 }
@@ -70,7 +91,193 @@ model UserOtp {
   @@map("user_otps")
 }
 
-enum OtpType {
-  email
-  mobile
+model Course {
+  id              Int             @id @default(autoincrement())
+  title           String
+  slug            String          @unique
+  thumbnail       String
+  grade           String
+  duration        String
+  price           Decimal         @db.Decimal(10, 2)
+  discountedPrice Decimal         @db.Decimal(10, 2)
+  description     String          @db.Text
+  status          Boolean         @default(true)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  teachers        CourseTeacher[] @relation("CourseTeachers")
+  subjects        CourseSubject[] @relation("CourseSubjects")
+
+  @@map("courses")
+}
+
+model CourseTeacher {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  teacherId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  course    Course   @relation("CourseTeachers", fields: [courseId], references: [id])
+  teacher   User     @relation("TeacherCourses", fields: [teacherId], references: [id])
+
+  @@map("course_teachers")
+}
+
+model Subject {
+  id          Int              @id @default(autoincrement())
+  name        String
+  slug        String           @unique
+  description String           @db.Text
+  status      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  courses     CourseSubject[]  @relation("SubjectCourses")
+  chapters    SubjectChapter[] @relation("SubjectChapters")
+
+  @@map("subjects")
+}
+
+model CourseSubject {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  subjectId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  course    Course   @relation("CourseSubjects", fields: [courseId], references: [id])
+  subject   Subject  @relation("SubjectCourses", fields: [subjectId], references: [id])
+
+  @@map("course_subjects")
+}
+
+model Chapter {
+  id          Int              @id @default(autoincrement())
+  title       String
+  slug        String           @unique
+  status      Boolean          @default(true)
+  description String           @db.Text
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  subjects    SubjectChapter[] @relation("SubjectChapters")
+  lessons     Lesson[]         @relation("LessonToChapters")
+
+  @@map("chapters")
+}
+
+model SubjectChapter {
+  id        Int      @id @default(autoincrement())
+  subjectId Int
+  chapterId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  subject   Subject  @relation("SubjectChapters", fields: [subjectId], references: [id])
+  chapter   Chapter  @relation("SubjectChapters", fields: [chapterId], references: [id])
+
+  @@map("subject_chapters")
+}
+
+model Lesson {
+  id          Int        @id @default(autoincrement())
+  chapterId   Int
+  title       String
+  slug        String     @unique
+  description String     @db.Text
+  status      Boolean    @default(true)
+  topicName   String
+  duration    String?
+  videoUrl    String?
+  NoOfPages   Int?
+  type        LessonType @default(video)
+  docUrl      String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  chapter     Chapter    @relation("LessonToChapters", fields: [chapterId], references: [id])
+
+  @@map("lessons")
+}
+
+model quiz {
+  id         Int           @id @default(autoincrement())
+  title      String
+  slug       String        @unique
+  totalMarks Int           @default(0) // calculated as sum of marks of all questions
+  passMarks  Int           @default(0) //auto calculated as 40% of total marks
+  timeLimit  Int // in minutes
+  questions  Question[]    @relation("quizQuestions")
+  status     Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  answers    String        @db.Text
+  attempts   QuizAttempt[] @relation("QuizAttempts")
+
+  @@map("quizzes")
+}
+
+model QuizAttempt {
+  id     Int @id @default(autoincrement())
+  quizId Int
+  userId Int
+
+  obtainedMarks Decimal @db.Decimal(10, 2)
+  totalMarks    Decimal @db.Decimal(10, 2)
+
+  correctAnswers Int
+  totalQuestions Int
+  timeTaken      Int // in minutes
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  quiz    quiz              @relation("QuizAttempts", fields: [quizId], references: [id])
+  user    User              @relation("UserQuizAttempts", fields: [userId], references: [id])
+  answers QuestionAttempt[] @relation("attemptedQuestions")
+
+  @@map("quiz_attempts")
+}
+
+model QuestionAttempt {
+  id            Int @id @default(autoincrement())
+  quizAttemptId Int
+  questionId    Int
+
+  obtainedMarks Decimal @db.Decimal(10, 2) // e.g. 1.0, 4.0
+  totalMarks    Decimal @db.Decimal(10, 2) // e.g. 1.0, 5.0
+
+  isCorrect Boolean
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  quizAttempt QuizAttempt @relation("attemptedQuestions", fields: [quizAttemptId], references: [id])
+  question    Question    @relation("QuestionAttempts", fields: [questionId], references: [id])
+
+  @@unique([quizAttemptId, questionId])
+  @@map("question_attempts")
+}
+
+model Question {
+  id        Int               @id @default(autoincrement())
+  quizId    Int
+  question  String            @db.Text
+  status    Boolean           @default(true)
+  marks     Int
+  type      QuestionType      @default(MCQ)
+  answers   String?           @db.Text
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  quiz      quiz              @relation("quizQuestions", fields: [quizId], references: [id])
+  options   QuestionOption[]  @relation("questionOptions")
+  attempts  QuestionAttempt[] @relation("QuestionAttempts")
+
+  @@map("questions")
+}
+
+model QuestionOption {
+  id         Int      @id @default(autoincrement())
+  questionId Int
+  option     String   @db.Text
+  status     Boolean  @default(true)
+  isCorrect  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  question   Question @relation("questionOptions", fields: [questionId], references: [id])
+
+  @@map("question_options")
 }
