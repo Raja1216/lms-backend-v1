@@ -64,6 +64,7 @@ export const ModelName = {
   Lesson: 'Lesson',
   LessonToChapter: 'LessonToChapter',
   quiz: 'quiz',
+  LessonQuiz: 'LessonQuiz',
   QuizAttempt: 'QuizAttempt',
   QuestionAttempt: 'QuestionAttempt',
   Question: 'Question',
@@ -265,11 +266,21 @@ export const QuizScalarFieldEnum = {
   timeLimit: 'timeLimit',
   status: 'status',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt',
-  answers: 'answers'
+  updatedAt: 'updatedAt'
 } as const
 
 export type QuizScalarFieldEnum = (typeof QuizScalarFieldEnum)[keyof typeof QuizScalarFieldEnum]
+
+
+export const LessonQuizScalarFieldEnum = {
+  id: 'id',
+  lessonId: 'lessonId',
+  quizId: 'quizId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LessonQuizScalarFieldEnum = (typeof LessonQuizScalarFieldEnum)[keyof typeof LessonQuizScalarFieldEnum]
 
 
 export const QuizAttemptScalarFieldEnum = {
@@ -309,7 +320,7 @@ export const QuestionScalarFieldEnum = {
   status: 'status',
   marks: 'marks',
   type: 'type',
-  answers: 'answers',
+  answer: 'answer',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -435,8 +446,7 @@ export type LessonOrderByRelevanceFieldEnum = (typeof LessonOrderByRelevanceFiel
 
 export const quizOrderByRelevanceFieldEnum = {
   title: 'title',
-  slug: 'slug',
-  answers: 'answers'
+  slug: 'slug'
 } as const
 
 export type quizOrderByRelevanceFieldEnum = (typeof quizOrderByRelevanceFieldEnum)[keyof typeof quizOrderByRelevanceFieldEnum]
@@ -444,7 +454,7 @@ export type quizOrderByRelevanceFieldEnum = (typeof quizOrderByRelevanceFieldEnu
 
 export const QuestionOrderByRelevanceFieldEnum = {
   question: 'question',
-  answers: 'answers'
+  answer: 'answer'
 } as const
 
 export type QuestionOrderByRelevanceFieldEnum = (typeof QuestionOrderByRelevanceFieldEnum)[keyof typeof QuestionOrderByRelevanceFieldEnum]

@@ -11,6 +11,8 @@ import { CourseModule } from './course/course.module';
 import { SubjectModule } from './subject/subject.module';
 import { LessonModule } from './lesson/lesson.module';
 import { ChapterModule } from './chapter/chapter.module';
+import { QuizModule } from './quiz/quiz.module';
+import { QuestionModule } from './question/question.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { ChapterModule } from './chapter/chapter.module';
     SubjectModule,
     LessonModule,
     ChapterModule,
+    QuizModule,
+    QuestionModule,
   ],
 })
 export class AppModule {}

@@ -189,6 +189,7 @@ model Lesson {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   chapters    LessonToChapter[] @relation("LessonToChapters")
+  quizzes     LessonQuiz[]      @relation("LessonQuiz")
 
   @@map("lessons")
 }
@@ -216,10 +217,20 @@ model quiz {
   status     Boolean       @default(true)
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
-  answers    String        @db.Text
   attempts   QuizAttempt[] @relation("QuizAttempts")
+  lessons    LessonQuiz[]  @relation("QuizLesson")
 
   @@map("quizzes")
+}
+
+model LessonQuiz {
+  id        Int      @id @default(autoincrement())
+  lessonId  Int
+  quizId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lesson    Lesson   @relation("LessonQuiz", fields: [lessonId], references: [id])
+  quiz      quiz     @relation("QuizLesson", fields: [quizId], references: [id])
 }
 
 model QuizAttempt {
@@ -270,7 +281,7 @@ model Question {
   status    Boolean           @default(true)
   marks     Int
   type      QuestionType      @default(MCQ)
-  answers   String?           @db.Text
+  answer    String?           @db.Text
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
   quiz      quiz              @relation("quizQuestions", fields: [quizId], references: [id])
