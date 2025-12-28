@@ -10,6 +10,7 @@ import { PermissionModule } from './permission/permission.module';
 import { CourseModule } from './course/course.module';
 import { SubjectModule } from './subject/subject.module';
 import { LessonModule } from './lesson/lesson.module';
+import { ChapterModule } from './chapter/chapter.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { LessonModule } from './lesson/lesson.module';
     CourseModule,
     SubjectModule,
     LessonModule,
+    ChapterModule,
   ],
 })
 export class AppModule {}

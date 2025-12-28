@@ -54,7 +54,8 @@ export class AuthController {
       return next(
         new ErrorHandler(
           err instanceof Error ? err.message : 'Internal Server Error',
-          401,
+          err.status ? err.status : 401,
+          // 600
         ),
       );
     }

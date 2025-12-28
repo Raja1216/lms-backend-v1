@@ -149,15 +149,15 @@ model CourseSubject {
 }
 
 model Chapter {
-  id          Int              @id @default(autoincrement())
+  id          Int               @id @default(autoincrement())
   title       String
-  slug        String           @unique
-  status      Boolean          @default(true)
-  description String           @db.Text
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  subjects    SubjectChapter[] @relation("SubjectChapters")
-  lessons     Lesson[]         @relation("LessonToChapters")
+  slug        String            @unique
+  status      Boolean           @default(true)
+  description String            @db.Text
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  subjects    SubjectChapter[]  @relation("SubjectChapters")
+  lessons     LessonToChapter[] @relation("LessonToChapters")
 
   @@map("chapters")
 }
@@ -175,23 +175,34 @@ model SubjectChapter {
 }
 
 model Lesson {
-  id          Int        @id @default(autoincrement())
-  chapterId   Int
+  id          Int               @id @default(autoincrement())
   title       String
-  slug        String     @unique
-  description String     @db.Text
-  status      Boolean    @default(true)
+  slug        String            @unique
+  description String            @db.Text
+  status      Boolean           @default(true)
   topicName   String
   duration    String?
   videoUrl    String?
   NoOfPages   Int?
-  type        LessonType @default(video)
+  type        LessonType        @default(video)
   docUrl      String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  chapter     Chapter    @relation("LessonToChapters", fields: [chapterId], references: [id])
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  chapters    LessonToChapter[] @relation("LessonToChapters")
 
   @@map("lessons")
+}
+
+model LessonToChapter {
+  id        Int      @id @default(autoincrement())
+  lessonId  Int
+  chapterId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  lesson    Lesson   @relation("LessonToChapters", fields: [lessonId], references: [id])
+  chapter   Chapter  @relation("LessonToChapters", fields: [chapterId], references: [id])
+
+  @@map("lesson_to_chapter")
 }
 
 model quiz {

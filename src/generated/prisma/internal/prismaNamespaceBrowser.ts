@@ -62,6 +62,7 @@ export const ModelName = {
   Chapter: 'Chapter',
   SubjectChapter: 'SubjectChapter',
   Lesson: 'Lesson',
+  LessonToChapter: 'LessonToChapter',
   quiz: 'quiz',
   QuizAttempt: 'QuizAttempt',
   QuestionAttempt: 'QuestionAttempt',
@@ -227,7 +228,6 @@ export type SubjectChapterScalarFieldEnum = (typeof SubjectChapterScalarFieldEnu
 
 export const LessonScalarFieldEnum = {
   id: 'id',
-  chapterId: 'chapterId',
   title: 'title',
   slug: 'slug',
   description: 'description',
@@ -243,6 +243,17 @@ export const LessonScalarFieldEnum = {
 } as const
 
 export type LessonScalarFieldEnum = (typeof LessonScalarFieldEnum)[keyof typeof LessonScalarFieldEnum]
+
+
+export const LessonToChapterScalarFieldEnum = {
+  id: 'id',
+  lessonId: 'lessonId',
+  chapterId: 'chapterId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LessonToChapterScalarFieldEnum = (typeof LessonToChapterScalarFieldEnum)[keyof typeof LessonToChapterScalarFieldEnum]
 
 
 export const QuizScalarFieldEnum = {

@@ -93,6 +93,11 @@ export type SubjectChapter = Prisma.SubjectChapterModel
  */
 export type Lesson = Prisma.LessonModel
 /**
+ * Model LessonToChapter
+ * 
+ */
+export type LessonToChapter = Prisma.LessonToChapterModel
+/**
  * Model quiz
  * 
  */

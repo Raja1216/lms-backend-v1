@@ -395,6 +395,7 @@ export const ModelName = {
   Chapter: 'Chapter',
   SubjectChapter: 'SubjectChapter',
   Lesson: 'Lesson',
+  LessonToChapter: 'LessonToChapter',
   quiz: 'quiz',
   QuizAttempt: 'QuizAttempt',
   QuestionAttempt: 'QuestionAttempt',
@@ -415,7 +416,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "userOtp" | "course" | "courseTeacher" | "subject" | "courseSubject" | "chapter" | "subjectChapter" | "lesson" | "quiz" | "quizAttempt" | "questionAttempt" | "question" | "questionOption"
+    modelProps: "user" | "role" | "permission" | "userOtp" | "course" | "courseTeacher" | "subject" | "courseSubject" | "chapter" | "subjectChapter" | "lesson" | "lessonToChapter" | "quiz" | "quizAttempt" | "questionAttempt" | "question" | "questionOption"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1145,6 +1146,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    LessonToChapter: {
+      payload: Prisma.$LessonToChapterPayload<ExtArgs>
+      fields: Prisma.LessonToChapterFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.LessonToChapterFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.LessonToChapterFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload>
+        }
+        findFirst: {
+          args: Prisma.LessonToChapterFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.LessonToChapterFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload>
+        }
+        findMany: {
+          args: Prisma.LessonToChapterFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload>[]
+        }
+        create: {
+          args: Prisma.LessonToChapterCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload>
+        }
+        createMany: {
+          args: Prisma.LessonToChapterCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.LessonToChapterDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload>
+        }
+        update: {
+          args: Prisma.LessonToChapterUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload>
+        }
+        deleteMany: {
+          args: Prisma.LessonToChapterDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.LessonToChapterUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.LessonToChapterUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$LessonToChapterPayload>
+        }
+        aggregate: {
+          args: Prisma.LessonToChapterAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateLessonToChapter>
+        }
+        groupBy: {
+          args: Prisma.LessonToChapterGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LessonToChapterGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.LessonToChapterCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.LessonToChapterCountAggregateOutputType> | number
+        }
+      }
+    }
     quiz: {
       payload: Prisma.$quizPayload<ExtArgs>
       fields: Prisma.quizFieldRefs
@@ -1656,7 +1723,6 @@ export type SubjectChapterScalarFieldEnum = (typeof SubjectChapterScalarFieldEnu
 
 export const LessonScalarFieldEnum = {
   id: 'id',
-  chapterId: 'chapterId',
   title: 'title',
   slug: 'slug',
   description: 'description',
@@ -1672,6 +1738,17 @@ export const LessonScalarFieldEnum = {
 } as const
 
 export type LessonScalarFieldEnum = (typeof LessonScalarFieldEnum)[keyof typeof LessonScalarFieldEnum]
+
+
+export const LessonToChapterScalarFieldEnum = {
+  id: 'id',
+  lessonId: 'lessonId',
+  chapterId: 'chapterId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LessonToChapterScalarFieldEnum = (typeof LessonToChapterScalarFieldEnum)[keyof typeof LessonToChapterScalarFieldEnum]
 
 
 export const QuizScalarFieldEnum = {
@@ -2033,6 +2110,7 @@ export type GlobalOmitConfig = {
   chapter?: Prisma.ChapterOmit
   subjectChapter?: Prisma.SubjectChapterOmit
   lesson?: Prisma.LessonOmit
+  lessonToChapter?: Prisma.LessonToChapterOmit
   quiz?: Prisma.quizOmit
   quizAttempt?: Prisma.QuizAttemptOmit
   questionAttempt?: Prisma.QuestionAttemptOmit

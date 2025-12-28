@@ -1,5 +1,5 @@
 import { IsNumber, IsEmail, IsString, MinLength } from 'class-validator';
-import { Match } from '../../custom_validator/is-matched.validator';
+import { Match } from '../../custom-validator/is-matched.validator';
 export class ResetPasswordDto {
   @IsEmail()
   email: string;

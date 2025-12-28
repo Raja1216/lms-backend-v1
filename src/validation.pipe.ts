@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Injectable,
   PipeTransform,
+  UnprocessableEntityException
 } from '@nestjs/common';
 import { ValidationPipe } from '@nestjs/common';
 
@@ -22,7 +23,7 @@ export class ApiValidationPipe extends ValidationPipe {
           formattedErrors[field] = Object.values(error.constraints || {});
         });
 
-        return new BadRequestException({
+        return new UnprocessableEntityException({
           status: 'validation_error',
           data: formattedErrors,
         });
