@@ -13,6 +13,7 @@ import { LessonModule } from './lesson/lesson.module';
 import { ChapterModule } from './chapter/chapter.module';
 import { QuizModule } from './quiz/quiz.module';
 import { QuestionModule } from './question/question.module';
+import { UploadCsvModule } from './upload-csv/upload-csv.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { QuestionModule } from './question/question.module';
     ChapterModule,
     QuizModule,
     QuestionModule,
+    UploadCsvModule,
   ],
 })
 export class AppModule {}
