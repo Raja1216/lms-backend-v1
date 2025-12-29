@@ -12,38 +12,43 @@ import {
   HttpStatus,
   ParseFilePipe,
   MaxFileSizeValidator,
+  Next,
+  UseGuards,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import {
   CsvEntityType,
   CsvImportDto,
   CsvUploadDto,
 } from './dto/csv-upload.dto';
+import { successResponse } from 'src/utils/success-response';
+import { ErrorHandler } from 'src/utils/error-handler';
+import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { PermissionGuard } from 'src/guard/permission.guard';
+import { Permissions } from 'src/guard/premission.decorator';
 
+@UseGuards(JwtAuthGuard, PermissionGuard)
+@Permissions('upload-csv')
 @Controller('upload-csv')
 export class UploadCsvController {
   constructor(private readonly uploadCsvService: UploadCsvService) {}
-  /**
-   * Download CSV template for specific entity type
-   * GET /csv/template?entityType=course
-   *
-   * @example
-   * GET http://localhost:3000/csv/template?entityType=course
-   */
+
+  @Permissions('read-csv-template')
   @Get('template')
   async downloadTemplate(
     @Query('entityType') entityType: string,
     @Res() res: Response,
+    @Next() next: NextFunction,
   ) {
-    // Validate entity type
-    if (!Object.values(CsvEntityType).includes(entityType as CsvEntityType)) {
-      throw new BadRequestException(
-        `Invalid entity type. Must be one of: ${Object.values(CsvEntityType).join(', ')}`,
-      );
-    }
-
     try {
+      // Validate entity type
+      if (!Object.values(CsvEntityType).includes(entityType as CsvEntityType)) {
+        throw new BadRequestException(
+          `Invalid entity type. Must be one of: ${Object.values(CsvEntityType).join(', ')}`,
+        );
+      }
+
       const csvBuffer = await this.uploadCsvService.generateTemplate(
         entityType as CsvEntityType,
       );
@@ -57,23 +62,16 @@ export class UploadCsvController {
 
       res.send(csvBuffer);
     } catch (error) {
-      throw new BadRequestException(
-        `Failed to generate template: ${error.message}`,
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
       );
     }
   }
 
-  /**
-   * Upload CSV file and get preview with validation
-   * POST /csv/upload
-   * Content-Type: multipart/form-data
-   *
-   * @example
-   * POST http://localhost:3000/csv/upload
-   * Body:
-   *   - file: [CSV file]
-   *   - entityType: course
-   */
+  @Permissions('create-upload-csv')
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadAndPreview(
@@ -87,6 +85,8 @@ export class UploadCsvController {
     )
     file: Express.Multer.File,
     @Body('entityType') entityType: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
   ) {
     // Validate file type
     if (!file.originalname.toLowerCase().endsWith('.csv')) {
@@ -105,36 +105,31 @@ export class UploadCsvController {
         file,
         entityType as CsvEntityType,
       );
-
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'CSV parsed and validated successfully',
-        data: preview,
-      };
+      return successResponse(
+        res,
+        HttpStatus.OK,
+        'CSV parsed and validated successfully',
+        preview,
+        null,
+      );
     } catch (error) {
-      throw new BadRequestException(`Failed to parse CSV: ${error.message}`);
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
     }
   }
 
-  /**
-   * Import validated CSV data into database
-   * POST /csv/import
-   * Content-Type: application/json
-   *
-   * @example
-   * POST http://localhost:3000/csv/import
-   * Body:
-   * {
-   *   "entityType": "course",
-   *   "data": [...rows...],
-   *   "updateExisting": false
-   * }
-   */
+  @Permissions('create-upload-csv')
   @Post('import')
   async importData(
     @Body('entityType') entityType: string,
     @Body('data') data: Record<string, any>[],
     @Body('updateExisting') updateExisting: boolean = false,
+    @Res() res: Response,
+    @Next() next: NextFunction,
   ) {
     // Validate entity type
     if (!Object.values(CsvEntityType).includes(entityType as CsvEntityType)) {
@@ -155,34 +150,24 @@ export class UploadCsvController {
         updateExisting,
       );
 
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'Import completed successfully',
-        data: result,
-      };
+      return successResponse(
+        res,
+        HttpStatus.OK,
+        'Data imported successfully',
+        result,
+        null,
+      );
     } catch (error) {
-      throw new BadRequestException(`Failed to import data: ${error.message}`);
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
     }
   }
 
-  /**
-   * Complete flow: Upload, validate, and import in one request
-   * POST /csv/upload-and-import
-   * Content-Type: multipart/form-data
-   *
-   * This endpoint will:
-   * 1. Upload the CSV file
-   * 2. Parse and validate the data
-   * 3. If no errors, automatically import the data
-   * 4. Return both preview and import results
-   *
-   * @example
-   * POST http://localhost:3000/csv/upload-and-import
-   * Body:
-   *   - file: [CSV file]
-   *   - entityType: course
-   *   - updateExisting: false (optional)
-   */
+  @Permissions('create-upload-csv')
   @Post('upload-and-import')
   @UseInterceptors(FileInterceptor('file'))
   async uploadAndImport(
@@ -197,6 +182,8 @@ export class UploadCsvController {
     file: Express.Multer.File,
     @Body('entityType') entityType: string,
     @Body('updateExisting') updateExisting: string = 'false',
+    @Res() res: Response,
+    @Next() next: NextFunction,
   ) {
     // Validate file type
     if (!file.originalname.toLowerCase().endsWith('.csv')) {
@@ -211,13 +198,13 @@ export class UploadCsvController {
     }
 
     try {
-      // Step 1: Parse and preview
+      //Parse and preview
       const preview = await this.uploadCsvService.parseAndPreview(
         file,
         entityType as CsvEntityType,
       );
 
-      // Step 2: Check for validation errors
+      // Check for validation errors
       if (preview.invalidRows > 0) {
         return {
           statusCode: HttpStatus.BAD_REQUEST,
@@ -229,53 +216,71 @@ export class UploadCsvController {
         };
       }
 
-      // Step 3: Import if no errors
+      //  Import if no validation errors
       const result = await this.uploadCsvService.importData(
         entityType as CsvEntityType,
         preview.rows,
         updateExisting === 'true',
       );
-
-      return {
-        statusCode: HttpStatus.OK,
-        message: 'CSV uploaded and imported successfully',
-        data: {
-          preview,
-          result,
-          imported: true,
-        },
-      };
+      return successResponse(
+        res,
+        HttpStatus.OK,
+        'CSV uploaded and imported successfully',
+        result,
+        null,
+      );
     } catch (error) {
-      throw new BadRequestException(`Failed to process CSV: ${error.message}`);
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
     }
   }
 
-  /**
-   * Get available entity types
-   * GET /csv/entity-types
-   */
+  @Permissions('read-upload-csv')
   @Get('entity-types')
-  getEntityTypes() {
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'Available entity types',
-      data: Object.values(CsvEntityType).map((type) => ({
-        value: type,
-        label: type.charAt(0).toUpperCase() + type.slice(1) + 's',
-      })),
-    };
+  getEntityTypes(@Res() res: Response, @Next() next: NextFunction) {
+    try {
+      return successResponse(
+        res,
+        HttpStatus.OK,
+        'Available entity types',
+        Object.values(CsvEntityType).map((type) => ({
+          value: type,
+          label: type.charAt(0).toUpperCase() + type.slice(1) + 's',
+        })),
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
   }
 
-  /**
-   * Health check endpoint
-   * GET /csv/health
-   */
+  @Permissions('read-upload-csv')
   @Get('health')
-  healthCheck() {
-    return {
-      statusCode: HttpStatus.OK,
-      message: 'CSV import service is running',
-      timestamp: new Date().toISOString(),
-    };
+  healthCheck(@Res() res: Response, @Next() next: NextFunction) {
+    try {
+      return successResponse(
+        res,
+        HttpStatus.OK,
+        'CSV import service is running',
+        null,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
   }
 }

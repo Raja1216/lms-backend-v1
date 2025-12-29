@@ -8,10 +8,11 @@ import {
   CsvTemplate,
 } from './dto/csv-upload.dto';
 import { LessonType, QuestionType } from 'src/generated/prisma/enums';
+import { generateSlug } from 'src/shared/generate-slug';
 
 @Injectable()
 export class UploadCsvService {
-    constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Generate CSV template for download
@@ -130,7 +131,6 @@ export class UploadCsvService {
         filename: 'course_template.csv',
         headers: [
           'title',
-          'slug',
           'thumbnail',
           'grade',
           'duration',
@@ -142,7 +142,6 @@ export class UploadCsvService {
         sampleData: [
           {
             title: 'Mathematics Grade 10',
-            slug: 'math-grade-10',
             thumbnail: 'https://example.com/math.jpg',
             grade: 'Grade 10',
             duration: '6 months',
@@ -153,7 +152,6 @@ export class UploadCsvService {
           },
           {
             title: 'Science Grade 9',
-            slug: 'science-grade-9',
             thumbnail: 'https://example.com/science.jpg',
             grade: 'Grade 9',
             duration: '4 months',
@@ -171,13 +169,11 @@ export class UploadCsvService {
         sampleData: [
           {
             name: 'Algebra',
-            slug: 'algebra',
             description: 'Algebraic concepts and problem solving',
             status: 'true',
           },
           {
             name: 'Geometry',
-            slug: 'geometry',
             description: 'Geometric shapes and theorems',
             status: 'true',
           },
@@ -186,17 +182,15 @@ export class UploadCsvService {
       },
       [CsvEntityType.CHAPTER]: {
         filename: 'chapter_template.csv',
-        headers: ['title', 'slug', 'description', 'status'],
+        headers: ['title', 'description', 'status'],
         sampleData: [
           {
             title: 'Linear Equations',
-            slug: 'linear-equations',
             description: 'Introduction to linear equations',
             status: 'true',
           },
           {
             title: 'Quadratic Equations',
-            slug: 'quadratic-equations',
             description: 'Solving quadratic equations',
             status: 'true',
           },
@@ -207,7 +201,6 @@ export class UploadCsvService {
         filename: 'lesson_template.csv',
         headers: [
           'title',
-          'slug',
           'description',
           'topicName',
           'duration',
@@ -220,7 +213,6 @@ export class UploadCsvService {
         sampleData: [
           {
             title: 'Solving Linear Equations',
-            slug: 'solving-linear-equations',
             description: 'Learn to solve linear equations step by step',
             topicName: 'Algebra Basics',
             duration: '45 minutes',
@@ -232,7 +224,6 @@ export class UploadCsvService {
           },
           {
             title: 'Linear Equations Worksheet',
-            slug: 'linear-equations-worksheet',
             description: 'Practice problems for linear equations',
             topicName: 'Algebra Practice',
             duration: '30 minutes',
@@ -247,18 +238,10 @@ export class UploadCsvService {
       },
       [CsvEntityType.QUIZ]: {
         filename: 'quiz_template.csv',
-        headers: [
-          'title',
-          'slug',
-          'totalMarks',
-          'passMarks',
-          'timeLimit',
-          'status',
-        ],
+        headers: ['title', 'totalMarks', 'passMarks', 'timeLimit', 'status'],
         sampleData: [
           {
             title: 'Algebra Quiz 1',
-            slug: 'algebra-quiz-1',
             totalMarks: 100,
             passMarks: 40,
             timeLimit: 60,
@@ -266,7 +249,6 @@ export class UploadCsvService {
           },
           {
             title: 'Geometry Quiz 1',
-            slug: 'geometry-quiz-1',
             totalMarks: 50,
             passMarks: 20,
             timeLimit: 30,
@@ -308,7 +290,7 @@ export class UploadCsvService {
             quizSlug: 'algebra-quiz-1',
             question: 'Is 5 greater than 3?',
             marks: 5,
-            type: 'TRUE_FALSE',
+            type: 'TRUEORFALSE',
             answer: 'true',
             option1: '',
             option2: '',
@@ -321,7 +303,7 @@ export class UploadCsvService {
             quizSlug: 'algebra-quiz-1',
             question: 'What is the value of x in 2x = 10?',
             marks: 15,
-            type: 'SHORT_ANSWER',
+            type: 'SHORTANSWER',
             answer: '5',
             option1: '',
             option2: '',
@@ -369,14 +351,7 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (!row.slug?.trim()) {
-          errors.push({
-            row: rowNumber,
-            field: 'slug',
-            message: 'Slug is required',
-            data: row,
-          });
-        }
+
         if (row.price && isNaN(parseFloat(row.price))) {
           errors.push({
             row: rowNumber,
@@ -404,14 +379,7 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (!row.slug?.trim()) {
-          errors.push({
-            row: rowNumber,
-            field: 'slug',
-            message: 'Slug is required',
-            data: row,
-          });
-        }
+
         break;
 
       case CsvEntityType.CHAPTER:
@@ -420,14 +388,6 @@ export class UploadCsvService {
             row: rowNumber,
             field: 'title',
             message: 'Title is required',
-            data: row,
-          });
-        }
-        if (!row.slug?.trim()) {
-          errors.push({
-            row: rowNumber,
-            field: 'slug',
-            message: 'Slug is required',
             data: row,
           });
         }
@@ -442,14 +402,6 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (!row.slug?.trim()) {
-          errors.push({
-            row: rowNumber,
-            field: 'slug',
-            message: 'Slug is required',
-            data: row,
-          });
-        }
         if (!row.topicName?.trim()) {
           errors.push({
             row: rowNumber,
@@ -460,12 +412,12 @@ export class UploadCsvService {
         }
         if (
           !row.type ||
-          !['video', 'document', 'interactive'].includes(row.type.toLowerCase())
+          !['video', 'document', 'quiz'].includes(row.type.toLowerCase())
         ) {
           errors.push({
             row: rowNumber,
             field: 'type',
-            message: 'Type must be video, document, or interactive',
+            message: 'Type must be video, document, or quiz',
             data: row,
           });
         }
@@ -523,14 +475,6 @@ export class UploadCsvService {
         break;
 
       case CsvEntityType.QUESTION:
-        if (!row.quizSlug?.trim()) {
-          errors.push({
-            row: rowNumber,
-            field: 'quizSlug',
-            message: 'Quiz slug is required',
-            data: row,
-          });
-        }
         if (!row.question?.trim()) {
           errors.push({
             row: rowNumber,
@@ -539,11 +483,29 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (!row.type || !['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'].includes(row.type)) {
+        if (!row.quizSlug?.trim()) {
+          errors.push({
+            row: rowNumber,
+            field: 'quizSlug',
+            message: 'Quiz slug is required',
+            data: row,
+          });
+        }
+        if (
+          !row.type ||
+          ![
+            'MCQ',
+            'FILLINTHEBLANK',
+            'TRUEORFALSE',
+            'SHORTANSWER',
+            'DECRIPTIVE',
+          ].includes(row.type)
+        ) {
           errors.push({
             row: rowNumber,
             field: 'type',
-            message: 'Type must be MCQ, TRUE_FALSE, or SHORT_ANSWER',
+            message:
+              'Type must be MCQ, TRUEORFALSE, FILLINTHEBLANK, SHORTANSWER, or DECRIPTIVE',
             data: row,
           });
         }
@@ -556,7 +518,10 @@ export class UploadCsvService {
           });
         }
         if (row.type === 'MCQ') {
-          if (!row.correctOption || !['1', '2', '3', '4'].includes(row.correctOption)) {
+          if (
+            !row.correctOption ||
+            !['1', '2', '3', '4'].includes(row.correctOption)
+          ) {
             errors.push({
               row: rowNumber,
               field: 'correctOption',
@@ -564,7 +529,8 @@ export class UploadCsvService {
               data: row,
             });
           }
-          const hasOptions = row.option1 || row.option2 || row.option3 || row.option4;
+          const hasOptions =
+            row.option1 || row.option2 || row.option3 || row.option4;
           if (!hasOptions) {
             errors.push({
               row: rowNumber,
@@ -587,13 +553,18 @@ export class UploadCsvService {
     data: Record<string, any>[],
     updateExisting: boolean,
   ): Promise<any> {
-    const results = { created: 0, updated: 0, failed: 0, errors: [] as Array<{ row: Record<string, any>; error: string }> };
+    const results = {
+      created: 0,
+      updated: 0,
+      failed: 0,
+      errors: [] as Array<{ row: Record<string, any>; error: string }>,
+    };
 
     for (const row of data) {
       try {
         const courseData = {
           title: row.title,
-          slug: row.slug,
+          slug: generateSlug(row.title),
           thumbnail: row.thumbnail || '',
           grade: row.grade || '',
           duration: row.duration || '',
@@ -635,13 +606,18 @@ export class UploadCsvService {
     data: Record<string, any>[],
     updateExisting: boolean,
   ): Promise<any> {
-    const results = { created: 0, updated: 0, failed: 0, errors: [] as Array<{ row: Record<string, any>; error: string }> };
+    const results = {
+      created: 0,
+      updated: 0,
+      failed: 0,
+      errors: [] as Array<{ row: Record<string, any>; error: string }>,
+    };
 
     for (const row of data) {
       try {
         const subjectData = {
           name: row.name,
-          slug: row.slug,
+          slug: generateSlug(row.name),
           description: row.description || '',
           status: this.parseBoolean(row.status),
         };
@@ -673,13 +649,18 @@ export class UploadCsvService {
     data: Record<string, any>[],
     updateExisting: boolean,
   ): Promise<any> {
-    const results = { created: 0, updated: 0, failed: 0, errors: [] as Array<{ row: Record<string, any>; error: string }> };
+    const results = {
+      created: 0,
+      updated: 0,
+      failed: 0,
+      errors: [] as Array<{ row: Record<string, any>; error: string }>,
+    };
 
     for (const row of data) {
       try {
         const chapterData = {
           title: row.title,
-          slug: row.slug,
+          slug: generateSlug(row.title),
           description: row.description || '',
           status: this.parseBoolean(row.status),
         };
@@ -711,13 +692,18 @@ export class UploadCsvService {
     data: Record<string, any>[],
     updateExisting: boolean,
   ): Promise<any> {
-    const results = { created: 0, updated: 0, failed: 0, errors: [] as Array<{ row: Record<string, any>; error: string }> };
+    const results = {
+      created: 0,
+      updated: 0,
+      failed: 0,
+      errors: [] as Array<{ row: Record<string, any>; error: string }>,
+    };
 
     for (const row of data) {
       try {
         const lessonData = {
           title: row.title,
-          slug: row.slug,
+          slug: generateSlug(row.title),
           description: row.description || '',
           topicName: row.topicName,
           duration: row.duration || null,
@@ -755,13 +741,18 @@ export class UploadCsvService {
     data: Record<string, any>[],
     updateExisting: boolean,
   ): Promise<any> {
-    const results = { created: 0, updated: 0, failed: 0, errors: [] as Array<{ row: Record<string, any>; error: string }> };
+    const results = {
+      created: 0,
+      updated: 0,
+      failed: 0,
+      errors: [] as Array<{ row: Record<string, any>; error: string }>,
+    };
 
     for (const row of data) {
       try {
         const quizData = {
           title: row.title,
-          slug: row.slug,
+          slug: generateSlug(row.title),
           totalMarks: row.totalMarks ? parseInt(row.totalMarks) : 0,
           passMarks: row.passMarks ? parseInt(row.passMarks) : 0,
           timeLimit: row.timeLimit ? parseInt(row.timeLimit) : 60,
@@ -795,7 +786,12 @@ export class UploadCsvService {
     data: Record<string, any>[],
     updateExisting: boolean,
   ): Promise<any> {
-    const results = { created: 0, updated: 0, failed: 0, errors: [] as Array<{ row: Record<string, any>; error: string }> };
+    const results = {
+      created: 0,
+      updated: 0,
+      failed: 0,
+      errors: [] as Array<{ row: Record<string, any>; error: string }>,
+    };
 
     for (const row of data) {
       try {
@@ -823,7 +819,12 @@ export class UploadCsvService {
 
         // Create options if MCQ
         if (row.type === 'MCQ' || row.type === QuestionType.TRUEORFALSE) {
-          const options: Array<{ questionId: number; option: string; isCorrect: boolean; status: boolean }> = [];
+          const options: Array<{
+            questionId: number;
+            option: string;
+            isCorrect: boolean;
+            status: boolean;
+          }> = [];
           for (let i = 1; i <= 4; i++) {
             const optionValue = row[`option${i}`];
             if (optionValue && optionValue.trim()) {

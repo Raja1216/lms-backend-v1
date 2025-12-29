@@ -30,4 +30,7 @@ export class CreateLessonDto {
   @IsBase64()
   @IsOptional()
   documentContent?: string;
+  @IsOptional()
+  @IsNumber()
+  NumberOfPages?: number;
 }

@@ -18,6 +18,7 @@ export class LessonService {
       documentContent,
       videoUrl,
       topicName,
+      NumberOfPages,
     } = createLessonDto;
     let documentUrl: string | null = null;
     if (documentContent) {
@@ -43,6 +44,7 @@ export class LessonService {
         docUrl: documentUrl,
         videoUrl,
         type: lessonType,
+        NoOfPages: NumberOfPages,
       },
     });
     const lessonToChapter: any[] = [];
@@ -88,6 +90,7 @@ export class LessonService {
       videoUrl,
       topicName,
       chapterIds,
+      NumberOfPages,
     } = updateLessonDto;
     let documentUrl: string | null = null;
     if (documentContent) {
@@ -114,6 +117,7 @@ export class LessonService {
         docUrl: documentUrl,
         videoUrl,
         type: lessonType,
+        NoOfPages: NumberOfPages,
       },
     });
     const lessonToChapter: any[] = [];

@@ -19,12 +19,12 @@ export class QuestionService {
             marks: q.marks,
             type: q.type,
             answer:
-              q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
+              q.type === QuestionType.MCQ 
                 ? null
                 : q.answer,
 
             options:
-              q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
+              q.type === QuestionType.MCQ 
                 ? {
                     create: q.options?.map((opt) => ({
                       option: opt.option,
