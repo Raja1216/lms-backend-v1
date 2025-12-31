@@ -619,7 +619,7 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (row.type === 'MCQ' || row.type === 'TRUE_FALSE') {
+        if (row.type === 'MCQ' || row.type === 'TRUEORFALSE') {
           if (
             !row.correctOption ||
             !['1', '2', '3', '4'].includes(row.correctOption)
@@ -1039,12 +1039,12 @@ export class UploadCsvService {
 
         // Create options if MCQ
 
-        // Create options if MCQ or TRUE_FALSE
-        if (row.type === 'MCQ' || row.type === 'TRUE_FALSE') {
+        // Create options if MCQ or TRUEORFALSE
+        if (row.type === 'MCQ' || row.type === 'TRUEORFALSE') {
           const options: any[] = [];
 
-          if (row.type === 'TRUE_FALSE') {
-            // For TRUE_FALSE, create exactly 2 options
+          if (row.type === 'TRUEORFALSE') {
+            // For TRUEORFALSE, create exactly 2 options
             if (row.option1 && row.option1.trim()) {
               options.push({
                 questionId: question.id,
