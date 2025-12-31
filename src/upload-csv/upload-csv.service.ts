@@ -165,7 +165,7 @@ export class UploadCsvService {
       },
       [CsvEntityType.SUBJECT]: {
         filename: 'subject_template.csv',
-        headers: ['name', 'slug', 'description', 'status', 'courseSlug'],
+        headers: ['name', 'description', 'status', 'courseSlug'],
         sampleData: [
           {
             name: 'Algebra',
@@ -307,12 +307,12 @@ export class UploadCsvService {
             question: 'Is 5 greater than 3?',
             marks: 5,
             type: 'TRUEORFALSE',
-            answer: 'true',
-            option1: '',
-            option2: '',
+            answer: '',
+            option1: 'True',
+            option2: 'False',
             option3: '',
             option4: '',
-            correctOption: '',
+            correctOption: '1',
             status: 'true',
           },
           {
@@ -525,14 +525,6 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (!row.slug?.trim()) {
-          errors.push({
-            row: rowNumber,
-            field: 'slug',
-            message: 'Slug is required',
-            data: row,
-          });
-        }
         if (row.totalMarks && isNaN(parseInt(row.totalMarks))) {
           errors.push({
             row: rowNumber,
@@ -565,29 +557,23 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (row.lessonSlug) {
-          errors.push({
-            row: rowNumber,
-            field: 'lessonSlug',
-            message: 'Lesson slug cannot be empty',
-            data: row,
+
+        if (row.lessonSlug?.trim()) {
+          const lesson = await this.prisma.lesson.findUnique({
+            where: {
+              slug: row.lessonSlug,
+            },
           });
-          if (row.lessonSlug?.trim()) {
-            const lesson = await this.prisma.lesson.findUnique({
-              where: {
-                slug: row.lessonSlug,
-              },
+          if (!lesson) {
+            errors.push({
+              row: rowNumber,
+              field: 'lessonSlug',
+              message: `Lesson with slug '${row.lessonSlug}' does not exist`,
+              data: row,
             });
-            if (!lesson) {
-              errors.push({
-                row: rowNumber,
-                field: 'lessonSlug',
-                message: `Lesson with slug '${row.lessonSlug}' does not exist`,
-                data: row,
-              });
-            }
           }
         }
+
         break;
 
       case CsvEntityType.QUESTION:
