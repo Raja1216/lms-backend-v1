@@ -34,7 +34,7 @@ import { Permissions } from 'src/guard/premission.decorator';
 export class UploadCsvController {
   constructor(private readonly uploadCsvService: UploadCsvService) {}
 
-  @Permissions('read-csv-template')
+  @Permissions('csv-template-read')
   @Get('template')
   async downloadTemplate(
     @Query('entityType') entityType: string,
@@ -71,7 +71,7 @@ export class UploadCsvController {
     }
   }
 
-  @Permissions('create-upload-csv')
+  @Permissions('csv-template-read')
   @Post('upload')
   @UseInterceptors(FileInterceptor('file'))
   async uploadAndPreview(
@@ -122,7 +122,7 @@ export class UploadCsvController {
     }
   }
 
-  @Permissions('create-upload-csv')
+  @Permissions('csv-template-update')
   @Post('import')
   async importData(
     @Body('entityType') entityType: string,
@@ -167,7 +167,7 @@ export class UploadCsvController {
     }
   }
 
-  @Permissions('create-upload-csv')
+  @Permissions('csv-template-update')
   @Post('upload-and-import')
   @UseInterceptors(FileInterceptor('file'))
   async uploadAndImport(

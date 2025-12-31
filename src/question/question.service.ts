@@ -7,7 +7,7 @@ import { QuestionType } from 'src/generated/prisma/enums';
 @Injectable()
 export class QuestionService {
   constructor(private prisma: PrismaService) {}
-  async create(createQuestionDto: CreateQuestionDto) {
+async create(createQuestionDto: CreateQuestionDto) {
     const { quizId, questions } = createQuestionDto;
 
     const result = await this.prisma.$transaction(
@@ -19,12 +19,12 @@ export class QuestionService {
             marks: q.marks,
             type: q.type,
             answer:
-              q.type === QuestionType.MCQ 
+              q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
                 ? null
                 : q.answer,
 
             options:
-              q.type === QuestionType.MCQ 
+              q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
                 ? {
                     create: q.options?.map((opt) => ({
                       option: opt.option,
@@ -42,6 +42,10 @@ export class QuestionService {
     await this.updateQuizMarks(quizId);
     return result;
   }
+
+
+
+
 
   findAll() {
     return `This action returns all question`;
@@ -61,7 +65,7 @@ export class QuestionService {
     });
   }
 
-  async update(id: number, updateQuestionDto: UpdateQuestionDto) {
+   async update(id: number, updateQuestionDto: UpdateQuestionDto) {
     const existinQuestion = await this.findOne(id);
     if (!existinQuestion) {
       throw new NotFoundException(`Question with ID ${id} not found`);

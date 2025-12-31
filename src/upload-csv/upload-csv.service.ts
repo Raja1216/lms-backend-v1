@@ -165,33 +165,37 @@ export class UploadCsvService {
       },
       [CsvEntityType.SUBJECT]: {
         filename: 'subject_template.csv',
-        headers: ['name', 'slug', 'description', 'status'],
+        headers: ['name', 'slug', 'description', 'status', 'courseSlug'],
         sampleData: [
           {
             name: 'Algebra',
             description: 'Algebraic concepts and problem solving',
             status: 'true',
+            courseSlug: 'mathematics-grade-10',
           },
           {
             name: 'Geometry',
             description: 'Geometric shapes and theorems',
             status: 'true',
+            courseSlug: 'mathematics-grade-10',
           },
         ],
         description: 'Subject import template',
       },
       [CsvEntityType.CHAPTER]: {
         filename: 'chapter_template.csv',
-        headers: ['title', 'description', 'status'],
+        headers: ['title', 'description', 'status', 'subjectSlug'],
         sampleData: [
           {
             title: 'Linear Equations',
             description: 'Introduction to linear equations',
             status: 'true',
+            subjectSlug: 'algebra',
           },
           {
             title: 'Quadratic Equations',
             description: 'Solving quadratic equations',
+            subjectSlug: 'algebra',
             status: 'true',
           },
         ],
@@ -209,6 +213,7 @@ export class UploadCsvService {
           'type',
           'docUrl',
           'status',
+          'chapterSlug',
         ],
         sampleData: [
           {
@@ -221,6 +226,7 @@ export class UploadCsvService {
             type: 'video',
             docUrl: '',
             status: 'true',
+            chapterSlug: 'linear-equations',
           },
           {
             title: 'Linear Equations Worksheet',
@@ -232,13 +238,21 @@ export class UploadCsvService {
             type: 'document',
             docUrl: 'https://example.com/worksheet.pdf',
             status: 'true',
+            chapterSlug: 'linear-equations',
           },
         ],
         description: 'Lesson import template',
       },
       [CsvEntityType.QUIZ]: {
         filename: 'quiz_template.csv',
-        headers: ['title', 'totalMarks', 'passMarks', 'timeLimit', 'status'],
+        headers: [
+          'title',
+          'totalMarks',
+          'passMarks',
+          'timeLimit',
+          'status',
+          'lessonSlug',
+        ],
         sampleData: [
           {
             title: 'Algebra Quiz 1',
@@ -246,6 +260,7 @@ export class UploadCsvService {
             passMarks: 40,
             timeLimit: 60,
             status: 'true',
+            lessonSlug: 'solving-linear-equations',
           },
           {
             title: 'Geometry Quiz 1',
@@ -253,6 +268,7 @@ export class UploadCsvService {
             passMarks: 20,
             timeLimit: 30,
             status: 'true',
+            lessonSlug: 'introduction-to-geometry',
           },
         ],
         description: 'Quiz import template',
@@ -379,6 +395,29 @@ export class UploadCsvService {
             data: row,
           });
         }
+        if (!row.courseSlug?.trim()) {
+          errors.push({
+            row: rowNumber,
+            field: 'courseSlug',
+            message: 'courseSlug is required',
+            data: row,
+          });
+        }
+        if (row.courseSlug?.trim()) {
+          const course = await this.prisma.course.findUnique({
+            where: {
+              slug: row.courseSlug,
+            },
+          });
+          if (!course) {
+            errors.push({
+              row: rowNumber,
+              field: 'courseSlug',
+              message: `Course with slug '${row.courseSlug}' does not exist`,
+              data: row,
+            });
+          }
+        }
 
         break;
 
@@ -390,6 +429,29 @@ export class UploadCsvService {
             message: 'Title is required',
             data: row,
           });
+        }
+        if (!row.subjectSlug?.trim()) {
+          errors.push({
+            row: rowNumber,
+            field: 'subjectSlug',
+            message: 'Subject slug is required',
+            data: row,
+          });
+        }
+        if (row.subjectSlug?.trim()) {
+          const subject = await this.prisma.subject.findUnique({
+            where: {
+              slug: row.subjectSlug,
+            },
+          });
+          if (!subject) {
+            errors.push({
+              row: rowNumber,
+              field: 'subjectSlug',
+              message: `Subject with slug '${row.subjectSlug}' does not exist`,
+              data: row,
+            });
+          }
         }
         break;
 
@@ -409,6 +471,29 @@ export class UploadCsvService {
             message: 'Topic name is required',
             data: row,
           });
+        }
+        if (!row.chapterSlug?.trim()) {
+          errors.push({
+            row: rowNumber,
+            field: 'chapterSlug',
+            message: 'Chapter slug is required',
+            data: row,
+          });
+        }
+        if (row.chapterSlug?.trim()) {
+          const chapter = await this.prisma.chapter.findUnique({
+            where: {
+              slug: row.chapterSlug,
+            },
+          });
+          if (!chapter) {
+            errors.push({
+              row: rowNumber,
+              field: 'chapterSlug',
+              message: `Chapter with slug '${row.chapterSlug}' does not exist`,
+              data: row,
+            });
+          }
         }
         if (
           !row.type ||
@@ -472,6 +557,37 @@ export class UploadCsvService {
             data: row,
           });
         }
+        if (!row.lessonSlug?.trim()) {
+          errors.push({
+            row: rowNumber,
+            field: 'lessonSlug',
+            message: 'Lesson slug is required',
+            data: row,
+          });
+        }
+        if (row.lessonSlug) {
+          errors.push({
+            row: rowNumber,
+            field: 'lessonSlug',
+            message: 'Lesson slug cannot be empty',
+            data: row,
+          });
+          if (row.lessonSlug?.trim()) {
+            const lesson = await this.prisma.lesson.findUnique({
+              where: {
+                slug: row.lessonSlug,
+              },
+            });
+            if (!lesson) {
+              errors.push({
+                row: rowNumber,
+                field: 'lessonSlug',
+                message: `Lesson with slug '${row.lessonSlug}' does not exist`,
+                data: row,
+              });
+            }
+          }
+        }
         break;
 
       case CsvEntityType.QUESTION:
@@ -517,7 +633,7 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (row.type === 'MCQ') {
+        if (row.type === 'MCQ' || row.type === 'TRUE_FALSE') {
           if (
             !row.correctOption ||
             !['1', '2', '3', '4'].includes(row.correctOption)
@@ -525,7 +641,7 @@ export class UploadCsvService {
             errors.push({
               row: rowNumber,
               field: 'correctOption',
-              message: 'Correct option must be 1, 2, 3, or 4 for MCQ',
+              message: `Correct option must be 1, 2, 3, or 4 for ${row.type}`,
               data: row,
             });
           }
@@ -535,7 +651,20 @@ export class UploadCsvService {
             errors.push({
               row: rowNumber,
               field: 'options',
-              message: 'At least one option is required for MCQ',
+              message: `At least one option is required for ${row.type}`,
+              data: row,
+            });
+          }
+        }
+
+        // For TRUEORFALSE, validate that option1 and option2 are provided
+        if (row.type === 'TRUEORFALSE') {
+          if (!row.option1 || !row.option2) {
+            errors.push({
+              row: rowNumber,
+              field: 'options',
+              message:
+                'TRUEORFALSE questions require option1 (True) and option2 (False)',
               data: row,
             });
           }
@@ -621,17 +750,43 @@ export class UploadCsvService {
           description: row.description || '',
           status: this.parseBoolean(row.status),
         };
-
+        let subject: any;
         if (updateExisting) {
-          await this.prisma.subject.upsert({
+          subject = await this.prisma.subject.upsert({
             where: { slug: subjectData.slug },
             update: subjectData,
             create: subjectData,
           });
           results.updated++;
         } else {
-          await this.prisma.subject.create({ data: subjectData });
+          subject = await this.prisma.subject.create({ data: subjectData });
           results.created++;
+        }
+        if (row.courseSlug) {
+          const course = await this.prisma.course.findUnique({
+            where: {
+              slug: row.courseSlug,
+            },
+            select: {
+              id: true,
+            },
+          });
+          if (course) {
+            const courseSubject = await this.prisma.courseSubject.findFirst({
+              where: {
+                courseId: course.id,
+                subjectId: subject.id,
+              },
+            });
+            if (!courseSubject) {
+              await this.prisma.courseSubject.create({
+                data: {
+                  courseId: course.id,
+                  subjectId: subject.id,
+                },
+              });
+            }
+          }
         }
       } catch (error) {
         results.failed++;
@@ -664,17 +819,43 @@ export class UploadCsvService {
           description: row.description || '',
           status: this.parseBoolean(row.status),
         };
-
+        let chapter: any = null;
         if (updateExisting) {
-          await this.prisma.chapter.upsert({
+          chapter = await this.prisma.chapter.upsert({
             where: { slug: chapterData.slug },
             update: chapterData,
             create: chapterData,
           });
           results.updated++;
         } else {
-          await this.prisma.chapter.create({ data: chapterData });
+          chapter = await this.prisma.chapter.create({ data: chapterData });
           results.created++;
+        }
+        if (row.subjectSlug) {
+          const subject = await this.prisma.subject.findUnique({
+            where: {
+              slug: row.subjectSlug,
+            },
+            select: {
+              id: true,
+            },
+          });
+          if (subject) {
+            const chapterSubject = await this.prisma.subjectChapter.findFirst({
+              where: {
+                chapterId: chapter.id,
+                subjectId: subject.id,
+              },
+            });
+            if (!chapterSubject) {
+              await this.prisma.subjectChapter.create({
+                data: {
+                  chapterId: chapter.id,
+                  subjectId: subject.id,
+                },
+              });
+            }
+          }
         }
       } catch (error) {
         results.failed++;
@@ -713,17 +894,44 @@ export class UploadCsvService {
           docUrl: row.docUrl || null,
           status: this.parseBoolean(row.status),
         };
-
+        let lesson: any = null;
         if (updateExisting) {
-          await this.prisma.lesson.upsert({
+          lesson = await this.prisma.lesson.upsert({
             where: { slug: lessonData.slug },
             update: lessonData,
             create: lessonData,
           });
           results.updated++;
         } else {
-          await this.prisma.lesson.create({ data: lessonData });
+          lesson = await this.prisma.lesson.create({ data: lessonData });
           results.created++;
+        }
+        let chapter: any = null;
+        if (row.chapterSlug) {
+          chapter = await this.prisma.chapter.findUnique({
+            where: {
+              slug: row.chapterSlug,
+            },
+            select: {
+              id: true,
+            },
+          });
+        }
+        if (chapter) {
+          const chapterLesson = await this.prisma.lessonToChapter.findFirst({
+            where: {
+              chapterId: chapter.id,
+              lessonId: lesson.id,
+            },
+          });
+          if (!chapterLesson) {
+            await this.prisma.lessonToChapter.create({
+              data: {
+                chapterId: chapter.id,
+                lessonId: lesson.id,
+              },
+            });
+          }
         }
       } catch (error) {
         results.failed++;
@@ -758,17 +966,43 @@ export class UploadCsvService {
           timeLimit: row.timeLimit ? parseInt(row.timeLimit) : 60,
           status: this.parseBoolean(row.status),
         };
-
+        let quiz: any = null;
         if (updateExisting) {
-          await this.prisma.quiz.upsert({
+          quiz = await this.prisma.quiz.upsert({
             where: { slug: quizData.slug },
             update: quizData,
             create: quizData,
           });
           results.updated++;
         } else {
-          await this.prisma.quiz.create({ data: quizData });
+          quiz = await this.prisma.quiz.create({ data: quizData });
           results.created++;
+        }
+        if (row.lessonSlug) {
+          const lesson = await this.prisma.lesson.findUnique({
+            where: {
+              slug: row.lessonSlug,
+            },
+            select: {
+              id: true,
+            },
+          });
+          if (lesson) {
+            const lessonQuiz = await this.prisma.lessonQuiz.findFirst({
+              where: {
+                lessonId: lesson.id,
+                quizId: quiz.id,
+              },
+            });
+            if (!lessonQuiz) {
+              await this.prisma.lessonQuiz.create({
+                data: {
+                  lessonId: lesson.id,
+                  quizId: quiz.id,
+                },
+              });
+            }
+          }
         }
       } catch (error) {
         results.failed++;
@@ -818,22 +1052,41 @@ export class UploadCsvService {
         });
 
         // Create options if MCQ
-        if (row.type === 'MCQ' || row.type === QuestionType.TRUEORFALSE) {
-          const options: Array<{
-            questionId: number;
-            option: string;
-            isCorrect: boolean;
-            status: boolean;
-          }> = [];
-          for (let i = 1; i <= 4; i++) {
-            const optionValue = row[`option${i}`];
-            if (optionValue && optionValue.trim()) {
+
+        // Create options if MCQ or TRUE_FALSE
+        if (row.type === 'MCQ' || row.type === 'TRUE_FALSE') {
+          const options: any[] = [];
+
+          if (row.type === 'TRUE_FALSE') {
+            // For TRUE_FALSE, create exactly 2 options
+            if (row.option1 && row.option1.trim()) {
               options.push({
                 questionId: question.id,
-                option: optionValue,
-                isCorrect: row.correctOption === i.toString(),
+                option: row.option1.trim(),
+                isCorrect: row.correctOption === '1',
                 status: true,
               });
+            }
+            if (row.option2 && row.option2.trim()) {
+              options.push({
+                questionId: question.id,
+                option: row.option2.trim(),
+                isCorrect: row.correctOption === '2',
+                status: true,
+              });
+            }
+          } else {
+            // For MCQ, create up to 4 options
+            for (let i = 1; i <= 4; i++) {
+              const optionValue = row[`option${i}`];
+              if (optionValue && optionValue.trim()) {
+                options.push({
+                  questionId: question.id,
+                  option: optionValue,
+                  isCorrect: row.correctOption === i.toString(),
+                  status: true,
+                });
+              }
             }
           }
 
