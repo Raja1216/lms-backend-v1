@@ -101,6 +101,7 @@ export class CourseService {
               select: {
                 id: true,
                 name: true,
+                slug: true,
               },
             },
           },

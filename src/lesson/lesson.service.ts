@@ -171,6 +171,13 @@ export class LessonService {
       where: {
         slug: slug,
       },
+      include: {
+        quizzes: {
+          select: {
+            quiz: true,
+          },
+        },
+      },
     });
     return lesson;
   }
