@@ -62,8 +62,8 @@ export class CourseService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { page = 1, limit = 10, keyword } = paginationDto;
-
+    const { page = 1, limit = 10, keyword=null } = paginationDto;
+    console.log('keyword', keyword);
     const skip = (page - 1) * limit;
     const whereClause = keyword
       ? {

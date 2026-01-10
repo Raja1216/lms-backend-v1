@@ -13,6 +13,7 @@ import {
   NotFoundException,
   BadRequestException,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -79,7 +80,7 @@ export class CourseController {
 
   @Get()
   async findAll(
-    @Body() paginationDto: PaginationDto,
+    @Query() paginationDto: PaginationDto,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
