@@ -11,6 +11,7 @@ import {
   IsArray,
   ArrayNotEmpty,
   ValidateNested,
+  IsNotEmpty,
 } from 'class-validator';
 import { QuestionType } from 'src/generated/prisma/enums';
 export class CreateQuestionDto {
@@ -47,6 +48,12 @@ export class CreateQuestionItemDto {
   @IsOptional()
   @IsString()
   answer?: string;
+
+  // duration in minutes
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(0)
+  duration: number;
 }
 
 export class CreateQuestionOptionDto {

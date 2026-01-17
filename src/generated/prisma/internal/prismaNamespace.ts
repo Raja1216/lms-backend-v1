@@ -1880,6 +1880,7 @@ export const QuestionScalarFieldEnum = {
   question: 'question',
   status: 'status',
   marks: 'marks',
+  duration: 'duration',
   type: 'type',
   answer: 'answer',
   createdAt: 'createdAt',

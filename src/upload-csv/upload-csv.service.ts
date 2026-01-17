@@ -245,20 +245,12 @@ export class UploadCsvService {
       },
       [CsvEntityType.QUIZ]: {
         filename: 'quiz_template.csv',
-        headers: [
-          'title',
-          'totalMarks',
-          'passMarks',
-          'timeLimit',
-          'status',
-          'lessonSlug',
-        ],
+        headers: ['title', 'totalMarks', 'passMarks', 'status', 'lessonSlug'],
         sampleData: [
           {
             title: 'Algebra Quiz 1',
             totalMarks: 100,
             passMarks: 40,
-            timeLimit: 60,
             status: 'true',
             lessonSlug: 'solving-linear-equations',
           },
@@ -266,7 +258,6 @@ export class UploadCsvService {
             title: 'Geometry Quiz 1',
             totalMarks: 50,
             passMarks: 20,
-            timeLimit: 30,
             status: 'true',
             lessonSlug: 'introduction-to-geometry',
           },
@@ -279,6 +270,7 @@ export class UploadCsvService {
           'quizSlug',
           'question',
           'marks',
+          'duration',
           'type',
           'answer',
           'option1',
@@ -293,6 +285,7 @@ export class UploadCsvService {
             quizSlug: 'algebra-quiz-1',
             question: 'What is 2 + 2?',
             marks: 10,
+            duration: 5,
             type: 'MCQ',
             answer: '',
             option1: '3',
@@ -306,6 +299,7 @@ export class UploadCsvService {
             quizSlug: 'algebra-quiz-1',
             question: 'Is 5 greater than 3?',
             marks: 5,
+            duration: 10,
             type: 'TRUEORFALSE',
             answer: '',
             option1: 'True',
@@ -319,6 +313,7 @@ export class UploadCsvService {
             quizSlug: 'algebra-quiz-1',
             question: 'What is the value of x in 2x = 10?',
             marks: 15,
+            duration: 10,
             type: 'SHORTANSWER',
             answer: '5',
             option1: '',
@@ -541,14 +536,7 @@ export class UploadCsvService {
             data: row,
           });
         }
-        if (row.timeLimit && isNaN(parseInt(row.timeLimit))) {
-          errors.push({
-            row: rowNumber,
-            field: 'timeLimit',
-            message: 'Time limit must be a valid integer',
-            data: row,
-          });
-        }
+
         if (!row.lessonSlug?.trim()) {
           errors.push({
             row: rowNumber,
@@ -590,6 +578,14 @@ export class UploadCsvService {
             row: rowNumber,
             field: 'quizSlug',
             message: 'Quiz slug is required',
+            data: row,
+          });
+        }
+        if (row.duration && isNaN(parseInt(row.duration))) {
+          errors.push({
+            row: rowNumber,
+            field: 'duration',
+            message: 'Duration must be a valid integer',
             data: row,
           });
         }
@@ -941,7 +937,7 @@ export class UploadCsvService {
       failed: 0,
       errors: [] as Array<{ row: Record<string, any>; error: string }>,
     };
-
+    const affectedQuizIds = new Set<number>();
     for (const row of data) {
       try {
         const quizData = {
@@ -949,7 +945,7 @@ export class UploadCsvService {
           slug: generateSlug(row.title),
           totalMarks: row.totalMarks ? parseInt(row.totalMarks) : 0,
           passMarks: row.passMarks ? parseInt(row.passMarks) : 0,
-          timeLimit: row.timeLimit ? parseInt(row.timeLimit) : 60,
+          timeLimit: row.duration ? parseInt(row.duration) : 0,
           status: this.parseBoolean(row.status),
         };
         let quiz: any = null;
@@ -990,12 +986,15 @@ export class UploadCsvService {
             }
           }
         }
+        affectedQuizIds.add(quiz.id);
       } catch (error) {
         results.failed++;
         results.errors.push({ row, error: error.message });
       }
     }
-
+    for (const quizId of affectedQuizIds) {
+      await this.updateQuizMarks(quizId);
+    }
     return results;
   }
 
@@ -1028,6 +1027,7 @@ export class UploadCsvService {
           quizId: quiz.id,
           question: row.question,
           marks: row.marks ? parseInt(row.marks) : 0,
+          duration: row.duration ? parseInt(row.duration) : 0,
           type: row.type as QuestionType,
           answer: row.answer || null,
           status: this.parseBoolean(row.status),
@@ -1092,7 +1092,39 @@ export class UploadCsvService {
 
     return results;
   }
+  private async updateQuizMarks(quizId: number): Promise<void> {
+    // Sum marks of all active questions for this quiz
+    const aggregate = await this.prisma.question.aggregate({
+      where: {
+        quizId,
+        status: true,
+      },
+      _sum: {
+        marks: true,
+      },
+    });
+    const aggregateDuration = await this.prisma.question.aggregate({
+      where: {
+        quizId,
+        status: true,
+      },
+      _sum: {
+        duration: true,
+      },
+    });
 
+    const totalMarks = aggregate._sum.marks ?? 0;
+    const passMarks = Math.ceil(totalMarks * 0.4); // 40%
+
+    await this.prisma.quiz.update({
+      where: { id: quizId },
+      data: {
+        totalMarks,
+        passMarks,
+        timeLimit: aggregateDuration._sum.duration ?? 0,
+      },
+    });
+  }
   /**
    * Helper function to parse boolean values
    */

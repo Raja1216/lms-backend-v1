@@ -10,6 +10,8 @@ import {
   Next,
   UseGuards,
   ConflictException,
+  Request,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
@@ -21,6 +23,7 @@ import { Permissions } from 'src/guard/premission.decorator';
 import { successResponse } from 'src/utils/success-response';
 import { ErrorHandler } from 'src/utils/error-handler';
 import { LessonService } from 'src/lesson/lesson.service';
+import { SubmitQuizDto } from './dto/submit-quiz.dto';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('quiz')
@@ -167,6 +170,99 @@ export class QuizController {
         200,
         'Quiz status updated successfully',
         updatedQuiz,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+
+  @Post(':quizId/submit')
+  async submitQuiz(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Body() submitQuizDto: SubmitQuizDto,
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const userId = req.user.id;
+
+      const result = await this.quizService.submitQuiz(
+        userId,
+        quizId,
+        submitQuizDto,
+      );
+
+      return successResponse(
+        res,
+        200,
+        'Quiz submitted successfully',
+        result,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+
+  @Get(':quizId/attempts')
+  async getQuizAttempts(
+    @Param('quizId', ParseIntPipe) quizId: number,
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const userId = req.user.id;
+      const attempts = await this.quizService.getQuizAttempts(userId, quizId);
+
+      return successResponse(
+        res,
+        200,
+        'Quiz attempts retrieved successfully',
+        attempts,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+
+  @Get('attempt/:attemptId')
+  async getAttemptDetails(
+    @Param('attemptId', ParseIntPipe) attemptId: number,
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const userId = req.user.id;
+      const attempt = await this.quizService.getAttemptDetails(
+        attemptId,
+        userId,
+      );
+
+      return successResponse(
+        res,
+        200,
+        'Attempt details retrieved successfully',
+        attempt,
         null,
       );
     } catch (error) {

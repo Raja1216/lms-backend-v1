@@ -212,7 +212,7 @@ model quiz {
   slug       String        @unique
   totalMarks Int           @default(0) // calculated as sum of marks of all questions
   passMarks  Int           @default(0) //auto calculated as 40% of total marks
-  timeLimit  Int // in minutes
+  timeLimit  Decimal        @db.Decimal(10, 2) // in minutes
   questions  Question[]    @relation("quizQuestions")
   status     Boolean       @default(true)
   createdAt  DateTime      @default(now())
@@ -280,6 +280,7 @@ model Question {
   question  String            @db.Text
   status    Boolean           @default(true)
   marks     Int
+  duration  Decimal           @db.Decimal(10, 2) @default(0)// in minutes
   type      QuestionType      @default(MCQ)
   answer    String?           @db.Text
   createdAt DateTime          @default(now())

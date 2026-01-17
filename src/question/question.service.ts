@@ -7,7 +7,7 @@ import { QuestionType } from 'src/generated/prisma/enums';
 @Injectable()
 export class QuestionService {
   constructor(private prisma: PrismaService) {}
-async create(createQuestionDto: CreateQuestionDto) {
+  async create(createQuestionDto: CreateQuestionDto) {
     const { quizId, questions } = createQuestionDto;
 
     const result = await this.prisma.$transaction(
@@ -32,6 +32,7 @@ async create(createQuestionDto: CreateQuestionDto) {
                     })),
                   }
                 : undefined,
+            duration: q.duration,
           },
           include: {
             options: true,
@@ -42,10 +43,6 @@ async create(createQuestionDto: CreateQuestionDto) {
     await this.updateQuizMarks(quizId);
     return result;
   }
-
-
-
-
 
   findAll() {
     return `This action returns all question`;
@@ -65,7 +62,7 @@ async create(createQuestionDto: CreateQuestionDto) {
     });
   }
 
-   async update(id: number, updateQuestionDto: UpdateQuestionDto) {
+  async update(id: number, updateQuestionDto: UpdateQuestionDto) {
     const existinQuestion = await this.findOne(id);
     if (!existinQuestion) {
       throw new NotFoundException(`Question with ID ${id} not found`);
@@ -87,6 +84,7 @@ async create(createQuestionDto: CreateQuestionDto) {
               })),
             }
           : undefined,
+        duration: updateQuestionDto.duration,
       },
       include: {
         options: true,
@@ -125,6 +123,15 @@ async create(createQuestionDto: CreateQuestionDto) {
         marks: true,
       },
     });
+    const aggregateDuration = await this.prisma.question.aggregate({
+      where: {
+        quizId,
+        status: true,
+      },
+      _sum: {
+        duration: true,
+      },
+    });
 
     const totalMarks = aggregate._sum.marks ?? 0;
     const passMarks = Math.ceil(totalMarks * 0.4); // 40%
@@ -134,6 +141,7 @@ async create(createQuestionDto: CreateQuestionDto) {
       data: {
         totalMarks,
         passMarks,
+        timeLimit: aggregateDuration._sum.duration ?? 0,
       },
     });
   }

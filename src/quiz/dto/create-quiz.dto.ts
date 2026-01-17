@@ -8,10 +8,6 @@ export class CreateQuizDto {
   @IsNotEmpty()
   description: string;
 
-  @IsNumber()
-  @IsNotEmpty()
-  duration: number; // duration in seconds
-
   @IsNumber({}, { each: true })
   lessonIds: number[];
 }
