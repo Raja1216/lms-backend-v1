@@ -72,7 +72,10 @@ export const ModelName = {
   UserSkill: 'UserSkill',
   UserProject: 'UserProject',
   CourForum: 'CourForum',
-  ForumReaction: 'ForumReaction'
+  ForumAttachment: 'ForumAttachment',
+  ForumReaction: 'ForumReaction',
+  Payment: 'Payment',
+  UserEnrolledCourse: 'UserEnrolledCourse'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -381,7 +384,6 @@ export const CourForumScalarFieldEnum = {
   userId: 'userId',
   title: 'title',
   content: 'content',
-  fileUrl: 'fileUrl',
   parentId: 'parentId',
   status: 'status',
   createdAt: 'createdAt',
@@ -389,6 +391,17 @@ export const CourForumScalarFieldEnum = {
 } as const
 
 export type CourForumScalarFieldEnum = (typeof CourForumScalarFieldEnum)[keyof typeof CourForumScalarFieldEnum]
+
+
+export const ForumAttachmentScalarFieldEnum = {
+  id: 'id',
+  forumId: 'forumId',
+  fileUrl: 'fileUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ForumAttachmentScalarFieldEnum = (typeof ForumAttachmentScalarFieldEnum)[keyof typeof ForumAttachmentScalarFieldEnum]
 
 
 export const ForumReactionScalarFieldEnum = {
@@ -403,12 +416,52 @@ export const ForumReactionScalarFieldEnum = {
 export type ForumReactionScalarFieldEnum = (typeof ForumReactionScalarFieldEnum)[keyof typeof ForumReactionScalarFieldEnum]
 
 
+export const PaymentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  amount: 'amount',
+  currency: 'currency',
+  status: 'status',
+  paymentDate: 'paymentDate',
+  paymentVerifiedAt: 'paymentVerifiedAt',
+  razorPayOrderId: 'razorPayOrderId',
+  razorPayPaymentId: 'razorPayPaymentId',
+  couseId: 'couseId',
+  paymentReference: 'paymentReference',
+  paymentMetaData: 'paymentMetaData',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PaymentScalarFieldEnum = (typeof PaymentScalarFieldEnum)[keyof typeof PaymentScalarFieldEnum]
+
+
+export const UserEnrolledCourseScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  courseId: 'courseId',
+  enrolledAt: 'enrolledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserEnrolledCourseScalarFieldEnum = (typeof UserEnrolledCourseScalarFieldEnum)[keyof typeof UserEnrolledCourseScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: 'DbNull',
+  JsonNull: 'JsonNull'
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const NullsOrder = {
@@ -550,11 +603,17 @@ export type UserProjectOrderByRelevanceFieldEnum = (typeof UserProjectOrderByRel
 
 export const CourForumOrderByRelevanceFieldEnum = {
   title: 'title',
-  content: 'content',
-  fileUrl: 'fileUrl'
+  content: 'content'
 } as const
 
 export type CourForumOrderByRelevanceFieldEnum = (typeof CourForumOrderByRelevanceFieldEnum)[keyof typeof CourForumOrderByRelevanceFieldEnum]
+
+
+export const ForumAttachmentOrderByRelevanceFieldEnum = {
+  fileUrl: 'fileUrl'
+} as const
+
+export type ForumAttachmentOrderByRelevanceFieldEnum = (typeof ForumAttachmentOrderByRelevanceFieldEnum)[keyof typeof ForumAttachmentOrderByRelevanceFieldEnum]
 
 
 export const ForumReactionOrderByRelevanceFieldEnum = {
@@ -562,4 +621,32 @@ export const ForumReactionOrderByRelevanceFieldEnum = {
 } as const
 
 export type ForumReactionOrderByRelevanceFieldEnum = (typeof ForumReactionOrderByRelevanceFieldEnum)[keyof typeof ForumReactionOrderByRelevanceFieldEnum]
+
+
+export const JsonNullValueFilter = {
+  DbNull: 'DbNull',
+  JsonNull: 'JsonNull',
+  AnyNull: 'AnyNull'
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const PaymentOrderByRelevanceFieldEnum = {
+  currency: 'currency',
+  status: 'status',
+  razorPayOrderId: 'razorPayOrderId',
+  razorPayPaymentId: 'razorPayPaymentId',
+  paymentReference: 'paymentReference'
+} as const
+
+export type PaymentOrderByRelevanceFieldEnum = (typeof PaymentOrderByRelevanceFieldEnum)[keyof typeof PaymentOrderByRelevanceFieldEnum]
 

@@ -1,25 +1,21 @@
 import {
-  IsBase64,
-  IsString,
-  IsNotEmpty,
   IsOptional,
-  IsNumber,
+  IsString,
   IsArray,
+  IsNumber,
+  IsBase64,
+  ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { ValidateNested } from 'class-validator';
-export class CreateDiscussionDto {
-  @IsString()
-  @IsNotEmpty()
-  title: string;
 
+export class UpdateDiscussionDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  content: string;
+  title?: string;
 
   @IsOptional()
-  @IsNumber()
-  forumId?: number;
+  @IsString()
+  content?: string;
 
   @IsOptional()
   @IsArray()
@@ -30,7 +26,6 @@ export class CreateDiscussionDto {
 
 export class AttachmentDto {
   @IsString()
-  @IsNotEmpty()
   @IsBase64()
-  fileBase64: string;
+  fileBase64: string; 
 }

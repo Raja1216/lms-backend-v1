@@ -123,7 +123,22 @@ export type UserProject = Prisma.UserProjectModel
  */
 export type CourForum = Prisma.CourForumModel
 /**
+ * Model ForumAttachment
+ * 
+ */
+export type ForumAttachment = Prisma.ForumAttachmentModel
+/**
  * Model ForumReaction
  * 
  */
 export type ForumReaction = Prisma.ForumReactionModel
+/**
+ * Model Payment
+ * 
+ */
+export type Payment = Prisma.PaymentModel
+/**
+ * Model UserEnrolledCourse
+ * 
+ */
+export type UserEnrolledCourse = Prisma.UserEnrolledCourseModel

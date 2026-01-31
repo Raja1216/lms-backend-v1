@@ -303,6 +303,8 @@ export type UserWhereInput = {
   projects?: Prisma.UserProjectListRelationFilter
   forums?: Prisma.CourForumListRelationFilter
   forumReactions?: Prisma.ForumReactionListRelationFilter
+  payments?: Prisma.PaymentListRelationFilter
+  userEnrolledCourses?: Prisma.UserEnrolledCourseListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -328,6 +330,8 @@ export type UserOrderByWithRelationInput = {
   projects?: Prisma.UserProjectOrderByRelationAggregateInput
   forums?: Prisma.CourForumOrderByRelationAggregateInput
   forumReactions?: Prisma.ForumReactionOrderByRelationAggregateInput
+  payments?: Prisma.PaymentOrderByRelationAggregateInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseOrderByRelationAggregateInput
   _relevance?: Prisma.UserOrderByRelevanceInput
 }
 
@@ -357,6 +361,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   projects?: Prisma.UserProjectListRelationFilter
   forums?: Prisma.CourForumListRelationFilter
   forumReactions?: Prisma.ForumReactionListRelationFilter
+  payments?: Prisma.PaymentListRelationFilter
+  userEnrolledCourses?: Prisma.UserEnrolledCourseListRelationFilter
 }, "id" | "uuid" | "email" | "username">
 
 export type UserOrderByWithAggregationInput = {
@@ -425,6 +431,8 @@ export type UserCreateInput = {
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -450,6 +458,8 @@ export type UserUncheckedCreateInput = {
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -474,6 +484,8 @@ export type UserUpdateInput = {
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -499,6 +511,8 @@ export type UserUncheckedUpdateInput = {
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -787,6 +801,34 @@ export type UserUpdateOneRequiredWithoutForumReactionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutForumReactionsInput, Prisma.UserUpdateWithoutForumReactionsInput>, Prisma.UserUncheckedUpdateWithoutForumReactionsInput>
 }
 
+export type UserCreateNestedOneWithoutPaymentsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPaymentsInput, Prisma.UserUncheckedCreateWithoutPaymentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPaymentsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutPaymentsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPaymentsInput, Prisma.UserUncheckedCreateWithoutPaymentsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPaymentsInput
+  upsert?: Prisma.UserUpsertWithoutPaymentsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPaymentsInput, Prisma.UserUpdateWithoutPaymentsInput>, Prisma.UserUncheckedUpdateWithoutPaymentsInput>
+}
+
+export type UserCreateNestedOneWithoutUserEnrolledCoursesInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutUserEnrolledCoursesInput, Prisma.UserUncheckedCreateWithoutUserEnrolledCoursesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutUserEnrolledCoursesInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutUserEnrolledCoursesNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutUserEnrolledCoursesInput, Prisma.UserUncheckedCreateWithoutUserEnrolledCoursesInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutUserEnrolledCoursesInput
+  upsert?: Prisma.UserUpsertWithoutUserEnrolledCoursesInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutUserEnrolledCoursesInput, Prisma.UserUpdateWithoutUserEnrolledCoursesInput>, Prisma.UserUncheckedUpdateWithoutUserEnrolledCoursesInput>
+}
+
 export type UserCreateWithoutRolesInput = {
   uuid?: string
   email: string
@@ -808,6 +850,8 @@ export type UserCreateWithoutRolesInput = {
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRolesInput = {
@@ -832,6 +876,8 @@ export type UserUncheckedCreateWithoutRolesInput = {
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRolesInput = {
@@ -897,6 +943,8 @@ export type UserCreateWithoutTeacherCoursesInput = {
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTeacherCoursesInput = {
@@ -921,6 +969,8 @@ export type UserUncheckedCreateWithoutTeacherCoursesInput = {
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTeacherCoursesInput = {
@@ -960,6 +1010,8 @@ export type UserUpdateWithoutTeacherCoursesInput = {
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTeacherCoursesInput = {
@@ -984,6 +1036,8 @@ export type UserUncheckedUpdateWithoutTeacherCoursesInput = {
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutQuizAttemptsInput = {
@@ -1007,6 +1061,8 @@ export type UserCreateWithoutQuizAttemptsInput = {
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutQuizAttemptsInput = {
@@ -1031,6 +1087,8 @@ export type UserUncheckedCreateWithoutQuizAttemptsInput = {
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutQuizAttemptsInput = {
@@ -1070,6 +1128,8 @@ export type UserUpdateWithoutQuizAttemptsInput = {
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutQuizAttemptsInput = {
@@ -1094,6 +1154,8 @@ export type UserUncheckedUpdateWithoutQuizAttemptsInput = {
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSkillsInput = {
@@ -1117,6 +1179,8 @@ export type UserCreateWithoutSkillsInput = {
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSkillsInput = {
@@ -1141,6 +1205,8 @@ export type UserUncheckedCreateWithoutSkillsInput = {
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSkillsInput = {
@@ -1180,6 +1246,8 @@ export type UserUpdateWithoutSkillsInput = {
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSkillsInput = {
@@ -1204,6 +1272,8 @@ export type UserUncheckedUpdateWithoutSkillsInput = {
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutProjectsInput = {
@@ -1227,6 +1297,8 @@ export type UserCreateWithoutProjectsInput = {
   skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutProjectsInput = {
@@ -1251,6 +1323,8 @@ export type UserUncheckedCreateWithoutProjectsInput = {
   skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutProjectsInput = {
@@ -1290,6 +1364,8 @@ export type UserUpdateWithoutProjectsInput = {
   skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutProjectsInput = {
@@ -1314,6 +1390,8 @@ export type UserUncheckedUpdateWithoutProjectsInput = {
   skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutForumsInput = {
@@ -1337,6 +1415,8 @@ export type UserCreateWithoutForumsInput = {
   skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutForumsInput = {
@@ -1361,6 +1441,8 @@ export type UserUncheckedCreateWithoutForumsInput = {
   skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
   forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutForumsInput = {
@@ -1400,6 +1482,8 @@ export type UserUpdateWithoutForumsInput = {
   skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutForumsInput = {
@@ -1424,6 +1508,8 @@ export type UserUncheckedUpdateWithoutForumsInput = {
   skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutForumReactionsInput = {
@@ -1447,6 +1533,8 @@ export type UserCreateWithoutForumReactionsInput = {
   skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutForumReactionsInput = {
@@ -1471,6 +1559,8 @@ export type UserUncheckedCreateWithoutForumReactionsInput = {
   skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
   forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutForumReactionsInput = {
@@ -1510,6 +1600,8 @@ export type UserUpdateWithoutForumReactionsInput = {
   skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutForumReactionsInput = {
@@ -1534,6 +1626,244 @@ export type UserUncheckedUpdateWithoutForumReactionsInput = {
   skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutPaymentsInput = {
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutPaymentsInput = {
+  id?: number
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutPaymentsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutPaymentsInput, Prisma.UserUncheckedCreateWithoutPaymentsInput>
+}
+
+export type UserUpsertWithoutPaymentsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutPaymentsInput, Prisma.UserUncheckedUpdateWithoutPaymentsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutPaymentsInput, Prisma.UserUncheckedCreateWithoutPaymentsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutPaymentsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutPaymentsInput, Prisma.UserUncheckedUpdateWithoutPaymentsInput>
+}
+
+export type UserUpdateWithoutPaymentsInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutPaymentsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutUserEnrolledCoursesInput = {
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutUserEnrolledCoursesInput = {
+  id?: number
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+  payments?: Prisma.PaymentUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutUserEnrolledCoursesInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutUserEnrolledCoursesInput, Prisma.UserUncheckedCreateWithoutUserEnrolledCoursesInput>
+}
+
+export type UserUpsertWithoutUserEnrolledCoursesInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutUserEnrolledCoursesInput, Prisma.UserUncheckedUpdateWithoutUserEnrolledCoursesInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutUserEnrolledCoursesInput, Prisma.UserUncheckedCreateWithoutUserEnrolledCoursesInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutUserEnrolledCoursesInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutUserEnrolledCoursesInput, Prisma.UserUncheckedUpdateWithoutUserEnrolledCoursesInput>
+}
+
+export type UserUpdateWithoutUserEnrolledCoursesInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutUserEnrolledCoursesInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpdateWithoutRolesInput = {
@@ -1557,6 +1887,8 @@ export type UserUpdateWithoutRolesInput = {
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRolesInput = {
@@ -1581,6 +1913,8 @@ export type UserUncheckedUpdateWithoutRolesInput = {
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
   forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
   forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+  payments?: Prisma.PaymentUncheckedUpdateManyWithoutUserNestedInput
+  userEnrolledCourses?: Prisma.UserEnrolledCourseUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateManyWithoutRolesInput = {
@@ -1614,6 +1948,8 @@ export type UserCountOutputType = {
   projects: number
   forums: number
   forumReactions: number
+  payments: number
+  userEnrolledCourses: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1624,6 +1960,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   projects?: boolean | UserCountOutputTypeCountProjectsArgs
   forums?: boolean | UserCountOutputTypeCountForumsArgs
   forumReactions?: boolean | UserCountOutputTypeCountForumReactionsArgs
+  payments?: boolean | UserCountOutputTypeCountPaymentsArgs
+  userEnrolledCourses?: boolean | UserCountOutputTypeCountUserEnrolledCoursesArgs
 }
 
 /**
@@ -1685,6 +2023,20 @@ export type UserCountOutputTypeCountForumReactionsArgs<ExtArgs extends runtime.T
   where?: Prisma.ForumReactionWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountPaymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PaymentWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountUserEnrolledCoursesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserEnrolledCourseWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1709,6 +2061,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
   forums?: boolean | Prisma.User$forumsArgs<ExtArgs>
   forumReactions?: boolean | Prisma.User$forumReactionsArgs<ExtArgs>
+  payments?: boolean | Prisma.User$paymentsArgs<ExtArgs>
+  userEnrolledCourses?: boolean | Prisma.User$userEnrolledCoursesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1741,6 +2095,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
   forums?: boolean | Prisma.User$forumsArgs<ExtArgs>
   forumReactions?: boolean | Prisma.User$forumReactionsArgs<ExtArgs>
+  payments?: boolean | Prisma.User$paymentsArgs<ExtArgs>
+  userEnrolledCourses?: boolean | Prisma.User$userEnrolledCoursesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -1754,6 +2110,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     projects: Prisma.$UserProjectPayload<ExtArgs>[]
     forums: Prisma.$CourForumPayload<ExtArgs>[]
     forumReactions: Prisma.$ForumReactionPayload<ExtArgs>[]
+    payments: Prisma.$PaymentPayload<ExtArgs>[]
+    userEnrolledCourses: Prisma.$UserEnrolledCoursePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -2118,6 +2476,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   projects<T extends Prisma.User$projectsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$projectsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserProjectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   forums<T extends Prisma.User$forumsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$forumsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CourForumPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   forumReactions<T extends Prisma.User$forumReactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$forumReactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ForumReactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  payments<T extends Prisma.User$paymentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  userEnrolledCourses<T extends Prisma.User$userEnrolledCoursesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$userEnrolledCoursesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserEnrolledCoursePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2670,6 +3030,54 @@ export type User$forumReactionsArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.ForumReactionScalarFieldEnum | Prisma.ForumReactionScalarFieldEnum[]
+}
+
+/**
+ * User.payments
+ */
+export type User$paymentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Payment
+   */
+  select?: Prisma.PaymentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Payment
+   */
+  omit?: Prisma.PaymentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PaymentInclude<ExtArgs> | null
+  where?: Prisma.PaymentWhereInput
+  orderBy?: Prisma.PaymentOrderByWithRelationInput | Prisma.PaymentOrderByWithRelationInput[]
+  cursor?: Prisma.PaymentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PaymentScalarFieldEnum | Prisma.PaymentScalarFieldEnum[]
+}
+
+/**
+ * User.userEnrolledCourses
+ */
+export type User$userEnrolledCoursesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserEnrolledCourse
+   */
+  select?: Prisma.UserEnrolledCourseSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserEnrolledCourse
+   */
+  omit?: Prisma.UserEnrolledCourseOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserEnrolledCourseInclude<ExtArgs> | null
+  where?: Prisma.UserEnrolledCourseWhereInput
+  orderBy?: Prisma.UserEnrolledCourseOrderByWithRelationInput | Prisma.UserEnrolledCourseOrderByWithRelationInput[]
+  cursor?: Prisma.UserEnrolledCourseWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserEnrolledCourseScalarFieldEnum | Prisma.UserEnrolledCourseScalarFieldEnum[]
 }
 
 /**

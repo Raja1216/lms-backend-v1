@@ -27,28 +27,30 @@ enum QuestionType {
 }
 
 model User {
-  id             Int             @id @default(autoincrement())
-  uuid           String          @unique @default(uuid())
-  email          String          @unique
-  name           String?
-  username       String?         @unique
-  dateOfBirth    DateTime?
-  avatar         String?
-  classGrade     String?
-  mobile_prefix  String          @default("+91")
-  mobile         String?
-  about          String?         @db.Text
-  password       String
-  status         Boolean         @default(true)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  roles          Role[]          @relation("userroles")
-  teacherCourses CourseTeacher[] @relation("TeacherCourses")
-  quizAttempts   QuizAttempt[]   @relation("UserQuizAttempts")
-  skills         UserSkill[]     @relation("UserSkill")
-  projects       UserProject[]   @relation("userProjects")
-  forums         CourForum[]     @relation("userForum")
-  forumReactions ForumReaction[] @relation("UserForumReactions")
+  id                  Int                  @id @default(autoincrement())
+  uuid                String               @unique @default(uuid())
+  email               String               @unique
+  name                String?
+  username            String?              @unique
+  dateOfBirth         DateTime?
+  avatar              String?
+  classGrade          String?
+  mobile_prefix       String               @default("+91")
+  mobile              String?
+  about               String?              @db.Text
+  password            String
+  status              Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  roles               Role[]               @relation("userroles")
+  teacherCourses      CourseTeacher[]      @relation("TeacherCourses")
+  quizAttempts        QuizAttempt[]        @relation("UserQuizAttempts")
+  skills              UserSkill[]          @relation("UserSkill")
+  projects            UserProject[]        @relation("userProjects")
+  forums              CourForum[]          @relation("userForum")
+  forumReactions      ForumReaction[]      @relation("UserForumReactions")
+  payments            Payment[]            @relation("UserPayments")
+  userEnrolledCourses UserEnrolledCourse[] @relation("UserEnrolledCourses")
 
   @@map("users")
 }
@@ -96,21 +98,23 @@ model UserOtp {
 }
 
 model Course {
-  id              Int             @id @default(autoincrement())
-  title           String
-  slug            String          @unique
-  thumbnail       String
-  grade           String
-  duration        String
-  price           Decimal         @db.Decimal(10, 2)
-  discountedPrice Decimal         @db.Decimal(10, 2)
-  description     String          @db.Text
-  status          Boolean         @default(true)
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  teachers        CourseTeacher[] @relation("CourseTeachers")
-  subjects        CourseSubject[] @relation("CourseSubjects")
-  forums          CourForum[]     @relation("courseForum")
+  id                  Int                  @id @default(autoincrement())
+  title               String
+  slug                String               @unique
+  thumbnail           String
+  grade               String
+  duration            String
+  price               Decimal              @db.Decimal(10, 2)
+  discountedPrice     Decimal              @db.Decimal(10, 2)
+  description         String               @db.Text
+  status              Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  teachers            CourseTeacher[]      @relation("CourseTeachers")
+  subjects            CourseSubject[]      @relation("CourseSubjects")
+  forums              CourForum[]          @relation("courseForum")
+  payments            Payment[]            @relation("CoursePayments")
+  userEnrolledCourses UserEnrolledCourse[] @relation("CourseEnrolledUsers")
 
   @@map("courses")
 }
@@ -340,24 +344,35 @@ model UserProject {
 }
 
 model CourForum {
-  id        Int             @id @default(autoincrement())
-  courseId  Int
-  userId    Int
-  title     String
-  content   String          @db.Text
-  fileUrl   String?
-  parentId  Int?
-  status    Boolean         @default(true)
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id          Int               @id @default(autoincrement())
+  courseId    Int
+  userId      Int
+  title       String
+  content     String            @db.Text
+  parentId    Int?
+  status      Boolean           @default(true)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
   //add self relation for parent forum post
-  parent    CourForum?      @relation("ForumReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies   CourForum[]     @relation("ForumReplies")
-  course    Course          @relation("courseForum", fields: [courseId], references: [id], onDelete: Cascade)
-  user      User            @relation("userForum", fields: [userId], references: [id], onDelete: Cascade)
-  reaction  ForumReaction[] @relation("ForumReactions")
+  parent      CourForum?        @relation("ForumReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     CourForum[]       @relation("ForumReplies")
+  course      Course            @relation("courseForum", fields: [courseId], references: [id], onDelete: Cascade)
+  user        User              @relation("userForum", fields: [userId], references: [id], onDelete: Cascade)
+  reaction    ForumReaction[]   @relation("ForumReactions")
+  attachments ForumAttachment[] @relation("ForumAttachments")
 
   @@map("course_forum")
+}
+
+model ForumAttachment {
+  id        Int       @id @default(autoincrement())
+  forumId   Int
+  fileUrl   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  forum     CourForum @relation("ForumAttachments", fields: [forumId], references: [id], onDelete: Cascade)
+
+  @@map("forum_attachments")
 }
 
 model ForumReaction {
@@ -371,4 +386,38 @@ model ForumReaction {
   user      User      @relation("UserForumReactions", fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("forum_reactions")
+}
+
+model Payment {
+  id                Int       @id @default(autoincrement())
+  userId            Int
+  amount            Decimal   @db.Decimal(10, 2)
+  currency          String
+  status            String    @default("pending")
+  paymentDate       DateTime  @default(now())
+  paymentVerifiedAt DateTime?
+  razorPayOrderId   String?
+  razorPayPaymentId String?
+  couseId           Int
+  paymentReference  String?
+  paymentMetaData   Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  user              User      @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+  course            Course    @relation("CoursePayments", fields: [couseId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model UserEnrolledCourse {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  courseId   Int
+  enrolledAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation("UserEnrolledCourses", fields: [userId], references: [id], onDelete: Cascade)
+  course     Course   @relation("CourseEnrolledUsers", fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@map("user_enrolled_courses")
 }
