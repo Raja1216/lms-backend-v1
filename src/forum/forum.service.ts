@@ -82,6 +82,7 @@ export class ForumService {
           _count: {
             select: {
               forums: true,
+              subjects:true
             },
           },
         },
