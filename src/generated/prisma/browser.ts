@@ -117,3 +117,13 @@ export type UserSkill = Prisma.UserSkillModel
  * 
  */
 export type UserProject = Prisma.UserProjectModel
+/**
+ * Model CourForum
+ * 
+ */
+export type CourForum = Prisma.CourForumModel
+/**
+ * Model ForumReaction
+ * 
+ */
+export type ForumReaction = Prisma.ForumReactionModel

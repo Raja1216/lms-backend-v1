@@ -403,7 +403,9 @@ export const ModelName = {
   Question: 'Question',
   QuestionOption: 'QuestionOption',
   UserSkill: 'UserSkill',
-  UserProject: 'UserProject'
+  UserProject: 'UserProject',
+  CourForum: 'CourForum',
+  ForumReaction: 'ForumReaction'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -419,7 +421,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "userOtp" | "course" | "courseTeacher" | "subject" | "courseSubject" | "chapter" | "subjectChapter" | "lesson" | "lessonToChapter" | "quiz" | "lessonQuiz" | "quizAttempt" | "questionAttempt" | "question" | "questionOption" | "userSkill" | "userProject"
+    modelProps: "user" | "role" | "permission" | "userOtp" | "course" | "courseTeacher" | "subject" | "courseSubject" | "chapter" | "subjectChapter" | "lesson" | "lessonToChapter" | "quiz" | "lessonQuiz" | "quizAttempt" | "questionAttempt" | "question" | "questionOption" | "userSkill" | "userProject" | "courForum" | "forumReaction"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1743,6 +1745,138 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    CourForum: {
+      payload: Prisma.$CourForumPayload<ExtArgs>
+      fields: Prisma.CourForumFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.CourForumFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.CourForumFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload>
+        }
+        findFirst: {
+          args: Prisma.CourForumFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.CourForumFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload>
+        }
+        findMany: {
+          args: Prisma.CourForumFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload>[]
+        }
+        create: {
+          args: Prisma.CourForumCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload>
+        }
+        createMany: {
+          args: Prisma.CourForumCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.CourForumDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload>
+        }
+        update: {
+          args: Prisma.CourForumUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload>
+        }
+        deleteMany: {
+          args: Prisma.CourForumDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.CourForumUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.CourForumUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$CourForumPayload>
+        }
+        aggregate: {
+          args: Prisma.CourForumAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateCourForum>
+        }
+        groupBy: {
+          args: Prisma.CourForumGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourForumGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.CourForumCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.CourForumCountAggregateOutputType> | number
+        }
+      }
+    }
+    ForumReaction: {
+      payload: Prisma.$ForumReactionPayload<ExtArgs>
+      fields: Prisma.ForumReactionFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ForumReactionFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ForumReactionFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload>
+        }
+        findFirst: {
+          args: Prisma.ForumReactionFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ForumReactionFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload>
+        }
+        findMany: {
+          args: Prisma.ForumReactionFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload>[]
+        }
+        create: {
+          args: Prisma.ForumReactionCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload>
+        }
+        createMany: {
+          args: Prisma.ForumReactionCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.ForumReactionDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload>
+        }
+        update: {
+          args: Prisma.ForumReactionUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload>
+        }
+        deleteMany: {
+          args: Prisma.ForumReactionDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ForumReactionUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.ForumReactionUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumReactionPayload>
+        }
+        aggregate: {
+          args: Prisma.ForumReactionAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateForumReaction>
+        }
+        groupBy: {
+          args: Prisma.ForumReactionGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ForumReactionGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ForumReactionCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ForumReactionCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2066,6 +2200,34 @@ export const UserProjectScalarFieldEnum = {
 export type UserProjectScalarFieldEnum = (typeof UserProjectScalarFieldEnum)[keyof typeof UserProjectScalarFieldEnum]
 
 
+export const CourForumScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  userId: 'userId',
+  title: 'title',
+  content: 'content',
+  fileUrl: 'fileUrl',
+  parentId: 'parentId',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CourForumScalarFieldEnum = (typeof CourForumScalarFieldEnum)[keyof typeof CourForumScalarFieldEnum]
+
+
+export const ForumReactionScalarFieldEnum = {
+  id: 'id',
+  forumId: 'forumId',
+  userId: 'userId',
+  emoji: 'emoji',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ForumReactionScalarFieldEnum = (typeof ForumReactionScalarFieldEnum)[keyof typeof ForumReactionScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2209,6 +2371,22 @@ export const UserProjectOrderByRelevanceFieldEnum = {
 } as const
 
 export type UserProjectOrderByRelevanceFieldEnum = (typeof UserProjectOrderByRelevanceFieldEnum)[keyof typeof UserProjectOrderByRelevanceFieldEnum]
+
+
+export const CourForumOrderByRelevanceFieldEnum = {
+  title: 'title',
+  content: 'content',
+  fileUrl: 'fileUrl'
+} as const
+
+export type CourForumOrderByRelevanceFieldEnum = (typeof CourForumOrderByRelevanceFieldEnum)[keyof typeof CourForumOrderByRelevanceFieldEnum]
+
+
+export const ForumReactionOrderByRelevanceFieldEnum = {
+  emoji: 'emoji'
+} as const
+
+export type ForumReactionOrderByRelevanceFieldEnum = (typeof ForumReactionOrderByRelevanceFieldEnum)[keyof typeof ForumReactionOrderByRelevanceFieldEnum]
 
 
 
@@ -2378,6 +2556,8 @@ export type GlobalOmitConfig = {
   questionOption?: Prisma.QuestionOptionOmit
   userSkill?: Prisma.UserSkillOmit
   userProject?: Prisma.UserProjectOmit
+  courForum?: Prisma.CourForumOmit
+  forumReaction?: Prisma.ForumReactionOmit
 }
 
 /* Types for Logging */

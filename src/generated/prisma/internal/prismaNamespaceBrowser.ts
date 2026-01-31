@@ -70,7 +70,9 @@ export const ModelName = {
   Question: 'Question',
   QuestionOption: 'QuestionOption',
   UserSkill: 'UserSkill',
-  UserProject: 'UserProject'
+  UserProject: 'UserProject',
+  CourForum: 'CourForum',
+  ForumReaction: 'ForumReaction'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -373,6 +375,34 @@ export const UserProjectScalarFieldEnum = {
 export type UserProjectScalarFieldEnum = (typeof UserProjectScalarFieldEnum)[keyof typeof UserProjectScalarFieldEnum]
 
 
+export const CourForumScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  userId: 'userId',
+  title: 'title',
+  content: 'content',
+  fileUrl: 'fileUrl',
+  parentId: 'parentId',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CourForumScalarFieldEnum = (typeof CourForumScalarFieldEnum)[keyof typeof CourForumScalarFieldEnum]
+
+
+export const ForumReactionScalarFieldEnum = {
+  id: 'id',
+  forumId: 'forumId',
+  userId: 'userId',
+  emoji: 'emoji',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ForumReactionScalarFieldEnum = (typeof ForumReactionScalarFieldEnum)[keyof typeof ForumReactionScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -516,4 +546,20 @@ export const UserProjectOrderByRelevanceFieldEnum = {
 } as const
 
 export type UserProjectOrderByRelevanceFieldEnum = (typeof UserProjectOrderByRelevanceFieldEnum)[keyof typeof UserProjectOrderByRelevanceFieldEnum]
+
+
+export const CourForumOrderByRelevanceFieldEnum = {
+  title: 'title',
+  content: 'content',
+  fileUrl: 'fileUrl'
+} as const
+
+export type CourForumOrderByRelevanceFieldEnum = (typeof CourForumOrderByRelevanceFieldEnum)[keyof typeof CourForumOrderByRelevanceFieldEnum]
+
+
+export const ForumReactionOrderByRelevanceFieldEnum = {
+  emoji: 'emoji'
+} as const
+
+export type ForumReactionOrderByRelevanceFieldEnum = (typeof ForumReactionOrderByRelevanceFieldEnum)[keyof typeof ForumReactionOrderByRelevanceFieldEnum]
 
