@@ -2449,7 +2449,7 @@ export const PaymentScalarFieldEnum = {
   paymentVerifiedAt: 'paymentVerifiedAt',
   razorPayOrderId: 'razorPayOrderId',
   razorPayPaymentId: 'razorPayPaymentId',
-  couseId: 'couseId',
+  courseId: 'courseId',
   paymentReference: 'paymentReference',
   paymentMetaData: 'paymentMetaData',
   createdAt: 'createdAt',
@@ -2463,6 +2463,7 @@ export const UserEnrolledCourseScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
   courseId: 'courseId',
+  paymentId: 'paymentId',
   enrolledAt: 'enrolledAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

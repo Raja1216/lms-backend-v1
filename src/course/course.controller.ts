@@ -28,6 +28,7 @@ import { UserService } from 'src/user/user.service';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { createPagedResponse } from 'src/shared/create-paged-response';
 import { get } from 'http';
+import { User } from 'src/generated/prisma/browser';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('course')
@@ -234,6 +235,34 @@ export class CourseController {
     }
   }
 
+  @Post('enroll/:courseSlug')
+  async enrollInCourse(
+    @Param('courseSlug') courseSlug: string,
+    @Req() req: { user: User },
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.courseService.enrollInCourse(
+        req.user,
+        courseSlug,
+      );
+      return successResponse(
+        res,
+        200,
+        'Enrolled in course successfully',
+        result,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.courseService.remove(+id);

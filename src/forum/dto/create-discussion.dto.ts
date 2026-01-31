@@ -31,6 +31,5 @@ export class CreateDiscussionDto {
 export class AttachmentDto {
   @IsString()
   @IsNotEmpty()
-  @IsBase64()
   fileBase64: string;
 }
