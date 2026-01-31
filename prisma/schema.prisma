@@ -389,22 +389,23 @@ model ForumReaction {
 }
 
 model Payment {
-  id                Int       @id @default(autoincrement())
-  userId            Int
-  amount            Decimal   @db.Decimal(10, 2)
-  currency          String
-  status            String    @default("pending")
-  paymentDate       DateTime  @default(now())
-  paymentVerifiedAt DateTime?
-  razorPayOrderId   String?
-  razorPayPaymentId String?
-  couseId           Int
-  paymentReference  String?
-  paymentMetaData   Json?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-  user              User      @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
-  course            Course    @relation("CoursePayments", fields: [couseId], references: [id], onDelete: Cascade)
+  id                 Int                 @id @default(autoincrement())
+  userId             Int
+  amount             Decimal             @db.Decimal(10, 2)
+  currency           String
+  status             String              @default("pending")
+  paymentDate        DateTime            @default(now())
+  paymentVerifiedAt  DateTime?
+  razorPayOrderId    String?
+  razorPayPaymentId  String?
+  courseId           Int
+  paymentReference   String?
+  paymentMetaData    Json?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  user               User                @relation("UserPayments", fields: [userId], references: [id], onDelete: Cascade)
+  course             Course              @relation("CoursePayments", fields: [courseId], references: [id], onDelete: Cascade)
+  userEnrolledCourse UserEnrolledCourse? @relation("UserEnrolledCoursePayment")
 
   @@map("payments")
 }
@@ -413,11 +414,13 @@ model UserEnrolledCourse {
   id         Int      @id @default(autoincrement())
   userId     Int
   courseId   Int
+  paymentId  Int      @unique
   enrolledAt DateTime @default(now())
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
   user       User     @relation("UserEnrolledCourses", fields: [userId], references: [id], onDelete: Cascade)
   course     Course   @relation("CourseEnrolledUsers", fields: [courseId], references: [id], onDelete: Cascade)
+  payment    Payment  @relation("UserEnrolledCoursePayment", fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@map("user_enrolled_courses")
 }

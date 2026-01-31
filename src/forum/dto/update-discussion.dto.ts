@@ -26,6 +26,5 @@ export class UpdateDiscussionDto {
 
 export class AttachmentDto {
   @IsString()
-  @IsBase64()
   fileBase64: string; 
 }
