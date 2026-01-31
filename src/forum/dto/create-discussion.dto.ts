@@ -5,13 +5,15 @@ import {
   IsOptional,
   IsNumber,
   IsArray,
+  ValidateIf,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
 export class CreateDiscussionDto {
+  @ValidateIf((o) => o.forumId == null)
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title?: string;
 
   @IsString()
   @IsNotEmpty()

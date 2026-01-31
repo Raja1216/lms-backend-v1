@@ -347,7 +347,7 @@ model CourForum {
   id          Int               @id @default(autoincrement())
   courseId    Int
   userId      Int
-  title       String
+  title       String?
   content     String            @db.Text
   parentId    Int?
   status      Boolean           @default(true)
