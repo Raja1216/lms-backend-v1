@@ -50,7 +50,7 @@ export class UserController {
         body.email,
         body.password,
         body.name,
-        body.class,
+        body.level,
         body.roles,
       );
       return successResponse(res, 201, 'User created successfully', user, null);

@@ -15,8 +15,8 @@ export class UserService {
   async createUser(
     email: string,
     password: string,
-    name?: string,
     level?: string,
+    name?: string,
     roles?: number[],
   ) {
     const existing = await this.prisma.user.findUnique({
