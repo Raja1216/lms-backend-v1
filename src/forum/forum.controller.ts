@@ -47,7 +47,7 @@ export class ForumController {
         res,
         200,
         'Dashboard data fetched successfully',
-        { stats, courses: coursePagedResponse, pagination },
+        { stats, courses: coursePagedResponse },
         null,
       );
     } catch (error) {
