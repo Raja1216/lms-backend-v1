@@ -1,14 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AddProjectDto } from './dto/add-project.dto';
-
+import { User } from 'src/generated/prisma/browser';
 @Injectable()
 export class PortfolioService {
   constructor(private prisma: PrismaService) {}
 
-  async getPortfolio(userId: number) {
+  async getPortfolio(user: User) {
     const portfolio = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { id: user.id },
       select: {
         id: true,
         name: true,
@@ -36,36 +36,36 @@ export class PortfolioService {
     });
     return portfolio;
   }
-  async updateAbout(userId: number, about: string) {
+  async updateAbout(user: User, about: string) {
     await this.prisma.user.update({
-      where: { id: userId },
+      where: { id: user.id },
       data: { about },
     });
-    return this.getPortfolio(userId);
+    return this.getPortfolio(user);
   }
 
-  async addSkill(userId: number, skill: string) {
+  async addSkill(user: User, skill: string) {
     await this.prisma.userSkill.create({
       data: {
-        userId,
+        userId: user.id,
         skill,
       },
     });
-    return this.getPortfolio(userId);
+    return this.getPortfolio(user);
   }
-  async removeSkill(skillId: number, userId: number) {
+  async removeSkill(skillId: number, user: User) {
     await this.prisma.userSkill.delete({
       where: { id: skillId },
     });
-    return this.getPortfolio(userId);
+    return this.getPortfolio(user);
   }
 
-  async addProject(userId: number, addProjectDto: AddProjectDto) {
+  async addProject(user: User, addProjectDto: AddProjectDto) {
     const { title, description, demoUrl, gitHubUrl, imageUrl, date } =
       addProjectDto;
     await this.prisma.userProject.create({
       data: {
-        userId,
+        userId: user.id,
         title,
         description,
         demoUrl,
@@ -74,19 +74,19 @@ export class PortfolioService {
         date,
       },
     });
-    return this.getPortfolio(userId);
+    return this.getPortfolio(user);
   }
 
-  async removeProject(projectId: number, userId: number) {
+  async removeProject(projectId: number, user: User) {
     const project = await this.prisma.userProject.findFirst({
-      where: { id: projectId, userId: userId },
+      where: { id: projectId, userId: user.id },
     });
     if (!project) {
       throw new NotFoundException('Project not found');
     }
     await this.prisma.userProject.delete({
-      where: { id: projectId, userId: userId },
+      where: { id: projectId, userId: user.id },
     });
-    return this.getPortfolio(userId);
+    return this.getPortfolio(user);
   }
 }

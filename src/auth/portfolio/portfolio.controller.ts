@@ -8,6 +8,7 @@ import {
   Body,
   Delete,
   Param,
+  Request as NestJsRequest,
 } from '@nestjs/common';
 import { PortfolioService } from './portfolio.service';
 import { JwtAuthGuard } from '../jwt.guard';
@@ -26,10 +27,10 @@ export class PortfolioController {
   async getPortfolio(
     @Res() res: Response,
     @Next() next: NextFunction,
-    req: { user: User },
+    @NestJsRequest() req: { user: User },
   ) {
     try {
-      const portfolio = await this.portfolioService.getPortfolio(req.user.id);
+      const portfolio = await this.portfolioService.getPortfolio(req.user);
       return successResponse(
         res,
         200,
@@ -50,13 +51,13 @@ export class PortfolioController {
   async saveAbout(
     @Res() res: Response,
     @Next() next: NextFunction,
-    req: { user: User },
+    @NestJsRequest() req: { user: User },
     @Body() body: AddAboutDto,
   ) {
     try {
       const { about } = body;
       const portfolio = await this.portfolioService.updateAbout(
-        req.user.id,
+        req.user,
         about,
       );
       return successResponse(
@@ -79,13 +80,13 @@ export class PortfolioController {
   async addSkill(
     @Res() res: Response,
     @Next() next: NextFunction,
-    req: { user: User },
+    @NestJsRequest() req: { user: User },
     @Body() body: AddSkillDto,
   ) {
     try {
       const { skill } = body;
       const portfolio = await this.portfolioService.addSkill(
-        req.user.id,
+        req.user,
         skill,
       );
       return successResponse(
@@ -108,13 +109,13 @@ export class PortfolioController {
   async removeSkill(
     @Res() res: Response,
     @Next() next: NextFunction,
-    req: { user: User },
+        @NestJsRequest() req: { user: User },
     @Param('id') skillId: number,
   ) {
     try {
       const portfolio = await this.portfolioService.removeSkill(
         skillId,
-        req.user.id,
+        req.user,
       );
       return successResponse(
         res,
@@ -137,12 +138,12 @@ export class PortfolioController {
   async addProject(
     @Res() res: Response,
     @Next() next: NextFunction,
-    req: { user: User },
+        @NestJsRequest() req: { user: User },
     @Body() addProjectDto: AddProjectDto,
   ) {
     try {
       const portfolio = await this.portfolioService.addProject(
-        req.user.id,
+        req.user,
         addProjectDto,
       );
       return successResponse(
@@ -165,13 +166,13 @@ export class PortfolioController {
   async removeProject(
     @Res() res: Response,
     @Next() next: NextFunction,
-    req: { user: User },
+    @NestJsRequest() req: { user: User },
     @Param('id') projectId: number,
   ) {
     try {
       const portfolio = await this.portfolioService.removeProject(
         projectId,
-        req.user.id,
+        req.user,
       );
       return successResponse(
         res,

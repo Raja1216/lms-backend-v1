@@ -47,6 +47,7 @@ model User {
   quizAttempts   QuizAttempt[]   @relation("UserQuizAttempts")
   skills         UserSkill[]     @relation("UserSkill")
   projects       UserProject[]   @relation("userProjects")
+  forums         CourForum[]     @relation("userForum")
 
   @@map("users")
 }
@@ -108,6 +109,7 @@ model Course {
   updatedAt       DateTime        @updatedAt
   teachers        CourseTeacher[] @relation("CourseTeachers")
   subjects        CourseSubject[] @relation("CourseSubjects")
+  forums          CourForum[]     @relation("courseForum")
 
   @@map("courses")
 }
@@ -334,4 +336,19 @@ model UserProject {
   updatedAt   DateTime  @updatedAt
 
   @@map("user_projects")
+}
+
+model CourForum{
+  id          Int       @id @default(autoincrement())
+  courseId    Int
+  userId      Int
+  title       String
+  content     String    @db.Text
+  status      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  course      Course    @relation("courseForum", fields: [courseId], references: [id], onDelete: Cascade)
+  user        User      @relation("userForum", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("course_forum")
 }
