@@ -401,7 +401,9 @@ export const ModelName = {
   QuizAttempt: 'QuizAttempt',
   QuestionAttempt: 'QuestionAttempt',
   Question: 'Question',
-  QuestionOption: 'QuestionOption'
+  QuestionOption: 'QuestionOption',
+  UserSkill: 'UserSkill',
+  UserProject: 'UserProject'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -417,7 +419,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "userOtp" | "course" | "courseTeacher" | "subject" | "courseSubject" | "chapter" | "subjectChapter" | "lesson" | "lessonToChapter" | "quiz" | "lessonQuiz" | "quizAttempt" | "questionAttempt" | "question" | "questionOption"
+    modelProps: "user" | "role" | "permission" | "userOtp" | "course" | "courseTeacher" | "subject" | "courseSubject" | "chapter" | "subjectChapter" | "lesson" | "lessonToChapter" | "quiz" | "lessonQuiz" | "quizAttempt" | "questionAttempt" | "question" | "questionOption" | "userSkill" | "userProject"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1609,6 +1611,138 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    UserSkill: {
+      payload: Prisma.$UserSkillPayload<ExtArgs>
+      fields: Prisma.UserSkillFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserSkillFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserSkillFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload>
+        }
+        findFirst: {
+          args: Prisma.UserSkillFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserSkillFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload>
+        }
+        findMany: {
+          args: Prisma.UserSkillFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload>[]
+        }
+        create: {
+          args: Prisma.UserSkillCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload>
+        }
+        createMany: {
+          args: Prisma.UserSkillCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.UserSkillDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload>
+        }
+        update: {
+          args: Prisma.UserSkillUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserSkillDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserSkillUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.UserSkillUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserSkillPayload>
+        }
+        aggregate: {
+          args: Prisma.UserSkillAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserSkill>
+        }
+        groupBy: {
+          args: Prisma.UserSkillGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserSkillGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserSkillCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserSkillCountAggregateOutputType> | number
+        }
+      }
+    }
+    UserProject: {
+      payload: Prisma.$UserProjectPayload<ExtArgs>
+      fields: Prisma.UserProjectFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserProjectFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserProjectFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload>
+        }
+        findFirst: {
+          args: Prisma.UserProjectFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserProjectFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload>
+        }
+        findMany: {
+          args: Prisma.UserProjectFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload>[]
+        }
+        create: {
+          args: Prisma.UserProjectCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload>
+        }
+        createMany: {
+          args: Prisma.UserProjectCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.UserProjectDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload>
+        }
+        update: {
+          args: Prisma.UserProjectUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload>
+        }
+        deleteMany: {
+          args: Prisma.UserProjectDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserProjectUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.UserProjectUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserProjectPayload>
+        }
+        aggregate: {
+          args: Prisma.UserProjectAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserProject>
+        }
+        groupBy: {
+          args: Prisma.UserProjectGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserProjectGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserProjectCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserProjectCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -1903,6 +2037,35 @@ export const QuestionOptionScalarFieldEnum = {
 export type QuestionOptionScalarFieldEnum = (typeof QuestionOptionScalarFieldEnum)[keyof typeof QuestionOptionScalarFieldEnum]
 
 
+export const UserSkillScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  skill: 'skill',
+  level: 'level',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserSkillScalarFieldEnum = (typeof UserSkillScalarFieldEnum)[keyof typeof UserSkillScalarFieldEnum]
+
+
+export const UserProjectScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  imageUrl: 'imageUrl',
+  date: 'date',
+  demoUrl: 'demoUrl',
+  gitHubUrl: 'gitHubUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserProjectScalarFieldEnum = (typeof UserProjectScalarFieldEnum)[keyof typeof UserProjectScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2027,6 +2190,25 @@ export const QuestionOptionOrderByRelevanceFieldEnum = {
 } as const
 
 export type QuestionOptionOrderByRelevanceFieldEnum = (typeof QuestionOptionOrderByRelevanceFieldEnum)[keyof typeof QuestionOptionOrderByRelevanceFieldEnum]
+
+
+export const UserSkillOrderByRelevanceFieldEnum = {
+  skill: 'skill',
+  level: 'level'
+} as const
+
+export type UserSkillOrderByRelevanceFieldEnum = (typeof UserSkillOrderByRelevanceFieldEnum)[keyof typeof UserSkillOrderByRelevanceFieldEnum]
+
+
+export const UserProjectOrderByRelevanceFieldEnum = {
+  title: 'title',
+  description: 'description',
+  imageUrl: 'imageUrl',
+  demoUrl: 'demoUrl',
+  gitHubUrl: 'gitHubUrl'
+} as const
+
+export type UserProjectOrderByRelevanceFieldEnum = (typeof UserProjectOrderByRelevanceFieldEnum)[keyof typeof UserProjectOrderByRelevanceFieldEnum]
 
 
 
@@ -2194,6 +2376,8 @@ export type GlobalOmitConfig = {
   questionAttempt?: Prisma.QuestionAttemptOmit
   question?: Prisma.QuestionOmit
   questionOption?: Prisma.QuestionOptionOmit
+  userSkill?: Prisma.UserSkillOmit
+  userProject?: Prisma.UserProjectOmit
 }
 
 /* Types for Logging */

@@ -68,7 +68,9 @@ export const ModelName = {
   QuizAttempt: 'QuizAttempt',
   QuestionAttempt: 'QuestionAttempt',
   Question: 'Question',
-  QuestionOption: 'QuestionOption'
+  QuestionOption: 'QuestionOption',
+  UserSkill: 'UserSkill',
+  UserProject: 'UserProject'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -342,6 +344,35 @@ export const QuestionOptionScalarFieldEnum = {
 export type QuestionOptionScalarFieldEnum = (typeof QuestionOptionScalarFieldEnum)[keyof typeof QuestionOptionScalarFieldEnum]
 
 
+export const UserSkillScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  skill: 'skill',
+  level: 'level',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserSkillScalarFieldEnum = (typeof UserSkillScalarFieldEnum)[keyof typeof UserSkillScalarFieldEnum]
+
+
+export const UserProjectScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  imageUrl: 'imageUrl',
+  date: 'date',
+  demoUrl: 'demoUrl',
+  gitHubUrl: 'gitHubUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserProjectScalarFieldEnum = (typeof UserProjectScalarFieldEnum)[keyof typeof UserProjectScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -466,4 +497,23 @@ export const QuestionOptionOrderByRelevanceFieldEnum = {
 } as const
 
 export type QuestionOptionOrderByRelevanceFieldEnum = (typeof QuestionOptionOrderByRelevanceFieldEnum)[keyof typeof QuestionOptionOrderByRelevanceFieldEnum]
+
+
+export const UserSkillOrderByRelevanceFieldEnum = {
+  skill: 'skill',
+  level: 'level'
+} as const
+
+export type UserSkillOrderByRelevanceFieldEnum = (typeof UserSkillOrderByRelevanceFieldEnum)[keyof typeof UserSkillOrderByRelevanceFieldEnum]
+
+
+export const UserProjectOrderByRelevanceFieldEnum = {
+  title: 'title',
+  description: 'description',
+  imageUrl: 'imageUrl',
+  demoUrl: 'demoUrl',
+  gitHubUrl: 'gitHubUrl'
+} as const
+
+export type UserProjectOrderByRelevanceFieldEnum = (typeof UserProjectOrderByRelevanceFieldEnum)[keyof typeof UserProjectOrderByRelevanceFieldEnum]
 

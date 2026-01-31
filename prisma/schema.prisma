@@ -45,6 +45,8 @@ model User {
   roles          Role[]          @relation("userroles")
   teacherCourses CourseTeacher[] @relation("TeacherCourses")
   quizAttempts   QuizAttempt[]   @relation("UserQuizAttempts")
+  skills         UserSkill[]     @relation("UserSkill")
+  projects       UserProject[]   @relation("userProjects")
 
   @@map("users")
 }
@@ -212,7 +214,7 @@ model quiz {
   slug       String        @unique
   totalMarks Int           @default(0) // calculated as sum of marks of all questions
   passMarks  Int           @default(0) //auto calculated as 40% of total marks
-  timeLimit  Decimal        @db.Decimal(10, 2) // in minutes
+  timeLimit  Decimal       @db.Decimal(10, 2) // in minutes
   questions  Question[]    @relation("quizQuestions")
   status     Boolean       @default(true)
   createdAt  DateTime      @default(now())
@@ -280,7 +282,7 @@ model Question {
   question  String            @db.Text
   status    Boolean           @default(true)
   marks     Int
-  duration  Decimal           @db.Decimal(10, 2) @default(0)// in minutes
+  duration  Decimal           @default(0) @db.Decimal(10, 2) // in minutes
   type      QuestionType      @default(MCQ)
   answer    String?           @db.Text
   createdAt DateTime          @default(now())
@@ -303,4 +305,33 @@ model QuestionOption {
   question   Question @relation("questionOptions", fields: [questionId], references: [id])
 
   @@map("question_options")
+}
+
+model UserSkill {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  skill     String
+  level     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation("UserSkill", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_skills")
+}
+
+model UserProject {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  title       String
+  description String    @db.Text
+  status      Boolean   @default(true)
+  imageUrl    String?
+  date        DateTime?
+  demoUrl     String?
+  gitHubUrl   String?
+  user        User      @relation("userProjects", fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("user_projects")
 }

@@ -107,3 +107,13 @@ export type Question = Prisma.QuestionModel
  * 
  */
 export type QuestionOption = Prisma.QuestionOptionModel
+/**
+ * Model UserSkill
+ * 
+ */
+export type UserSkill = Prisma.UserSkillModel
+/**
+ * Model UserProject
+ * 
+ */
+export type UserProject = Prisma.UserProjectModel

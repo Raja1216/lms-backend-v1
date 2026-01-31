@@ -299,6 +299,8 @@ export type UserWhereInput = {
   roles?: Prisma.RoleListRelationFilter
   teacherCourses?: Prisma.CourseTeacherListRelationFilter
   quizAttempts?: Prisma.QuizAttemptListRelationFilter
+  skills?: Prisma.UserSkillListRelationFilter
+  projects?: Prisma.UserProjectListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -320,6 +322,8 @@ export type UserOrderByWithRelationInput = {
   roles?: Prisma.RoleOrderByRelationAggregateInput
   teacherCourses?: Prisma.CourseTeacherOrderByRelationAggregateInput
   quizAttempts?: Prisma.QuizAttemptOrderByRelationAggregateInput
+  skills?: Prisma.UserSkillOrderByRelationAggregateInput
+  projects?: Prisma.UserProjectOrderByRelationAggregateInput
   _relevance?: Prisma.UserOrderByRelevanceInput
 }
 
@@ -345,6 +349,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   roles?: Prisma.RoleListRelationFilter
   teacherCourses?: Prisma.CourseTeacherListRelationFilter
   quizAttempts?: Prisma.QuizAttemptListRelationFilter
+  skills?: Prisma.UserSkillListRelationFilter
+  projects?: Prisma.UserProjectListRelationFilter
 }, "id" | "uuid" | "email" | "username">
 
 export type UserOrderByWithAggregationInput = {
@@ -409,6 +415,8 @@ export type UserCreateInput = {
   roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
   teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
   quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -430,6 +438,8 @@ export type UserUncheckedCreateInput = {
   roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
   teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
   quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -450,6 +460,8 @@ export type UserUpdateInput = {
   roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
   teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
   quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -471,6 +483,8 @@ export type UserUncheckedUpdateInput = {
   roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
   teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
   quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -703,6 +717,34 @@ export type UserUpdateOneRequiredWithoutQuizAttemptsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutQuizAttemptsInput, Prisma.UserUpdateWithoutQuizAttemptsInput>, Prisma.UserUncheckedUpdateWithoutQuizAttemptsInput>
 }
 
+export type UserCreateNestedOneWithoutSkillsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSkillsInput, Prisma.UserUncheckedCreateWithoutSkillsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSkillsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutSkillsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutSkillsInput, Prisma.UserUncheckedCreateWithoutSkillsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutSkillsInput
+  upsert?: Prisma.UserUpsertWithoutSkillsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutSkillsInput, Prisma.UserUpdateWithoutSkillsInput>, Prisma.UserUncheckedUpdateWithoutSkillsInput>
+}
+
+export type UserCreateNestedOneWithoutProjectsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProjectsInput, Prisma.UserUncheckedCreateWithoutProjectsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProjectsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutProjectsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutProjectsInput, Prisma.UserUncheckedCreateWithoutProjectsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutProjectsInput
+  upsert?: Prisma.UserUpsertWithoutProjectsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutProjectsInput, Prisma.UserUpdateWithoutProjectsInput>, Prisma.UserUncheckedUpdateWithoutProjectsInput>
+}
+
 export type UserCreateWithoutRolesInput = {
   uuid?: string
   email: string
@@ -720,6 +762,8 @@ export type UserCreateWithoutRolesInput = {
   updatedAt?: Date | string
   teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
   quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRolesInput = {
@@ -740,6 +784,8 @@ export type UserUncheckedCreateWithoutRolesInput = {
   updatedAt?: Date | string
   teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
   quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRolesInput = {
@@ -801,6 +847,8 @@ export type UserCreateWithoutTeacherCoursesInput = {
   updatedAt?: Date | string
   roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
   quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTeacherCoursesInput = {
@@ -821,6 +869,8 @@ export type UserUncheckedCreateWithoutTeacherCoursesInput = {
   updatedAt?: Date | string
   roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
   quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTeacherCoursesInput = {
@@ -856,6 +906,8 @@ export type UserUpdateWithoutTeacherCoursesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
   quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTeacherCoursesInput = {
@@ -876,6 +928,8 @@ export type UserUncheckedUpdateWithoutTeacherCoursesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
   quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutQuizAttemptsInput = {
@@ -895,6 +949,8 @@ export type UserCreateWithoutQuizAttemptsInput = {
   updatedAt?: Date | string
   roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
   teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutQuizAttemptsInput = {
@@ -915,6 +971,8 @@ export type UserUncheckedCreateWithoutQuizAttemptsInput = {
   updatedAt?: Date | string
   roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
   teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutQuizAttemptsInput = {
@@ -950,6 +1008,8 @@ export type UserUpdateWithoutQuizAttemptsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
   teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutQuizAttemptsInput = {
@@ -970,6 +1030,212 @@ export type UserUncheckedUpdateWithoutQuizAttemptsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
   teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutSkillsInput = {
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutSkillsInput = {
+  id?: number
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutSkillsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutSkillsInput, Prisma.UserUncheckedCreateWithoutSkillsInput>
+}
+
+export type UserUpsertWithoutSkillsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutSkillsInput, Prisma.UserUncheckedUpdateWithoutSkillsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutSkillsInput, Prisma.UserUncheckedCreateWithoutSkillsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutSkillsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutSkillsInput, Prisma.UserUncheckedUpdateWithoutSkillsInput>
+}
+
+export type UserUpdateWithoutSkillsInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutSkillsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutProjectsInput = {
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutProjectsInput = {
+  id?: number
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutProjectsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutProjectsInput, Prisma.UserUncheckedCreateWithoutProjectsInput>
+}
+
+export type UserUpsertWithoutProjectsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutProjectsInput, Prisma.UserUncheckedUpdateWithoutProjectsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutProjectsInput, Prisma.UserUncheckedCreateWithoutProjectsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutProjectsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutProjectsInput, Prisma.UserUncheckedUpdateWithoutProjectsInput>
+}
+
+export type UserUpdateWithoutProjectsInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutProjectsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpdateWithoutRolesInput = {
@@ -989,6 +1255,8 @@ export type UserUpdateWithoutRolesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
   quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRolesInput = {
@@ -1009,6 +1277,8 @@ export type UserUncheckedUpdateWithoutRolesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
   quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateManyWithoutRolesInput = {
@@ -1038,12 +1308,16 @@ export type UserCountOutputType = {
   roles: number
   teacherCourses: number
   quizAttempts: number
+  skills: number
+  projects: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   roles?: boolean | UserCountOutputTypeCountRolesArgs
   teacherCourses?: boolean | UserCountOutputTypeCountTeacherCoursesArgs
   quizAttempts?: boolean | UserCountOutputTypeCountQuizAttemptsArgs
+  skills?: boolean | UserCountOutputTypeCountSkillsArgs
+  projects?: boolean | UserCountOutputTypeCountProjectsArgs
 }
 
 /**
@@ -1077,6 +1351,20 @@ export type UserCountOutputTypeCountQuizAttemptsArgs<ExtArgs extends runtime.Typ
   where?: Prisma.QuizAttemptWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountSkillsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserSkillWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountProjectsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.UserProjectWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1097,6 +1385,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   roles?: boolean | Prisma.User$rolesArgs<ExtArgs>
   teacherCourses?: boolean | Prisma.User$teacherCoursesArgs<ExtArgs>
   quizAttempts?: boolean | Prisma.User$quizAttemptsArgs<ExtArgs>
+  skills?: boolean | Prisma.User$skillsArgs<ExtArgs>
+  projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1125,6 +1415,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   roles?: boolean | Prisma.User$rolesArgs<ExtArgs>
   teacherCourses?: boolean | Prisma.User$teacherCoursesArgs<ExtArgs>
   quizAttempts?: boolean | Prisma.User$quizAttemptsArgs<ExtArgs>
+  skills?: boolean | Prisma.User$skillsArgs<ExtArgs>
+  projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -1134,6 +1426,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     roles: Prisma.$RolePayload<ExtArgs>[]
     teacherCourses: Prisma.$CourseTeacherPayload<ExtArgs>[]
     quizAttempts: Prisma.$QuizAttemptPayload<ExtArgs>[]
+    skills: Prisma.$UserSkillPayload<ExtArgs>[]
+    projects: Prisma.$UserProjectPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1494,6 +1788,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   roles<T extends Prisma.User$rolesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$rolesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RolePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   teacherCourses<T extends Prisma.User$teacherCoursesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$teacherCoursesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CourseTeacherPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   quizAttempts<T extends Prisma.User$quizAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$quizAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuizAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  skills<T extends Prisma.User$skillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$skillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  projects<T extends Prisma.User$projectsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$projectsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserProjectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1950,6 +2246,54 @@ export type User$quizAttemptsArgs<ExtArgs extends runtime.Types.Extensions.Inter
   take?: number
   skip?: number
   distinct?: Prisma.QuizAttemptScalarFieldEnum | Prisma.QuizAttemptScalarFieldEnum[]
+}
+
+/**
+ * User.skills
+ */
+export type User$skillsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserSkill
+   */
+  select?: Prisma.UserSkillSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserSkill
+   */
+  omit?: Prisma.UserSkillOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserSkillInclude<ExtArgs> | null
+  where?: Prisma.UserSkillWhereInput
+  orderBy?: Prisma.UserSkillOrderByWithRelationInput | Prisma.UserSkillOrderByWithRelationInput[]
+  cursor?: Prisma.UserSkillWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserSkillScalarFieldEnum | Prisma.UserSkillScalarFieldEnum[]
+}
+
+/**
+ * User.projects
+ */
+export type User$projectsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the UserProject
+   */
+  select?: Prisma.UserProjectSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the UserProject
+   */
+  omit?: Prisma.UserProjectOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserProjectInclude<ExtArgs> | null
+  where?: Prisma.UserProjectWhereInput
+  orderBy?: Prisma.UserProjectOrderByWithRelationInput | Prisma.UserProjectOrderByWithRelationInput[]
+  cursor?: Prisma.UserProjectWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.UserProjectScalarFieldEnum | Prisma.UserProjectScalarFieldEnum[]
 }
 
 /**
