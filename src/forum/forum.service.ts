@@ -82,7 +82,7 @@ export class ForumService {
           _count: {
             select: {
               forums: true,
-              subjects:true
+              subjects: true,
             },
           },
         },
@@ -150,7 +150,12 @@ export class ForumService {
         id: true,
         title: true,
         content: true,
-        fileUrl: true,
+        attachments: {
+          select: {
+            id: true,
+            fileUrl: true,
+          },
+        },
         _count: {
           select: { replies: true, reaction: true },
         },
@@ -196,21 +201,39 @@ export class ForumService {
     createDiscussionDto: CreateDiscussionDto,
     courseSlug: string,
   ) {
-    let fileUrl: string | null = null;
-    if (createDiscussionDto.attachment) {
-      fileUrl = createDiscussionDto.attachment; //Assume Base64 File
-      if (fileUrl.startsWith('data:')) {
-        const savedFile = await Base64FileUtil.saveBase64File(
-          fileUrl,
-          'uploads/discussion-attachments',
-        );
-        const relativePath = path.posix.join(
-          'uploads/discussion-attachments',
-          savedFile.fileName,
-        );
-        fileUrl = process.env.APP_URL + '/' + relativePath;
+    let fileUrls: string[] = [];
+
+    if (
+      createDiscussionDto.attachments &&
+      createDiscussionDto.attachments.length > 0
+    ) {
+      for (const attachment of createDiscussionDto.attachments) {
+        const fileValue = attachment.fileBase64;
+
+        // Base64 file → save to disk
+        if (fileValue.startsWith('data:')) {
+          const savedFile = await Base64FileUtil.saveBase64File(
+            fileValue,
+            'uploads/discussion-attachments',
+          );
+
+          const relativePath = path.posix.join(
+            'uploads/discussion-attachments',
+            savedFile.fileName,
+          );
+
+          fileUrls.push(`${process.env.APP_URL}/${relativePath}`);
+        }
+
+        //  Already a URL / file path → keep as-is
+        else {
+          fileUrls.push(fileValue);
+        }
       }
     }
+
+    // Store null instead of empty array (optional)
+    const finalFileUrls = fileUrls.length > 0 ? fileUrls : null;
     const userData = await this.prisma.user.findUnique({
       where: { id: user.id },
       select: { classGrade: true },
@@ -228,12 +251,22 @@ export class ForumService {
       data: {
         title: createDiscussionDto.title,
         content: createDiscussionDto.content,
-        fileUrl: fileUrl,
         userId: user.id,
         courseId: course.id,
         parentId: createDiscussionDto.forumId || null,
       },
     });
+    //  Save attachments if any
+    if (finalFileUrls) {
+      for (const fileUrl of finalFileUrls) {
+        await this.prisma.forumAttachment.create({
+          data: {
+            forumId: newDiscussion.id,
+            fileUrl: fileUrl,
+          },
+        });
+      }
+    }
     return newDiscussion;
   }
   async getDiscussionReplies(
@@ -267,7 +300,12 @@ export class ForumService {
         id: true,
         title: true,
         content: true,
-        fileUrl: true,
+        attachments: {
+          select: {
+            id: true,
+            fileUrl: true,
+          },
+        },
         _count: { select: { replies: true, reaction: true } },
         user: {
           select: {
@@ -332,7 +370,12 @@ export class ForumService {
         id: true,
         title: true,
         content: true,
-        fileUrl: true,
+        attachments: {
+          select: {
+            id: true,
+            fileUrl: true,
+          },
+        },
         _count: { select: { replies: true, reaction: true } },
         user: {
           select: {
@@ -387,19 +430,48 @@ export class ForumService {
     discussionId: number,
     updateData: Partial<CreateDiscussionDto>,
   ) {
-    let fileUrl: string | null = null;
-    if (updateData.attachment) {
-      fileUrl = updateData.attachment; //Assume Base64 File
-      if (fileUrl.startsWith('data:')) {
-        const savedFile = await Base64FileUtil.saveBase64File(
-          fileUrl,
-          'uploads/discussion-attachments',
-        );
-        const relativePath = path.posix.join(
-          'uploads/discussion-attachments',
-          savedFile.fileName,
-        );
-        fileUrl = process.env.APP_URL + '/' + relativePath;
+    const discussion = await this.prisma.courForum.findFirst({
+      where: {
+        id: discussionId,
+        userId: user.id,
+      },
+      select: {
+        id: true,
+        attachments: {
+          select: {
+            id: true,
+            fileUrl: true,
+          },
+        },
+      },
+    });
+
+    if (!discussion) {
+      throw new NotFoundException('Discussion not found ');
+    }
+    let updatedFileUrls: string[] = [];
+    if (updateData.attachments && updateData.attachments.length > 0) {
+      for (const attachment of updateData.attachments) {
+        const value = attachment.fileBase64;
+
+        // New base64 file
+        if (value.startsWith('data:')) {
+          const savedFile = await Base64FileUtil.saveBase64File(
+            value,
+            'uploads/discussion-attachments',
+          );
+
+          const relativePath = path.posix.join(
+            'uploads/discussion-attachments',
+            savedFile.fileName,
+          );
+
+          updatedFileUrls.push(`${process.env.APP_URL}/${relativePath}`);
+        }
+        // Existing URL → keep
+        else {
+          updatedFileUrls.push(value);
+        }
       }
     }
 
@@ -408,9 +480,23 @@ export class ForumService {
       data: {
         title: updateData.title,
         content: updateData.content,
-        fileUrl: fileUrl,
       },
     });
+
+    //  Delete existing attachments
+    await this.prisma.forumAttachment.deleteMany({
+      where: { forumId: discussionId },
+    });
+
+    //  Add updated attachments
+    for (const fileUrl of updatedFileUrls) {
+      await this.prisma.forumAttachment.create({
+        data: {
+          forumId: discussionId,
+          fileUrl: fileUrl,
+        },
+      });
+    }
     return updatedDiscussion;
   }
   async reactUnreactDiscussion(reactionDto: ForumReactUnreactDto, user: User) {

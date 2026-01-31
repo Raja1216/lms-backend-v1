@@ -405,7 +405,10 @@ export const ModelName = {
   UserSkill: 'UserSkill',
   UserProject: 'UserProject',
   CourForum: 'CourForum',
-  ForumReaction: 'ForumReaction'
+  ForumAttachment: 'ForumAttachment',
+  ForumReaction: 'ForumReaction',
+  Payment: 'Payment',
+  UserEnrolledCourse: 'UserEnrolledCourse'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -421,7 +424,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "role" | "permission" | "userOtp" | "course" | "courseTeacher" | "subject" | "courseSubject" | "chapter" | "subjectChapter" | "lesson" | "lessonToChapter" | "quiz" | "lessonQuiz" | "quizAttempt" | "questionAttempt" | "question" | "questionOption" | "userSkill" | "userProject" | "courForum" | "forumReaction"
+    modelProps: "user" | "role" | "permission" | "userOtp" | "course" | "courseTeacher" | "subject" | "courseSubject" | "chapter" | "subjectChapter" | "lesson" | "lessonToChapter" | "quiz" | "lessonQuiz" | "quizAttempt" | "questionAttempt" | "question" | "questionOption" | "userSkill" | "userProject" | "courForum" | "forumAttachment" | "forumReaction" | "payment" | "userEnrolledCourse"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1811,6 +1814,72 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ForumAttachment: {
+      payload: Prisma.$ForumAttachmentPayload<ExtArgs>
+      fields: Prisma.ForumAttachmentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ForumAttachmentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ForumAttachmentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload>
+        }
+        findFirst: {
+          args: Prisma.ForumAttachmentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ForumAttachmentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload>
+        }
+        findMany: {
+          args: Prisma.ForumAttachmentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload>[]
+        }
+        create: {
+          args: Prisma.ForumAttachmentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload>
+        }
+        createMany: {
+          args: Prisma.ForumAttachmentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.ForumAttachmentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload>
+        }
+        update: {
+          args: Prisma.ForumAttachmentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload>
+        }
+        deleteMany: {
+          args: Prisma.ForumAttachmentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ForumAttachmentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.ForumAttachmentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ForumAttachmentPayload>
+        }
+        aggregate: {
+          args: Prisma.ForumAttachmentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateForumAttachment>
+        }
+        groupBy: {
+          args: Prisma.ForumAttachmentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ForumAttachmentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ForumAttachmentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ForumAttachmentCountAggregateOutputType> | number
+        }
+      }
+    }
     ForumReaction: {
       payload: Prisma.$ForumReactionPayload<ExtArgs>
       fields: Prisma.ForumReactionFieldRefs
@@ -1874,6 +1943,138 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.ForumReactionCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.ForumReactionCountAggregateOutputType> | number
+        }
+      }
+    }
+    Payment: {
+      payload: Prisma.$PaymentPayload<ExtArgs>
+      fields: Prisma.PaymentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.PaymentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.PaymentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload>
+        }
+        findFirst: {
+          args: Prisma.PaymentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.PaymentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload>
+        }
+        findMany: {
+          args: Prisma.PaymentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload>[]
+        }
+        create: {
+          args: Prisma.PaymentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload>
+        }
+        createMany: {
+          args: Prisma.PaymentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.PaymentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload>
+        }
+        update: {
+          args: Prisma.PaymentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload>
+        }
+        deleteMany: {
+          args: Prisma.PaymentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.PaymentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.PaymentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$PaymentPayload>
+        }
+        aggregate: {
+          args: Prisma.PaymentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregatePayment>
+        }
+        groupBy: {
+          args: Prisma.PaymentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PaymentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.PaymentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.PaymentCountAggregateOutputType> | number
+        }
+      }
+    }
+    UserEnrolledCourse: {
+      payload: Prisma.$UserEnrolledCoursePayload<ExtArgs>
+      fields: Prisma.UserEnrolledCourseFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.UserEnrolledCourseFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.UserEnrolledCourseFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload>
+        }
+        findFirst: {
+          args: Prisma.UserEnrolledCourseFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.UserEnrolledCourseFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload>
+        }
+        findMany: {
+          args: Prisma.UserEnrolledCourseFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload>[]
+        }
+        create: {
+          args: Prisma.UserEnrolledCourseCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload>
+        }
+        createMany: {
+          args: Prisma.UserEnrolledCourseCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        delete: {
+          args: Prisma.UserEnrolledCourseDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload>
+        }
+        update: {
+          args: Prisma.UserEnrolledCourseUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload>
+        }
+        deleteMany: {
+          args: Prisma.UserEnrolledCourseDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.UserEnrolledCourseUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        upsert: {
+          args: Prisma.UserEnrolledCourseUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$UserEnrolledCoursePayload>
+        }
+        aggregate: {
+          args: Prisma.UserEnrolledCourseAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateUserEnrolledCourse>
+        }
+        groupBy: {
+          args: Prisma.UserEnrolledCourseGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserEnrolledCourseGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.UserEnrolledCourseCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.UserEnrolledCourseCountAggregateOutputType> | number
         }
       }
     }
@@ -2206,7 +2407,6 @@ export const CourForumScalarFieldEnum = {
   userId: 'userId',
   title: 'title',
   content: 'content',
-  fileUrl: 'fileUrl',
   parentId: 'parentId',
   status: 'status',
   createdAt: 'createdAt',
@@ -2214,6 +2414,17 @@ export const CourForumScalarFieldEnum = {
 } as const
 
 export type CourForumScalarFieldEnum = (typeof CourForumScalarFieldEnum)[keyof typeof CourForumScalarFieldEnum]
+
+
+export const ForumAttachmentScalarFieldEnum = {
+  id: 'id',
+  forumId: 'forumId',
+  fileUrl: 'fileUrl',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ForumAttachmentScalarFieldEnum = (typeof ForumAttachmentScalarFieldEnum)[keyof typeof ForumAttachmentScalarFieldEnum]
 
 
 export const ForumReactionScalarFieldEnum = {
@@ -2228,12 +2439,52 @@ export const ForumReactionScalarFieldEnum = {
 export type ForumReactionScalarFieldEnum = (typeof ForumReactionScalarFieldEnum)[keyof typeof ForumReactionScalarFieldEnum]
 
 
+export const PaymentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  amount: 'amount',
+  currency: 'currency',
+  status: 'status',
+  paymentDate: 'paymentDate',
+  paymentVerifiedAt: 'paymentVerifiedAt',
+  razorPayOrderId: 'razorPayOrderId',
+  razorPayPaymentId: 'razorPayPaymentId',
+  couseId: 'couseId',
+  paymentReference: 'paymentReference',
+  paymentMetaData: 'paymentMetaData',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type PaymentScalarFieldEnum = (typeof PaymentScalarFieldEnum)[keyof typeof PaymentScalarFieldEnum]
+
+
+export const UserEnrolledCourseScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  courseId: 'courseId',
+  enrolledAt: 'enrolledAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserEnrolledCourseScalarFieldEnum = (typeof UserEnrolledCourseScalarFieldEnum)[keyof typeof UserEnrolledCourseScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
 } as const
 
 export type SortOrder = (typeof SortOrder)[keyof typeof SortOrder]
+
+
+export const NullableJsonNullValueInput = {
+  DbNull: DbNull,
+  JsonNull: JsonNull
+} as const
+
+export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
 
 
 export const NullsOrder = {
@@ -2375,11 +2626,17 @@ export type UserProjectOrderByRelevanceFieldEnum = (typeof UserProjectOrderByRel
 
 export const CourForumOrderByRelevanceFieldEnum = {
   title: 'title',
-  content: 'content',
-  fileUrl: 'fileUrl'
+  content: 'content'
 } as const
 
 export type CourForumOrderByRelevanceFieldEnum = (typeof CourForumOrderByRelevanceFieldEnum)[keyof typeof CourForumOrderByRelevanceFieldEnum]
+
+
+export const ForumAttachmentOrderByRelevanceFieldEnum = {
+  fileUrl: 'fileUrl'
+} as const
+
+export type ForumAttachmentOrderByRelevanceFieldEnum = (typeof ForumAttachmentOrderByRelevanceFieldEnum)[keyof typeof ForumAttachmentOrderByRelevanceFieldEnum]
 
 
 export const ForumReactionOrderByRelevanceFieldEnum = {
@@ -2387,6 +2644,34 @@ export const ForumReactionOrderByRelevanceFieldEnum = {
 } as const
 
 export type ForumReactionOrderByRelevanceFieldEnum = (typeof ForumReactionOrderByRelevanceFieldEnum)[keyof typeof ForumReactionOrderByRelevanceFieldEnum]
+
+
+export const JsonNullValueFilter = {
+  DbNull: DbNull,
+  JsonNull: JsonNull,
+  AnyNull: AnyNull
+} as const
+
+export type JsonNullValueFilter = (typeof JsonNullValueFilter)[keyof typeof JsonNullValueFilter]
+
+
+export const QueryMode = {
+  default: 'default',
+  insensitive: 'insensitive'
+} as const
+
+export type QueryMode = (typeof QueryMode)[keyof typeof QueryMode]
+
+
+export const PaymentOrderByRelevanceFieldEnum = {
+  currency: 'currency',
+  status: 'status',
+  razorPayOrderId: 'razorPayOrderId',
+  razorPayPaymentId: 'razorPayPaymentId',
+  paymentReference: 'paymentReference'
+} as const
+
+export type PaymentOrderByRelevanceFieldEnum = (typeof PaymentOrderByRelevanceFieldEnum)[keyof typeof PaymentOrderByRelevanceFieldEnum]
 
 
 
@@ -2448,6 +2733,20 @@ export type EnumLessonTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prism
  * Reference to a field of type 'QuestionType'
  */
 export type EnumQuestionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QuestionType'>
+    
+
+
+/**
+ * Reference to a field of type 'Json'
+ */
+export type JsonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Json'>
+    
+
+
+/**
+ * Reference to a field of type 'QueryMode'
+ */
+export type EnumQueryModeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QueryMode'>
     
 
 
@@ -2557,7 +2856,10 @@ export type GlobalOmitConfig = {
   userSkill?: Prisma.UserSkillOmit
   userProject?: Prisma.UserProjectOmit
   courForum?: Prisma.CourForumOmit
+  forumAttachment?: Prisma.ForumAttachmentOmit
   forumReaction?: Prisma.ForumReactionOmit
+  payment?: Prisma.PaymentOmit
+  userEnrolledCourse?: Prisma.UserEnrolledCourseOmit
 }
 
 /* Types for Logging */
