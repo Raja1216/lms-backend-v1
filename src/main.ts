@@ -6,6 +6,8 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { PrismaClientExceptionFilter } from './prisma-client-exception.filter';
 import { ApiValidationPipe } from './validation.pipe';
 import { GlobalExceptionFilter } from './global-error-handler';
+import express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -39,7 +41,7 @@ async function bootstrap() {
   const port = Number(process.env.PORT ?? 3000);
   const app_url = process.env.APP_URL ?? `http://localhost:${port}`;
   document.servers = [{ url: app_url }];
-
+app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
   SwaggerModule.setup('api', app, document);
 
   await app.listen(port, '0.0.0.0');
