@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
   IsUrl,
   IsNotEmpty,
@@ -27,6 +28,7 @@ export class AddProjectDto {
   imageUrl?: string;
 
   @IsOptional()
+  @Type(() => Date)
   @IsDate()
   date?: Date;
 }
