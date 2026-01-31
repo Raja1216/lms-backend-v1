@@ -14,6 +14,7 @@ import { ChapterModule } from './chapter/chapter.module';
 import { QuizModule } from './quiz/quiz.module';
 import { QuestionModule } from './question/question.module';
 import { UploadCsvModule } from './upload-csv/upload-csv.module';
+import { PortfolioModule } from './auth/portfolio/portfolio.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { UploadCsvModule } from './upload-csv/upload-csv.module';
     QuizModule,
     QuestionModule,
     UploadCsvModule,
+    PortfolioModule,
   ],
 })
 export class AppModule {}
