@@ -301,6 +301,8 @@ export type UserWhereInput = {
   quizAttempts?: Prisma.QuizAttemptListRelationFilter
   skills?: Prisma.UserSkillListRelationFilter
   projects?: Prisma.UserProjectListRelationFilter
+  forums?: Prisma.CourForumListRelationFilter
+  forumReactions?: Prisma.ForumReactionListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -324,6 +326,8 @@ export type UserOrderByWithRelationInput = {
   quizAttempts?: Prisma.QuizAttemptOrderByRelationAggregateInput
   skills?: Prisma.UserSkillOrderByRelationAggregateInput
   projects?: Prisma.UserProjectOrderByRelationAggregateInput
+  forums?: Prisma.CourForumOrderByRelationAggregateInput
+  forumReactions?: Prisma.ForumReactionOrderByRelationAggregateInput
   _relevance?: Prisma.UserOrderByRelevanceInput
 }
 
@@ -351,6 +355,8 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   quizAttempts?: Prisma.QuizAttemptListRelationFilter
   skills?: Prisma.UserSkillListRelationFilter
   projects?: Prisma.UserProjectListRelationFilter
+  forums?: Prisma.CourForumListRelationFilter
+  forumReactions?: Prisma.ForumReactionListRelationFilter
 }, "id" | "uuid" | "email" | "username">
 
 export type UserOrderByWithAggregationInput = {
@@ -417,6 +423,8 @@ export type UserCreateInput = {
   quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
   skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -440,6 +448,8 @@ export type UserUncheckedCreateInput = {
   quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
   skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -462,6 +472,8 @@ export type UserUpdateInput = {
   quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
   skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -485,6 +497,8 @@ export type UserUncheckedUpdateInput = {
   quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
   skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -745,6 +759,34 @@ export type UserUpdateOneRequiredWithoutProjectsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutProjectsInput, Prisma.UserUpdateWithoutProjectsInput>, Prisma.UserUncheckedUpdateWithoutProjectsInput>
 }
 
+export type UserCreateNestedOneWithoutForumsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutForumsInput, Prisma.UserUncheckedCreateWithoutForumsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutForumsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutForumsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutForumsInput, Prisma.UserUncheckedCreateWithoutForumsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutForumsInput
+  upsert?: Prisma.UserUpsertWithoutForumsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutForumsInput, Prisma.UserUpdateWithoutForumsInput>, Prisma.UserUncheckedUpdateWithoutForumsInput>
+}
+
+export type UserCreateNestedOneWithoutForumReactionsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutForumReactionsInput, Prisma.UserUncheckedCreateWithoutForumReactionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutForumReactionsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutForumReactionsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutForumReactionsInput, Prisma.UserUncheckedCreateWithoutForumReactionsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutForumReactionsInput
+  upsert?: Prisma.UserUpsertWithoutForumReactionsInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutForumReactionsInput, Prisma.UserUpdateWithoutForumReactionsInput>, Prisma.UserUncheckedUpdateWithoutForumReactionsInput>
+}
+
 export type UserCreateWithoutRolesInput = {
   uuid?: string
   email: string
@@ -764,6 +806,8 @@ export type UserCreateWithoutRolesInput = {
   quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
   skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutRolesInput = {
@@ -786,6 +830,8 @@ export type UserUncheckedCreateWithoutRolesInput = {
   quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
   skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutRolesInput = {
@@ -849,6 +895,8 @@ export type UserCreateWithoutTeacherCoursesInput = {
   quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
   skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutTeacherCoursesInput = {
@@ -871,6 +919,8 @@ export type UserUncheckedCreateWithoutTeacherCoursesInput = {
   quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
   skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutTeacherCoursesInput = {
@@ -908,6 +958,8 @@ export type UserUpdateWithoutTeacherCoursesInput = {
   quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
   skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutTeacherCoursesInput = {
@@ -930,6 +982,8 @@ export type UserUncheckedUpdateWithoutTeacherCoursesInput = {
   quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
   skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutQuizAttemptsInput = {
@@ -951,6 +1005,8 @@ export type UserCreateWithoutQuizAttemptsInput = {
   teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
   skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutQuizAttemptsInput = {
@@ -973,6 +1029,8 @@ export type UserUncheckedCreateWithoutQuizAttemptsInput = {
   teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
   skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutQuizAttemptsInput = {
@@ -1010,6 +1068,8 @@ export type UserUpdateWithoutQuizAttemptsInput = {
   teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
   skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutQuizAttemptsInput = {
@@ -1032,6 +1092,8 @@ export type UserUncheckedUpdateWithoutQuizAttemptsInput = {
   teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
   skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSkillsInput = {
@@ -1053,6 +1115,8 @@ export type UserCreateWithoutSkillsInput = {
   teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
   quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSkillsInput = {
@@ -1075,6 +1139,8 @@ export type UserUncheckedCreateWithoutSkillsInput = {
   teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
   quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
   projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSkillsInput = {
@@ -1112,6 +1178,8 @@ export type UserUpdateWithoutSkillsInput = {
   teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
   quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSkillsInput = {
@@ -1134,6 +1202,8 @@ export type UserUncheckedUpdateWithoutSkillsInput = {
   teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
   quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutProjectsInput = {
@@ -1155,6 +1225,8 @@ export type UserCreateWithoutProjectsInput = {
   teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
   quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
   skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutProjectsInput = {
@@ -1177,6 +1249,8 @@ export type UserUncheckedCreateWithoutProjectsInput = {
   teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
   quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
   skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutProjectsInput = {
@@ -1214,6 +1288,8 @@ export type UserUpdateWithoutProjectsInput = {
   teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
   quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
   skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutProjectsInput = {
@@ -1236,6 +1312,228 @@ export type UserUncheckedUpdateWithoutProjectsInput = {
   teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
   quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
   skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutForumsInput = {
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutForumsInput = {
+  id?: number
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forumReactions?: Prisma.ForumReactionUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutForumsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutForumsInput, Prisma.UserUncheckedCreateWithoutForumsInput>
+}
+
+export type UserUpsertWithoutForumsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutForumsInput, Prisma.UserUncheckedUpdateWithoutForumsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutForumsInput, Prisma.UserUncheckedCreateWithoutForumsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutForumsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutForumsInput, Prisma.UserUncheckedUpdateWithoutForumsInput>
+}
+
+export type UserUpdateWithoutForumsInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutForumsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutForumReactionsInput = {
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutForumReactionsInput = {
+  id?: number
+  uuid?: string
+  email: string
+  name?: string | null
+  username?: string | null
+  dateOfBirth?: Date | string | null
+  avatar?: string | null
+  classGrade?: string | null
+  mobile_prefix?: string
+  mobile?: string | null
+  about?: string | null
+  password: string
+  status?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.RoleUncheckedCreateNestedManyWithoutUsersInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedCreateNestedManyWithoutTeacherInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedCreateNestedManyWithoutUserInput
+  skills?: Prisma.UserSkillUncheckedCreateNestedManyWithoutUserInput
+  projects?: Prisma.UserProjectUncheckedCreateNestedManyWithoutUserInput
+  forums?: Prisma.CourForumUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutForumReactionsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutForumReactionsInput, Prisma.UserUncheckedCreateWithoutForumReactionsInput>
+}
+
+export type UserUpsertWithoutForumReactionsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutForumReactionsInput, Prisma.UserUncheckedUpdateWithoutForumReactionsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutForumReactionsInput, Prisma.UserUncheckedCreateWithoutForumReactionsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutForumReactionsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutForumReactionsInput, Prisma.UserUncheckedUpdateWithoutForumReactionsInput>
+}
+
+export type UserUpdateWithoutForumReactionsInput = {
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutForumReactionsInput = {
+  id?: Prisma.IntFieldUpdateOperationsInput | number
+  uuid?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  username?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  dateOfBirth?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  classGrade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  mobile_prefix?: Prisma.StringFieldUpdateOperationsInput | string
+  mobile?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  about?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.RoleUncheckedUpdateManyWithoutUsersNestedInput
+  teacherCourses?: Prisma.CourseTeacherUncheckedUpdateManyWithoutTeacherNestedInput
+  quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
+  skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
+  projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUpdateWithoutRolesInput = {
@@ -1257,6 +1555,8 @@ export type UserUpdateWithoutRolesInput = {
   quizAttempts?: Prisma.QuizAttemptUpdateManyWithoutUserNestedInput
   skills?: Prisma.UserSkillUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutRolesInput = {
@@ -1279,6 +1579,8 @@ export type UserUncheckedUpdateWithoutRolesInput = {
   quizAttempts?: Prisma.QuizAttemptUncheckedUpdateManyWithoutUserNestedInput
   skills?: Prisma.UserSkillUncheckedUpdateManyWithoutUserNestedInput
   projects?: Prisma.UserProjectUncheckedUpdateManyWithoutUserNestedInput
+  forums?: Prisma.CourForumUncheckedUpdateManyWithoutUserNestedInput
+  forumReactions?: Prisma.ForumReactionUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateManyWithoutRolesInput = {
@@ -1310,6 +1612,8 @@ export type UserCountOutputType = {
   quizAttempts: number
   skills: number
   projects: number
+  forums: number
+  forumReactions: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1318,6 +1622,8 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   quizAttempts?: boolean | UserCountOutputTypeCountQuizAttemptsArgs
   skills?: boolean | UserCountOutputTypeCountSkillsArgs
   projects?: boolean | UserCountOutputTypeCountProjectsArgs
+  forums?: boolean | UserCountOutputTypeCountForumsArgs
+  forumReactions?: boolean | UserCountOutputTypeCountForumReactionsArgs
 }
 
 /**
@@ -1365,6 +1671,20 @@ export type UserCountOutputTypeCountProjectsArgs<ExtArgs extends runtime.Types.E
   where?: Prisma.UserProjectWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountForumsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CourForumWhereInput
+}
+
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountForumReactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ForumReactionWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1387,6 +1707,8 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   quizAttempts?: boolean | Prisma.User$quizAttemptsArgs<ExtArgs>
   skills?: boolean | Prisma.User$skillsArgs<ExtArgs>
   projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
+  forums?: boolean | Prisma.User$forumsArgs<ExtArgs>
+  forumReactions?: boolean | Prisma.User$forumReactionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1417,6 +1739,8 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   quizAttempts?: boolean | Prisma.User$quizAttemptsArgs<ExtArgs>
   skills?: boolean | Prisma.User$skillsArgs<ExtArgs>
   projects?: boolean | Prisma.User$projectsArgs<ExtArgs>
+  forums?: boolean | Prisma.User$forumsArgs<ExtArgs>
+  forumReactions?: boolean | Prisma.User$forumReactionsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 
@@ -1428,6 +1752,8 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     quizAttempts: Prisma.$QuizAttemptPayload<ExtArgs>[]
     skills: Prisma.$UserSkillPayload<ExtArgs>[]
     projects: Prisma.$UserProjectPayload<ExtArgs>[]
+    forums: Prisma.$CourForumPayload<ExtArgs>[]
+    forumReactions: Prisma.$ForumReactionPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: number
@@ -1790,6 +2116,8 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   quizAttempts<T extends Prisma.User$quizAttemptsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$quizAttemptsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuizAttemptPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   skills<T extends Prisma.User$skillsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$skillsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserSkillPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   projects<T extends Prisma.User$projectsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$projectsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UserProjectPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  forums<T extends Prisma.User$forumsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$forumsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CourForumPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  forumReactions<T extends Prisma.User$forumReactionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$forumReactionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ForumReactionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2294,6 +2622,54 @@ export type User$projectsArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   take?: number
   skip?: number
   distinct?: Prisma.UserProjectScalarFieldEnum | Prisma.UserProjectScalarFieldEnum[]
+}
+
+/**
+ * User.forums
+ */
+export type User$forumsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the CourForum
+   */
+  select?: Prisma.CourForumSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the CourForum
+   */
+  omit?: Prisma.CourForumOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CourForumInclude<ExtArgs> | null
+  where?: Prisma.CourForumWhereInput
+  orderBy?: Prisma.CourForumOrderByWithRelationInput | Prisma.CourForumOrderByWithRelationInput[]
+  cursor?: Prisma.CourForumWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CourForumScalarFieldEnum | Prisma.CourForumScalarFieldEnum[]
+}
+
+/**
+ * User.forumReactions
+ */
+export type User$forumReactionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ForumReaction
+   */
+  select?: Prisma.ForumReactionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ForumReaction
+   */
+  omit?: Prisma.ForumReactionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ForumReactionInclude<ExtArgs> | null
+  where?: Prisma.ForumReactionWhereInput
+  orderBy?: Prisma.ForumReactionOrderByWithRelationInput | Prisma.ForumReactionOrderByWithRelationInput[]
+  cursor?: Prisma.ForumReactionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ForumReactionScalarFieldEnum | Prisma.ForumReactionScalarFieldEnum[]
 }
 
 /**

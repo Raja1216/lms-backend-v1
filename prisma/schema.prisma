@@ -48,6 +48,7 @@ model User {
   skills         UserSkill[]     @relation("UserSkill")
   projects       UserProject[]   @relation("userProjects")
   forums         CourForum[]     @relation("userForum")
+  forumReactions ForumReaction[] @relation("UserForumReactions")
 
   @@map("users")
 }
@@ -338,17 +339,36 @@ model UserProject {
   @@map("user_projects")
 }
 
-model CourForum{
-  id          Int       @id @default(autoincrement())
-  courseId    Int
-  userId      Int
-  title       String
-  content     String    @db.Text
-  status      Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  course      Course    @relation("courseForum", fields: [courseId], references: [id], onDelete: Cascade)
-  user        User      @relation("userForum", fields: [userId], references: [id], onDelete: Cascade)
+model CourForum {
+  id        Int             @id @default(autoincrement())
+  courseId  Int
+  userId    Int
+  title     String
+  content   String          @db.Text
+  fileUrl   String?
+  parentId  Int?
+  status    Boolean         @default(true)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  //add self relation for parent forum post
+  parent    CourForum?      @relation("ForumReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   CourForum[]     @relation("ForumReplies")
+  course    Course          @relation("courseForum", fields: [courseId], references: [id], onDelete: Cascade)
+  user      User            @relation("userForum", fields: [userId], references: [id], onDelete: Cascade)
+  reaction  ForumReaction[] @relation("ForumReactions")
 
   @@map("course_forum")
+}
+
+model ForumReaction {
+  id        Int       @id @default(autoincrement())
+  forumId   Int
+  userId    Int
+  emoji     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  forum     CourForum @relation("ForumReactions", fields: [forumId], references: [id], onDelete: Cascade)
+  user      User      @relation("UserForumReactions", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("forum_reactions")
 }
