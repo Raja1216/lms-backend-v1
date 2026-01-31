@@ -74,8 +74,8 @@ export class AuthController {
     @Next() next: NextFunction,
   ) {
     try {
-      const { name, email, password } = dto;
-      const user = await this.auth.register(email, password, name);
+      const { name, email, password, level } = dto;
+      const user = await this.auth.register(email, password,level, name );
       const cookieOptions = {
         expires: new Date(
           Date.now() +

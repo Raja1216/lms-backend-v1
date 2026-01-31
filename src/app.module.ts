@@ -15,6 +15,7 @@ import { QuizModule } from './quiz/quiz.module';
 import { QuestionModule } from './question/question.module';
 import { UploadCsvModule } from './upload-csv/upload-csv.module';
 import { PortfolioModule } from './auth/portfolio/portfolio.module';
+import { ForumModule } from './forum/forum.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { PortfolioModule } from './auth/portfolio/portfolio.module';
     QuestionModule,
     UploadCsvModule,
     PortfolioModule,
+    ForumModule,
   ],
 })
 export class AppModule {}

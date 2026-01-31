@@ -19,7 +19,7 @@ export class CreateUserDto {
 
   @IsString()
   @ApiProperty({ example: 'user' })
-  class: string;
+  level: string;
 
   @IsArray()
   @ApiProperty({ example: [1, 2], required: false })
