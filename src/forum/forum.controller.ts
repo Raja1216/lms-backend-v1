@@ -68,7 +68,7 @@ export class ForumController {
     @Param('courseSlug') courseSlug: string,
   ) {
     try {
-      const { discussions, total, page, limit } =
+      const { discussions, total, page, limit,course } =
         await this.forumService.getCourseDiscussions(
           req.user,
           courseSlug,
@@ -84,7 +84,7 @@ export class ForumController {
         res,
         200,
         'Course discussions fetched successfully',
-        discussionsPagedResponse,
+        { discussions: discussionsPagedResponse, course },
         null,
       );
     } catch (error) {
