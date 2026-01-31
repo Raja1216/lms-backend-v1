@@ -135,6 +135,12 @@ export class ForumService {
     if (!userData?.classGrade) {
       return { discussions: [], total: 0, page, limit };
     }
+    const course = await this.prisma.course.findUnique({
+      where: { slug: courseSlug, grade: userData.classGrade },
+    });
+    if (!course) {
+      throw new NotFoundException('Invalid course');
+    }
     //  Fetch discussions for courses the user is enrolled in
     const discussions = await this.prisma.courForum.findMany({
       where: {
@@ -194,7 +200,7 @@ export class ForumService {
         },
       },
     });
-    return { discussions: formattedDiscussions, total, page, limit };
+    return { discussions: formattedDiscussions, course,total, page, limit };
   }
   async createDiscussion(
     user: User,
