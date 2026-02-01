@@ -24,6 +24,7 @@ import { successResponse } from 'src/utils/success-response';
 import { Request, Response, NextFunction } from 'express';
 
 import { ErrorHandler } from 'src/utils/error-handler';
+import { User } from 'src/generated/prisma/browser';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('chapter')
@@ -110,9 +111,10 @@ export class ChapterController {
     @Param('slug') slug: string,
     @Res() res: Response,
     @Next() next: NextFunction,
+    @Req() req: {user:User},
   ) {
     try {
-      const chapter = await this.chapterService.findBySlug(slug);
+      const chapter = await this.chapterService.findBySlug(slug, req.user);
       if (!chapter) {
         throw new NotFoundException('Chapter not found');
       }

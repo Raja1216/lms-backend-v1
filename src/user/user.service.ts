@@ -401,10 +401,10 @@ export class UserService {
     };
   }
 
-  async getUserLeaderboard(userId: number, courseId: number) {
+  async getUserLeaderboard(user: User, courseId: number) {
     const enrolledCourse = await this.prisma.userEnrolledCourse.findFirst({
       where: {
-        userId,
+        userId: user.id,
         courseId,
       },
     });
@@ -449,7 +449,7 @@ export class UserService {
         const totalAttempts = quizAttempts.length;
         const averageScore =
           totalAttempts > 0 ? Math.round(totalScore / totalAttempts) : 0;
-
+        
         return {
           userId: enrollment.user.id,
           name: enrollment.user.name,

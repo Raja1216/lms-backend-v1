@@ -3,6 +3,7 @@ import { CreateChapterDto } from './dto/create-chapter.dto';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { generateSlug } from 'src/shared/generate-slug';
+import { User } from 'src/generated/prisma/browser';
 @Injectable()
 export class ChapterService {
   constructor(private prisma: PrismaService) {}
@@ -46,8 +47,8 @@ export class ChapterService {
     });
   }
 
-  async findBySlug(slug: string) {
-    return await this.prisma.chapter.findUnique({
+  async findBySlug(slug: string, user: User) {
+    const chapter = await this.prisma.chapter.findUnique({
       where: { slug },
       include: {
         lessons: {
@@ -57,6 +58,29 @@ export class ChapterService {
         },
       },
     });
+    if (!chapter) {
+      return null;
+    }
+    //add isComplete flag on lessons based on user progress
+    const completedLessons = await this.prisma.userXPEarned.findMany({
+      where: {
+        userId: user.id,
+        lessonId: { in: chapter.lessons.map((l) => l.lessonId) },
+      },
+    });
+    const mappedChapters = chapter.lessons.map((lesson) => {
+      const isComplete = completedLessons.some(
+        (cl) => cl.lessonId === lesson.lessonId,
+      );
+      return {
+        ...lesson,
+        isComplete,
+      };
+    });
+    return {
+      ...chapter,
+      lessons: mappedChapters,
+    };
   }
 
   async update(id: number, updateChapterDto: UpdateChapterDto) {
@@ -103,15 +127,15 @@ export class ChapterService {
   }
 
   async updateStatus(id: number) {
-    const existingChapter=await this.findOne(id);
-    if(!existingChapter){
-      throw new  NotFoundException('Chapter not found');
+    const existingChapter = await this.findOne(id);
+    if (!existingChapter) {
+      throw new NotFoundException('Chapter not found');
     }
     return await this.prisma.chapter.update({
-      where:{id},
-      data:{
-        status:!existingChapter.status
-      }
+      where: { id },
+      data: {
+        status: !existingChapter.status,
+      },
     });
   }
 

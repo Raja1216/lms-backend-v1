@@ -29,6 +29,7 @@ import { ErrorHandler } from 'src/utils/error-handler';
 import { Response, NextFunction } from 'express';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { createPagedResponse } from 'src/shared/create-paged-response';
+import { User } from 'src/generated/prisma/browser';
 @ApiTags('users')
 @Controller('users')
 export class UserController {
@@ -248,13 +249,13 @@ export class UserController {
   @ApiOperation({ summary: 'Get leaderboard for a course' })
   async getLeaderboard(
     @Param('courseId') courseId: string,
-    @Request() req,
+    @Request() req: { user: User },
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
     try {
       const leaderboard = await this.svc.getUserLeaderboard(
-        req.user.id,
+        req.user,
         Number(courseId),
       );
       return successResponse(
