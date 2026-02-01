@@ -225,6 +225,47 @@ export class QuizService {
     });
 
     const passed = obtainedMarks >= Number(quiz.passMarks);
+    // If quiz passed, try awarding lesson XP
+    if (passed) {
+      // Find lesson connected to this quiz
+      const lesson = await this.prisma.lesson.findFirst({
+        where: {
+          quizzes: {
+            some: {
+              quizId: quizId,
+            },
+          },
+        },
+        select: {
+          id: true,
+          noOfXpPoints: true,
+        },
+      });
+
+      if (lesson) {
+        // Check if lesson XP already earned
+        const lessonXpAlreadyEarned = await this.prisma.userXPEarned.findFirst({
+          where: {
+            userId,
+            lessonId: lesson.id,
+          },
+        });
+
+        if (!lessonXpAlreadyEarned) {
+          // Award lesson XP
+          await this.prisma.$transaction([
+            this.prisma.userXPEarned.create({
+              data: {
+                userId,
+                lessonId: lesson.id,
+                quizId: quizId,
+                xpPoints: lesson.noOfXpPoints,
+              },
+            }),
+          ]);
+        }
+      }
+    }
 
     return {
       attemptId: quizAttempt.id,

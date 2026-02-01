@@ -78,10 +78,10 @@ export type Lesson = Prisma.LessonModel
  */
 export type LessonToChapter = Prisma.LessonToChapterModel
 /**
- * Model quiz
+ * Model Quiz
  * 
  */
-export type quiz = Prisma.quizModel
+export type Quiz = Prisma.QuizModel
 /**
  * Model LessonQuiz
  * 
@@ -142,3 +142,8 @@ export type Payment = Prisma.PaymentModel
  * 
  */
 export type UserEnrolledCourse = Prisma.UserEnrolledCourseModel
+/**
+ * Model UserXPEarned
+ * 
+ */
+export type UserXPEarned = Prisma.UserXPEarnedModel

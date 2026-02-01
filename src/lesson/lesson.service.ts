@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateLessonDto } from './dto/create-lesson.dto';
 import { UpdateLessonDto } from './dto/update-lesson.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Base64FileUtil } from 'src/utils/base64-file.util';
 import path from 'path/win32';
 import { generateSlug } from 'src/shared/generate-slug';
+import { User } from 'src/generated/prisma/browser';
 @Injectable()
 export class LessonService {
   constructor(private prisma: PrismaService) {}
@@ -19,6 +24,7 @@ export class LessonService {
       videoUrl,
       topicName,
       NumberOfPages,
+      noOfXpPoints,
     } = createLessonDto;
     let documentUrl: string | null = null;
     if (documentContent) {
@@ -45,6 +51,7 @@ export class LessonService {
         videoUrl,
         type: lessonType,
         NoOfPages: NumberOfPages,
+        noOfXpPoints: noOfXpPoints,
       },
     });
     const lessonToChapter: any[] = [];
@@ -91,6 +98,7 @@ export class LessonService {
       topicName,
       chapterIds,
       NumberOfPages,
+      noOfXpPoints,
     } = updateLessonDto;
     let documentUrl: string | null = null;
     if (documentContent) {
@@ -118,6 +126,7 @@ export class LessonService {
         videoUrl,
         type: lessonType,
         NoOfPages: NumberOfPages,
+        noOfXpPoints: noOfXpPoints,
       },
     });
     const lessonToChapter: any[] = [];
@@ -180,5 +189,113 @@ export class LessonService {
       },
     });
     return lesson;
+  }
+  async completeLesson(lessonId: number, user: User): Promise<any> {
+    // Check if user is enrolled in the course containing the lesson
+    const lesson = await this.prisma.lesson.findFirst({
+      where: {
+        id: lessonId,
+        chapters: {
+          some: {
+            chapter: {
+              subjects: {
+                some: {
+                  subject: {
+                    courses: {
+                      some: {
+                        course: {
+                          userEnrolledCourses: {
+                            some: {
+                              userId: user.id,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        noOfXpPoints: true,
+      },
+    });
+
+    if (!lesson) {
+      throw new BadRequestException(
+        'Invalid lesson or user not enrolled in the course containing the lesson',
+      );
+    }
+
+    // Check if lesson already completed
+    const alreadyCompleted = await this.prisma.userXPEarned.findFirst({
+      where: {
+        userId: user.id,
+        lessonId,
+      },
+    });
+
+    if (alreadyCompleted) {
+      throw new BadRequestException('Lesson already completed');
+    }
+
+    //  Mark lesson as completed
+    await this.prisma.userXPEarned.create({
+      data: {
+        userId: user.id,
+        lessonId,
+      },
+    });
+
+    //  Get lesson quizzes
+    const lessonQuizzes = await this.prisma.quiz.findMany({
+      where: {
+        lessons: {
+          some: {
+            lessonId,
+          },
+        },
+      },
+      select: { id: true },
+    });
+
+    const lessonQuizIds = lessonQuizzes.map((q) => q.id);
+
+    //  Check if XP already earned via quizzes
+    const xpFromQuizzes = await this.prisma.userXPEarned.findFirst({
+      where: {
+        userId: user.id,
+        quizId: {
+          in: lessonQuizIds,
+        },
+      },
+    });
+
+    //  Calculate XP to add
+    const xpToAdd = xpFromQuizzes ? 0 : (lesson.noOfXpPoints ?? 0);
+
+    //  Update user XP
+    if (xpToAdd > 0) {
+      await this.prisma.userXPEarned.update({
+        where: { id: user.id },
+        data: {
+          xpPoints: {
+            increment: xpToAdd,
+          },
+        },
+      });
+    }
+
+    //  Return response
+    return {
+      message:
+        xpToAdd > 0
+          ? 'Lesson completed and XP awarded'
+          : 'Lesson completed (XP already earned via quiz)',
+    };
   }
 }

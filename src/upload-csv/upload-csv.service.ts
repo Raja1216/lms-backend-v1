@@ -214,6 +214,7 @@ export class UploadCsvService {
           'docUrl',
           'status',
           'chapterSlug',
+          'noOfXpPoints',
         ],
         sampleData: [
           {
@@ -227,6 +228,7 @@ export class UploadCsvService {
             docUrl: '',
             status: 'true',
             chapterSlug: 'linear-equations',
+            noOfXpPoints: '50',
           },
           {
             title: 'Linear Equations Worksheet',
@@ -239,6 +241,7 @@ export class UploadCsvService {
             docUrl: 'https://example.com/worksheet.pdf',
             status: 'true',
             chapterSlug: 'linear-equations',
+            noOfXpPoints: '30',
           },
         ],
         description: 'Lesson import template',
@@ -506,6 +509,14 @@ export class UploadCsvService {
             row: rowNumber,
             field: 'NoOfPages',
             message: 'Number of pages must be a valid integer',
+            data: row,
+          });
+        }
+        if (row.noOfXpPoints && isNaN(parseInt(row.noOfXpPoints))) {
+          errors.push({
+            row: rowNumber,
+            field: 'noOfXpPoints',
+            message: 'Number of XP points must be a valid integer',
             data: row,
           });
         }
@@ -875,6 +886,7 @@ export class UploadCsvService {
           type: row.type.toLowerCase() as LessonType,
           docUrl: row.docUrl || null,
           status: this.parseBoolean(row.status),
+          noOfXpPoints: row.noOfXpPoints ? parseInt(row.noOfXpPoints) : 0,
         };
         let lesson: any = null;
         if (updateExisting) {

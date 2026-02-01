@@ -29,7 +29,6 @@ import { ErrorHandler } from 'src/utils/error-handler';
 import { Response, NextFunction } from 'express';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { createPagedResponse } from 'src/shared/create-paged-response';
-
 @ApiTags('users')
 @Controller('users')
 export class UserController {
@@ -157,5 +156,191 @@ export class UserController {
   async profile(@Request() req) {
     // req.user is set by JwtStrategy.validate()
     return req.user;
+  }
+
+  @Get('me/full-profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get full profile with XP and level' })
+  async fullProfile(
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const profile = await this.svc.getUserProfile(req.user.id);
+      return successResponse(
+        res,
+        200,
+        'Profile retrieved successfully',
+        profile,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
+
+  @Get('me/badges')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get user badges' })
+  async getBadges(
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const badges = await this.svc.getUserBadges(req.user.id);
+      return successResponse(
+        res,
+        200,
+        'Badges retrieved successfully',
+        badges,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
+
+  @Get('me/certificates')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get user certificates' })
+  async getCertificates(
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const certificates = await this.svc.getUserCertificates(req.user.id);
+      return successResponse(
+        res,
+        200,
+        'Certificates retrieved successfully',
+        certificates,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
+
+  @Get('me/leaderboard/:courseId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get leaderboard for a course' })
+  async getLeaderboard(
+    @Param('courseId') courseId: string,
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const leaderboard = await this.svc.getUserLeaderboard(
+        req.user.id,
+        Number(courseId),
+      );
+      return successResponse(
+        res,
+        200,
+        'Leaderboard retrieved successfully',
+        leaderboard,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
+
+  @Get('me/performance-report')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get user performance report' })
+  async getPerformanceReport(
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query('courseId') courseId?: string,
+  ) {
+    try {
+      const report = await this.svc.getUserPerformanceReport(
+        req.user.id,
+        courseId ? Number(courseId) : undefined,
+      );
+      return successResponse(
+        res,
+        200,
+        'Performance report retrieved successfully',
+        report,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
+
+  @Get('me/xp-history')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get user XP history' })
+  async getXPHistory(
+    @Request() req,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const profile = await this.svc.getUserProfile(req.user.id);
+      const xpHistory = profile.xpEarned.map((xp) => ({
+        id: xp.id,
+        amount: xp.xpPoints,
+        reason: xp.lesson
+          ? `Completed lesson: ${xp.lesson.title}`
+          : xp.quiz
+            ? `Completed quiz: ${xp.quiz.title}`
+            : 'XP earned',
+        date: xp.createdAt,
+      }));
+      return successResponse(
+        res,
+        200,
+        'XP history retrieved successfully',
+        xpHistory,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
   }
 }

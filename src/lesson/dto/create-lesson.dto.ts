@@ -33,4 +33,7 @@ export class CreateLessonDto {
   @IsOptional()
   @IsNumber()
   NumberOfPages?: number;
+  @IsOptional()
+  @IsNumber()
+  noOfXpPoints?: number;
 }
