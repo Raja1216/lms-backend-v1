@@ -330,6 +330,7 @@ export const QuestionScalarFieldEnum = {
   marks: 'marks',
   duration: 'duration',
   type: 'type',
+  difficulty: 'difficulty',
   answer: 'answer',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

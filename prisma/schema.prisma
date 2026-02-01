@@ -25,6 +25,11 @@ enum QuestionType {
   SHORTANSWER
   DECRIPTIVE
 }
+enum Difficulty {
+  easy
+  medium
+  hard
+}
 
 model User {
   id                  Int                  @id @default(autoincrement())
@@ -295,6 +300,7 @@ model Question {
   marks     Int
   duration  Decimal           @default(0) @db.Decimal(10, 2) // in minutes
   type      QuestionType      @default(MCQ)
+  difficulty   Difficulty        @default(medium)
   answer    String?           @db.Text
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt

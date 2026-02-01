@@ -369,6 +369,20 @@ export class UserService {
             createdAt: 'desc',
           },
         },
+        payments: {
+          select: {
+            id: true,
+            amount: true,
+            status: true,
+            createdAt: true,
+            course: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+        },
       },
     });
 
@@ -462,7 +476,6 @@ export class UserService {
       students: rankedLeaderboard,
     };
   }
-
   async getUserPerformanceReport(userId: number, courseId?: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -472,7 +485,7 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    let courses: Course[] = [];
+    let courses: any[] = [];
     if (courseId) {
       const course = await this.prisma.course.findUnique({
         where: { id: courseId },
@@ -481,7 +494,6 @@ export class UserService {
         courses = [course];
       }
     } else {
-      // Get all enrolled courses
       const enrolledCourses = await this.prisma.userEnrolledCourse.findMany({
         where: { userId },
         include: {
@@ -491,19 +503,26 @@ export class UserService {
       courses = enrolledCourses.map((ec) => ec.course);
     }
 
+    // Get all subject reports with actual difficulty breakdown
     const subjectReports = await Promise.all(
       courses.flatMap(async (course) => {
-        const subjects = await this.prisma.subject.findMany({
+        // Get subjects for this course only
+        const courseSubjects = await this.prisma.courseSubject.findMany({
+          where: { courseId: course.id },
           include: {
-            chapters: {
+            subject: {
               include: {
-                chapter: {
+                chapters: {
                   include: {
-                    lessons: {
+                    chapter: {
                       include: {
-                        lesson: {
+                        lessons: {
                           include: {
-                            quizzes: true,
+                            lesson: {
+                              include: {
+                                quizzes: true,
+                              },
+                            },
                           },
                         },
                       },
@@ -515,71 +534,114 @@ export class UserService {
           },
         });
 
-        return subjects.map(async (subject) => {
-          const chapterReports = await Promise.all(
-            subject.chapters.map(async (sc) => {
-              const chapter = sc.chapter;
-              const lessons = chapter.lessons.map((lc) => lc.lesson);
+        return Promise.all(
+          courseSubjects.map(async (cs) => {
+            const subject = cs.subject;
+            const chapterReports = await Promise.all(
+              subject.chapters.map(async (sc) => {
+                const chapter = sc.chapter;
+                const lessons = chapter.lessons.map((lc) => lc.lesson);
 
-              // Get quiz attempts for lessons in this chapter
-              let totalCorrect = 0;
-              let totalAttempted = 0;
-              let timeSpent = 0;
+                let totalCorrect = 0;
+                let totalAttempted = 0;
+                let timeSpent = 0;
 
-              for (const lesson of lessons) {
-                const quizzes = lesson.quizzes;
-                for (const quiz of quizzes) {
-                  const attempts = await this.prisma.quizAttempt.findMany({
-                    where: {
-                      userId,
-                      quizId: quiz.id,
-                    },
-                  });
-
-                  attempts.forEach((attempt) => {
-                    totalCorrect += attempt.correctAnswers;
-                    totalAttempted += attempt.totalQuestions;
-                    timeSpent += attempt.timeTaken;
-                  });
-                }
-              }
-
-              return {
-                chapterId: chapter.id,
-                chapterName: chapter.title,
-                timeSpent,
-                questionsAttempted: totalAttempted,
-                correctAnswers: totalCorrect,
-                difficultyBreakdown: {
+                // Initialize difficulty breakdown
+                const difficultyBreakdown = {
                   easy: { attempted: 0, correct: 0 },
                   medium: { attempted: 0, correct: 0 },
                   hard: { attempted: 0, correct: 0 },
-                },
-              };
-            }),
-          );
+                };
 
-          return {
-            subjectId: subject.id,
-            subjectName: subject.name,
-            averageDifficulty: 'medium',
-            totalTimeSpent: chapterReports.reduce(
-              (sum, cr) => sum + cr.timeSpent,
-              0,
-            ),
-            chapterReports: await Promise.all(chapterReports),
-          };
-        });
+                for (const lesson of lessons) {
+                  const quizzes = lesson.quizzes;
+                  for (const quiz of quizzes) {
+                    // Get attempts with question details for difficulty breakdown
+                    const attempts = await this.prisma.quizAttempt.findMany({
+                      where: {
+                        userId,
+                        quizId: quiz.id,
+                      },
+                      include: {
+                        answers: {
+                          include: {
+                            question: true, // Include question to get difficulty
+                          },
+                        },
+                      },
+                    });
+
+                    attempts.forEach((attempt) => {
+                      totalCorrect += attempt.correctAnswers;
+                      totalAttempted += attempt.totalQuestions;
+                      timeSpent += attempt.timeTaken || 0;
+
+                      // Aggregate by difficulty
+                      attempt.answers.forEach((answer) => {
+                        const difficulty = answer.question
+                          .difficulty as keyof typeof difficultyBreakdown;
+                        if (difficultyBreakdown[difficulty]) {
+                          difficultyBreakdown[difficulty].attempted += 1;
+                          if (answer.isCorrect) {
+                            difficultyBreakdown[difficulty].correct += 1;
+                          }
+                        }
+                      });
+                    });
+                  }
+                }
+
+                return {
+                  chapterId: chapter.id,
+                  chapterName: chapter.title,
+                  timeSpent,
+                  questionsAttempted: totalAttempted,
+                  correctAnswers: totalCorrect,
+                  difficultyBreakdown,
+                };
+              }),
+            );
+
+            return {
+              subjectId: subject.id,
+              subjectName: subject.name,
+              averageDifficulty: 'medium',
+              totalTimeSpent: chapterReports.reduce(
+                (sum, cr) => sum + cr.timeSpent,
+                0,
+              ),
+              chapterReports,
+            };
+          }),
+        );
       }),
     );
 
-    const flattenedReports = await Promise.all(subjectReports.flat());
+    const flattenedReports = subjectReports.flat();
+
+    // Calculate overall progress based on chapters started vs total chapters
+    const totalChapters = flattenedReports.reduce(
+      (sum, subject) => sum + subject.chapterReports.length,
+      0,
+    );
+
+    const completedChapters = flattenedReports.reduce(
+      (sum, subject) =>
+        sum +
+        subject.chapterReports.filter((ch) => ch.questionsAttempted > 0).length,
+      0,
+    );
+
+    const overallProgress =
+      totalChapters > 0
+        ? Math.round((completedChapters / totalChapters) * 100)
+        : 0;
 
     return {
       userId,
-      courseId,
+      courseId: courseId || null,
       subjectReports: flattenedReports,
-      overallProgress: 50, // placeholder - calculate based on completed content
+      overallProgress,
     };
   }
 

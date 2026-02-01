@@ -35,3 +35,12 @@ export const QuestionType = {
 } as const
 
 export type QuestionType = (typeof QuestionType)[keyof typeof QuestionType]
+
+
+export const Difficulty = {
+  easy: 'easy',
+  medium: 'medium',
+  hard: 'hard'
+} as const
+
+export type Difficulty = (typeof Difficulty)[keyof typeof Difficulty]

@@ -2419,6 +2419,7 @@ export const QuestionScalarFieldEnum = {
   marks: 'marks',
   duration: 'duration',
   type: 'type',
+  difficulty: 'difficulty',
   answer: 'answer',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -2815,6 +2816,13 @@ export type EnumLessonTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$Prism
  * Reference to a field of type 'QuestionType'
  */
 export type EnumQuestionTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'QuestionType'>
+    
+
+
+/**
+ * Reference to a field of type 'Difficulty'
+ */
+export type EnumDifficultyFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Difficulty'>
     
 
 
