@@ -23,6 +23,7 @@ import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { PermissionGuard } from 'src/guard/permission.guard';
 import { Permissions } from 'src/guard/premission.decorator';
 import { ChapterService } from 'src/chapter/chapter.service';
+import { User } from 'src/generated/prisma/browser';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('lesson')
@@ -113,35 +114,34 @@ export class LessonController {
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
-    try{
-
-    const { title , chapterIds} = updateLessonDto;
-    if (title) {
-      const isLessonExist = await this.lessonService.findLessonByTitle(
-        title,
-        +id,
-      );
-      if (isLessonExist) {
-        throw new ConflictException('Lesson with this title already exists');
-      }
-    }
-    if (chapterIds && chapterIds.length > 0) {
-      for (const chapterId of chapterIds) {
-        const chapter = await this.chapterService.findOne(chapterId);
-        if (!chapter) {
-          throw new NotFoundException(`Some Invalid Chapter  are selected`);
+    try {
+      const { title, chapterIds } = updateLessonDto;
+      if (title) {
+        const isLessonExist = await this.lessonService.findLessonByTitle(
+          title,
+          +id,
+        );
+        if (isLessonExist) {
+          throw new ConflictException('Lesson with this title already exists');
         }
       }
-    }
-    const result = await this.lessonService.update(+id, updateLessonDto);
-    return successResponse(
-      res,
-      200,
-      'Lesson updated successfully',
-      result,
-      null,
-    );
-  } catch (error) {
+      if (chapterIds && chapterIds.length > 0) {
+        for (const chapterId of chapterIds) {
+          const chapter = await this.chapterService.findOne(chapterId);
+          if (!chapter) {
+            throw new NotFoundException(`Some Invalid Chapter  are selected`);
+          }
+        }
+      }
+      const result = await this.lessonService.update(+id, updateLessonDto);
+      return successResponse(
+        res,
+        200,
+        'Lesson updated successfully',
+        result,
+        null,
+      );
+    } catch (error) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -178,7 +178,6 @@ export class LessonController {
     }
   }
 
-
   @Permissions('update-lesson')
   @Patch('/status/:id')
   async updateStatus(
@@ -208,5 +207,34 @@ export class LessonController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.lessonService.remove(+id);
+  }
+
+  @Post('/complete/:lessonId')
+  async completeLesson(
+    @Param('lessonId') lessonId: number,
+    @Req() req: { user: User },
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.lessonService.completeLesson(
+        lessonId,
+        req.user,
+      );
+      return successResponse(
+        res,
+        200,
+        'Lesson marked as complete successfully',
+        result,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
   }
 }

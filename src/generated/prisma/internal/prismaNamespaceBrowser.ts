@@ -63,7 +63,7 @@ export const ModelName = {
   SubjectChapter: 'SubjectChapter',
   Lesson: 'Lesson',
   LessonToChapter: 'LessonToChapter',
-  quiz: 'quiz',
+  Quiz: 'Quiz',
   LessonQuiz: 'LessonQuiz',
   QuizAttempt: 'QuizAttempt',
   QuestionAttempt: 'QuestionAttempt',
@@ -75,7 +75,8 @@ export const ModelName = {
   ForumAttachment: 'ForumAttachment',
   ForumReaction: 'ForumReaction',
   Payment: 'Payment',
-  UserEnrolledCourse: 'UserEnrolledCourse'
+  UserEnrolledCourse: 'UserEnrolledCourse',
+  UserXPEarned: 'UserXPEarned'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -244,6 +245,7 @@ export const LessonScalarFieldEnum = {
   duration: 'duration',
   videoUrl: 'videoUrl',
   NoOfPages: 'NoOfPages',
+  noOfXpPoints: 'noOfXpPoints',
   type: 'type',
   docUrl: 'docUrl',
   createdAt: 'createdAt',
@@ -449,6 +451,19 @@ export const UserEnrolledCourseScalarFieldEnum = {
 export type UserEnrolledCourseScalarFieldEnum = (typeof UserEnrolledCourseScalarFieldEnum)[keyof typeof UserEnrolledCourseScalarFieldEnum]
 
 
+export const UserXPEarnedScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  xpPoints: 'xpPoints',
+  lessonId: 'lessonId',
+  quizId: 'quizId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserXPEarnedScalarFieldEnum = (typeof UserXPEarnedScalarFieldEnum)[keyof typeof UserXPEarnedScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -560,12 +575,12 @@ export const LessonOrderByRelevanceFieldEnum = {
 export type LessonOrderByRelevanceFieldEnum = (typeof LessonOrderByRelevanceFieldEnum)[keyof typeof LessonOrderByRelevanceFieldEnum]
 
 
-export const quizOrderByRelevanceFieldEnum = {
+export const QuizOrderByRelevanceFieldEnum = {
   title: 'title',
   slug: 'slug'
 } as const
 
-export type quizOrderByRelevanceFieldEnum = (typeof quizOrderByRelevanceFieldEnum)[keyof typeof quizOrderByRelevanceFieldEnum]
+export type QuizOrderByRelevanceFieldEnum = (typeof QuizOrderByRelevanceFieldEnum)[keyof typeof QuizOrderByRelevanceFieldEnum]
 
 
 export const QuestionOrderByRelevanceFieldEnum = {

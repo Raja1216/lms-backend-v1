@@ -51,6 +51,7 @@ model User {
   forumReactions      ForumReaction[]      @relation("UserForumReactions")
   payments            Payment[]            @relation("UserPayments")
   userEnrolledCourses UserEnrolledCourse[] @relation("UserEnrolledCourses")
+  xpEarned            UserXPEarned[]       @relation("userXpEarned")
 
   @@map("users")
 }
@@ -184,21 +185,23 @@ model SubjectChapter {
 }
 
 model Lesson {
-  id          Int               @id @default(autoincrement())
-  title       String
-  slug        String            @unique
-  description String            @db.Text
-  status      Boolean           @default(true)
-  topicName   String
-  duration    String?
-  videoUrl    String?
-  NoOfPages   Int?
-  type        LessonType        @default(video)
-  docUrl      String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  chapters    LessonToChapter[] @relation("LessonToChapters")
-  quizzes     LessonQuiz[]      @relation("LessonQuiz")
+  id           Int               @id @default(autoincrement())
+  title        String
+  slug         String            @unique
+  description  String            @db.Text
+  status       Boolean           @default(true)
+  topicName    String
+  duration     String?
+  videoUrl     String?
+  NoOfPages    Int?
+  noOfXpPoints Int               @default(0)
+  type         LessonType        @default(video)
+  docUrl       String?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  chapters     LessonToChapter[] @relation("LessonToChapters")
+  quizzes      LessonQuiz[]      @relation("LessonQuiz")
+  xpEarned     UserXPEarned[]    @relation("lessonXpEarned")
 
   @@map("lessons")
 }
@@ -215,19 +218,20 @@ model LessonToChapter {
   @@map("lesson_to_chapter")
 }
 
-model quiz {
-  id         Int           @id @default(autoincrement())
-  title      String
-  slug       String        @unique
-  totalMarks Int           @default(0) // calculated as sum of marks of all questions
-  passMarks  Int           @default(0) //auto calculated as 40% of total marks
-  timeLimit  Decimal       @db.Decimal(10, 2) // in minutes
-  questions  Question[]    @relation("quizQuestions")
-  status     Boolean       @default(true)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  attempts   QuizAttempt[] @relation("QuizAttempts")
-  lessons    LessonQuiz[]  @relation("QuizLesson")
+model Quiz {
+  id           Int            @id @default(autoincrement())
+  title        String
+  slug         String         @unique
+  totalMarks   Int            @default(0) // calculated as sum of marks of all questions
+  passMarks    Int            @default(0) //auto calculated as 40% of total marks
+  timeLimit    Decimal        @db.Decimal(10, 2) // in minutes
+  questions    Question[]     @relation("quizQuestions")
+  status       Boolean        @default(true)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  attempts     QuizAttempt[]  @relation("QuizAttempts")
+  lessons      LessonQuiz[]   @relation("QuizLesson")
+  userXPEarned UserXPEarned[] @relation("quizXpEarned")
 
   @@map("quizzes")
 }
@@ -239,7 +243,7 @@ model LessonQuiz {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   lesson    Lesson   @relation("LessonQuiz", fields: [lessonId], references: [id])
-  quiz      quiz     @relation("QuizLesson", fields: [quizId], references: [id])
+  quiz      Quiz     @relation("QuizLesson", fields: [quizId], references: [id])
 }
 
 model QuizAttempt {
@@ -256,7 +260,7 @@ model QuizAttempt {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  quiz    quiz              @relation("QuizAttempts", fields: [quizId], references: [id])
+  quiz    Quiz              @relation("QuizAttempts", fields: [quizId], references: [id])
   user    User              @relation("UserQuizAttempts", fields: [userId], references: [id])
   answers QuestionAttempt[] @relation("attemptedQuestions")
 
@@ -294,7 +298,7 @@ model Question {
   answer    String?           @db.Text
   createdAt DateTime          @default(now())
   updatedAt DateTime          @updatedAt
-  quiz      quiz              @relation("quizQuestions", fields: [quizId], references: [id])
+  quiz      Quiz              @relation("quizQuestions", fields: [quizId], references: [id])
   options   QuestionOption[]  @relation("questionOptions")
   attempts  QuestionAttempt[] @relation("QuestionAttempts")
 
@@ -423,4 +427,19 @@ model UserEnrolledCourse {
   payment    Payment  @relation("UserEnrolledCoursePayment", fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@map("user_enrolled_courses")
+}
+
+model UserXPEarned {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  xpPoints  Int      @default(0)
+  lessonId  Int?
+  quizId    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation("userXpEarned", fields: [userId], references: [id], onDelete: Cascade)
+  lesson    Lesson?  @relation("lessonXpEarned", fields: [lessonId], references: [id], onDelete: Cascade)
+  quiz      Quiz?    @relation("quizXpEarned", fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@map("user_xp_earneds")
 }
