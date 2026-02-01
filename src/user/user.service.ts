@@ -5,9 +5,14 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { User } from 'src/generated/prisma/browser';
+import { Course, User } from 'src/generated/prisma/browser';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
-
+interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  earnedAt: Date;
+}
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
@@ -302,5 +307,374 @@ export class UserService {
     });
 
     return updatedUser;
+  }
+
+  async getUserProfile(userId: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        uuid: true,
+        email: true,
+        name: true,
+        username: true,
+        classGrade: true,
+        dateOfBirth: true,
+        avatar: true,
+        about: true,
+        mobile: true,
+        mobile_prefix: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        roles: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        userEnrolledCourses: {
+          select: {
+            id: true,
+            courseId: true,
+            enrolledAt: true,
+            course: {
+              select: {
+                id: true,
+                title: true,
+                slug: true,
+              },
+            },
+          },
+        },
+        xpEarned: {
+          select: {
+            id: true,
+            xpPoints: true,
+            createdAt: true,
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+            quiz: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Calculate total XP and level
+    const totalXP = user.xpEarned.reduce((sum, xp) => sum + xp.xpPoints, 0);
+    const level = Math.floor(totalXP / 1000) + 1;
+
+    return {
+      ...user,
+      totalXP,
+      level,
+    };
+  }
+
+  async getUserLeaderboard(userId: number, courseId: number) {
+    const enrolledCourse = await this.prisma.userEnrolledCourse.findFirst({
+      where: {
+        userId,
+        courseId,
+      },
+    });
+
+    if (!enrolledCourse) {
+      throw new NotFoundException('User not enrolled in this course');
+    }
+
+    const course = await this.prisma.course.findUnique({
+      where: { id: courseId },
+      select: {
+        id: true,
+        title: true,
+      },
+    });
+
+    // Get all students in the course with their quiz performance
+    const studentsInCourse = await this.prisma.userEnrolledCourse.findMany({
+      where: { courseId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // Get quiz attempts for each student
+    const leaderboardData = await Promise.all(
+      studentsInCourse.map(async (enrollment) => {
+        const quizAttempts = await this.prisma.quizAttempt.findMany({
+          where: { userId: enrollment.user.id },
+        });
+
+        const totalScore = quizAttempts.reduce(
+          (sum, attempt) => sum + Number(attempt.obtainedMarks),
+          0,
+        );
+        const totalAttempts = quizAttempts.length;
+        const averageScore =
+          totalAttempts > 0 ? Math.round(totalScore / totalAttempts) : 0;
+
+        return {
+          userId: enrollment.user.id,
+          name: enrollment.user.name,
+          email: enrollment.user.email,
+          totalScore,
+          completedChapters: 0, // placeholder - would need to track lesson completion
+          averageTime: 0, // placeholder - would need to track time spent
+          averageScore,
+          totalAttempts,
+        };
+      }),
+    );
+
+    // Sort by score and assign ranks
+    const sorted = leaderboardData.sort((a, b) => b.totalScore - a.totalScore);
+    const rankedLeaderboard = sorted.map((student, index) => ({
+      ...student,
+      rank: index + 1,
+    }));
+
+    return {
+      courseId,
+      courseName: course?.title,
+      students: rankedLeaderboard,
+    };
+  }
+
+  async getUserPerformanceReport(userId: number, courseId?: number) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    let courses: Course[] = [];
+    if (courseId) {
+      const course = await this.prisma.course.findUnique({
+        where: { id: courseId },
+      });
+      if (course) {
+        courses = [course];
+      }
+    } else {
+      // Get all enrolled courses
+      const enrolledCourses = await this.prisma.userEnrolledCourse.findMany({
+        where: { userId },
+        include: {
+          course: true,
+        },
+      });
+      courses = enrolledCourses.map((ec) => ec.course);
+    }
+
+    const subjectReports = await Promise.all(
+      courses.flatMap(async (course) => {
+        const subjects = await this.prisma.subject.findMany({
+          include: {
+            chapters: {
+              include: {
+                chapter: {
+                  include: {
+                    lessons: {
+                      include: {
+                        lesson: {
+                          include: {
+                            quizzes: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        return subjects.map(async (subject) => {
+          const chapterReports = await Promise.all(
+            subject.chapters.map(async (sc) => {
+              const chapter = sc.chapter;
+              const lessons = chapter.lessons.map((lc) => lc.lesson);
+
+              // Get quiz attempts for lessons in this chapter
+              let totalCorrect = 0;
+              let totalAttempted = 0;
+              let timeSpent = 0;
+
+              for (const lesson of lessons) {
+                const quizzes = lesson.quizzes;
+                for (const quiz of quizzes) {
+                  const attempts = await this.prisma.quizAttempt.findMany({
+                    where: {
+                      userId,
+                      quizId: quiz.id,
+                    },
+                  });
+
+                  attempts.forEach((attempt) => {
+                    totalCorrect += attempt.correctAnswers;
+                    totalAttempted += attempt.totalQuestions;
+                    timeSpent += attempt.timeTaken;
+                  });
+                }
+              }
+
+              return {
+                chapterId: chapter.id,
+                chapterName: chapter.title,
+                timeSpent,
+                questionsAttempted: totalAttempted,
+                correctAnswers: totalCorrect,
+                difficultyBreakdown: {
+                  easy: { attempted: 0, correct: 0 },
+                  medium: { attempted: 0, correct: 0 },
+                  hard: { attempted: 0, correct: 0 },
+                },
+              };
+            }),
+          );
+
+          return {
+            subjectId: subject.id,
+            subjectName: subject.name,
+            averageDifficulty: 'medium',
+            totalTimeSpent: chapterReports.reduce(
+              (sum, cr) => sum + cr.timeSpent,
+              0,
+            ),
+            chapterReports: await Promise.all(chapterReports),
+          };
+        });
+      }),
+    );
+
+    const flattenedReports = await Promise.all(subjectReports.flat());
+
+    return {
+      userId,
+      courseId,
+      subjectReports: flattenedReports,
+      overallProgress: 50, // placeholder - calculate based on completed content
+    };
+  }
+
+  async getUserBadges(userId: number) {
+    // Mock badges based on XP and achievements
+    const user = await this.getUserProfile(userId);
+
+    const badges: Badge[] = [];
+
+    // Award badges based on XP
+    if (user.totalXP >= 100) {
+      badges.push({
+        id: 'first-steps',
+        name: 'First Steps',
+        description: 'Earned 100 XP',
+        earnedAt: user.createdAt,
+      });
+    }
+    if (user.totalXP >= 500) {
+      badges.push({
+        id: 'quick-learner',
+        name: 'Quick Learner',
+        description: 'Earned 500 XP',
+        earnedAt: new Date(),
+      });
+    }
+    if (user.totalXP >= 1000) {
+      badges.push({
+        id: 'week-warrior',
+        name: 'Week Warrior',
+        description: 'Earned 1000 XP',
+        earnedAt: new Date(),
+      });
+    }
+    if (user.totalXP >= 2000) {
+      badges.push({
+        id: 'chapter-master',
+        name: 'Chapter Master',
+        description: 'Earned 2000 XP',
+        earnedAt: new Date(),
+      });
+    }
+    if (user.level >= 5) {
+      badges.push({
+        id: 'test-ace',
+        name: 'Test Ace',
+        description: 'Reached Level 5',
+        earnedAt: new Date(),
+      });
+    }
+
+    // Get quiz attempts to count perfect scores
+    const quizAttempts = await this.prisma.quizAttempt.findMany({
+      where: { userId },
+    });
+
+    const perfectScores = quizAttempts.filter(
+      (attempt) => Number(attempt.obtainedMarks) === Number(attempt.totalMarks),
+    ).length;
+
+    if (perfectScores >= 3) {
+      badges.push({
+        id: 'perfect-score',
+        name: 'Perfect Score',
+        description: 'Achieved 3 perfect quiz scores',
+        earnedAt: new Date(),
+      });
+    }
+
+    return badges;
+  }
+
+  async getUserCertificates(userId: number) {
+    const enrolledCourses = await this.prisma.userEnrolledCourse.findMany({
+      where: { userId },
+      include: {
+        course: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+    });
+
+    // Mock certificates - in real app, would store actual completion status
+    const certificates = enrolledCourses
+      .filter((_, index) => index < 2) // Show first 2 as completed
+      .map((enrollment) => ({
+        id: `cert-${enrollment.id}`,
+        courseName: enrollment.course.title,
+        courseId: enrollment.course.id,
+        issuedAt: enrollment.enrolledAt,
+      }));
+
+    return certificates;
   }
 }

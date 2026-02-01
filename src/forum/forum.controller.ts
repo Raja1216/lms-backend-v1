@@ -282,7 +282,7 @@ export class ForumController {
       );
     }
   }
-  @Post('discussions/:discussionId/react-unreact/:forumId')
+  @Post('discussions/react-unreact')
   async reactUnreactDiscussion(
     @Req() req: { user: User },
     @Res() res: Response,
