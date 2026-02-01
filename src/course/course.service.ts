@@ -232,7 +232,15 @@ export class CourseService {
 
     return updatedCourse;
   }
-  async findCourseBySlug(slug: string) {
+  async findCourseBySlug(slug: string, user: User) {
+    const isEnrolled = await this.prisma.userEnrolledCourse.findFirst({
+      where: {
+        userId: user.id,
+        course: {
+          slug: slug,
+        },
+      },
+    });
     const course = await this.prisma.course.findUnique({
       where: { slug },
       include: {
@@ -261,6 +269,10 @@ export class CourseService {
         },
       },
     });
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
+    course['isEnrolled'] = isEnrolled ? true : false;
     return course;
   }
   async remove(id: number) {

@@ -215,9 +215,10 @@ export class CourseController {
     @Param('slug') slug: string,
     @Next() next: NextFunction,
     @Res() res: Response,
+    @Req() req: {user: User},
   ) {
     try {
-      const result = await this.courseService.findCourseBySlug(slug);
+      const result = await this.courseService.findCourseBySlug(slug, req.user);
       return successResponse(
         res,
         200,
