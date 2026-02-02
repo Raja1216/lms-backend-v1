@@ -66,15 +66,17 @@ export class CourseService {
     const { page = 1, limit = 10, keyword = null } = paginationDto;
     console.log('keyword', keyword);
     const skip = (page - 1) * limit;
-    const whereClause = keyword
-      ? {
-          OR: [
-            { title: { contains: keyword } },
-            { slug: { contains: keyword } },
-            { description: { contains: keyword } },
-          ],
-        }
-      : {};
+    const whereClause: any = {
+      status: true,
+    };
+
+    if (keyword) {
+      whereClause.OR = [
+        { title: { contains: keyword, mode: 'insensitive' } },
+        { slug: { contains: keyword, mode: 'insensitive' } },
+        { description: { contains: keyword, mode: 'insensitive' } },
+      ];
+    }
     const courses = await this.prisma.course.findMany({
       where: whereClause,
 
