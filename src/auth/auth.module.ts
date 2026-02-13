@@ -1,5 +1,5 @@
 // src/auth/auth.module.ts
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
@@ -19,7 +19,7 @@ import { PorfileModule } from './porfile/porfile.module';
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: '30d' },
     }),
-    UserModule,
+    forwardRef(() => UserModule),
     OtpModule,
     PorfileModule,
   ],
