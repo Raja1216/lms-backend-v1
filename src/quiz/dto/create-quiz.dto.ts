@@ -1,15 +1,9 @@
-import { IsInt, IsOptional, IsString, IsNotEmpty } from 'class-validator';
+import { IsString, IsOptional, IsInt } from 'class-validator';
 
 export class CreateQuizDto {
   @IsString()
-  @IsNotEmpty()
   title: string;
 
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  // Attach quiz to ONE level only
   @IsOptional()
   @IsInt()
   courseId?: number;
