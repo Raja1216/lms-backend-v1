@@ -126,7 +126,7 @@ export class SubjectController {
       );
     }
   }
-  @Get(':slug')
+  @Get('slug/:slug')
   async findOneBySlug(
     @Param('slug') slug: string,
     @Res() res: Response,

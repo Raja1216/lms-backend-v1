@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -7,8 +11,20 @@ import { QuestionType } from 'src/generated/prisma/enums';
 @Injectable()
 export class QuestionService {
   constructor(private prisma: PrismaService) {}
+
   async create(createQuestionDto: CreateQuestionDto) {
     const { quizId, questions } = createQuestionDto;
+
+    // ✅ Validation for TRUE/FALSE
+    for (const q of questions) {
+      if (q.type === QuestionType.TRUEORFALSE) {
+        if (!q.options || q.options.length !== 2) {
+          throw new BadRequestException(
+            'TRUE/FALSE questions must have exactly 2 options',
+          );
+        }
+      }
+    }
 
     const result = await this.prisma.$transaction(
       questions.map((q) =>
@@ -19,12 +35,14 @@ export class QuestionService {
             marks: q.marks,
             type: q.type,
             answer:
-              q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
+              q.type === QuestionType.MCQ ||
+              q.type === QuestionType.TRUEORFALSE
                 ? null
                 : q.answer,
-
+            duration: q.duration,
             options:
-              q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
+              q.type === QuestionType.MCQ ||
+              q.type === QuestionType.TRUEORFALSE
                 ? {
                     create: q.options?.map((opt) => ({
                       option: opt.option,
@@ -32,7 +50,6 @@ export class QuestionService {
                     })),
                   }
                 : undefined,
-            duration: q.duration,
           },
           include: {
             options: true,
@@ -40,34 +57,54 @@ export class QuestionService {
         }),
       ),
     );
+
     await this.updateQuizMarks(quizId);
     return result;
   }
 
-  findAll() {
-    return `This action returns all question`;
-  }
+  // ✅ FIXED
+  async findAll(query: any) {
+    const { quizId, page = 1, limit = 20 } = query;
 
-  async findOne(id: number) {
-    return await this.prisma.question.findUnique({
-      where: { id },
+    return this.prisma.question.findMany({
+      where: {
+        quizId: quizId ? +quizId : undefined,
+        status: true,
+      },
       include: {
-        options: {
-          select: {
-            option: true,
-          },
-        },
+        options: true,
         quiz: true,
+      },
+      skip: (page - 1) * limit,
+      take: +limit,
+      orderBy: {
+        createdAt: 'desc',
       },
     });
   }
 
-  async update(id: number, updateQuestionDto: UpdateQuestionDto) {
-    const existinQuestion = await this.findOne(id);
-    if (!existinQuestion) {
+  async findOne(id: number) {
+    const question = await this.prisma.question.findUnique({
+      where: { id },
+      include: {
+        options: true,
+        quiz: true,
+      },
+    });
+
+    if (!question) {
       throw new NotFoundException(`Question with ID ${id} not found`);
     }
-    const { questionText, type, marks, options, answer } = updateQuestionDto;
+
+    return question;
+  }
+
+  async update(id: number, updateQuestionDto: UpdateQuestionDto) {
+    const existing = await this.findOne(id);
+
+    const { questionText, type, marks, options, answer, duration } =
+      updateQuestionDto;
+
     const updatedQuestion = await this.prisma.question.update({
       where: { id },
       data: {
@@ -75,6 +112,7 @@ export class QuestionService {
         type,
         marks,
         answer,
+        duration,
         options: options
           ? {
               deleteMany: {},
@@ -84,64 +122,56 @@ export class QuestionService {
               })),
             }
           : undefined,
-        duration: updateQuestionDto.duration,
       },
       include: {
         options: true,
       },
     });
-    await this.updateQuizMarks(updatedQuestion.quizId);
+
+    await this.updateQuizMarks(existing.quizId);
     return updatedQuestion;
   }
 
   async updateStatus(id: number) {
-    const existingQuestion = await this.findOne(id);
-    if (!existingQuestion) {
-      throw new NotFoundException(`Question with ID ${id} not found`);
-    }
-    const updatedQuestion = await this.prisma.question.update({
+    const existing = await this.findOne(id);
+
+    const updated = await this.prisma.question.update({
       where: { id },
-      data: {
-        status: !existingQuestion.status,
-      },
+      data: { status: !existing.status },
     });
-    await this.updateQuizMarks(existingQuestion.quizId);
-    return updatedQuestion;
+
+    await this.updateQuizMarks(existing.quizId);
+    return updated;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} question`;
-  }
-  private async updateQuizMarks(quizId: number): Promise<void> {
-    // Sum marks of all active questions for this quiz
-    const aggregate = await this.prisma.question.aggregate({
-      where: {
-        quizId,
-        status: true,
-      },
-      _sum: {
-        marks: true,
-      },
+  // ✅ FIXED: real soft delete
+  async remove(id: number) {
+    const existing = await this.findOne(id);
+
+    const updated = await this.prisma.question.update({
+      where: { id },
+      data: { status: false },
     });
-    const aggregateDuration = await this.prisma.question.aggregate({
-      where: {
-        quizId,
-        status: true,
-      },
-      _sum: {
-        duration: true,
-      },
+
+    await this.updateQuizMarks(existing.quizId);
+    return updated;
+  }
+
+  private async updateQuizMarks(quizId: number): Promise<void> {
+    const aggregate = await this.prisma.question.aggregate({
+      where: { quizId, status: true },
+      _sum: { marks: true, duration: true },
     });
 
     const totalMarks = aggregate._sum.marks ?? 0;
-    const passMarks = Math.ceil(totalMarks * 0.4); // 40%
+    const passMarks = Math.ceil(totalMarks * 0.4);
 
     await this.prisma.quiz.update({
       where: { id: quizId },
       data: {
         totalMarks,
         passMarks,
-        timeLimit: aggregateDuration._sum.duration ?? 0,
+        timeLimit: aggregate._sum.duration ?? 0,
       },
     });
   }

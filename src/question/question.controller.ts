@@ -10,6 +10,7 @@ import {
   Next,
   NotFoundException,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { QuestionService } from './question.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
@@ -23,7 +24,7 @@ import { Permissions } from 'src/guard/premission.decorator';
 import { QuizService } from 'src/quiz/quiz.service';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@Controller('question')
+@Controller('questions') // ✅ plural (recommended)
 export class QuestionController {
   constructor(
     private readonly questionService: QuestionService,
@@ -41,8 +42,9 @@ export class QuestionController {
       const { quizId } = createQuestionDto;
       const quiz = await this.quizService.findOne(quizId);
       if (!quiz) {
-        throw new NotFoundException(`Quiz not found`);
+        throw new NotFoundException('Quiz not found');
       }
+
       const question = await this.questionService.create(createQuestionDto);
       return successResponse(
         res,
@@ -55,15 +57,36 @@ export class QuestionController {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
-          error.status ? error.status : 500,
+          error.status || 500,
         ),
       );
     }
   }
 
+  // ✅ FIXED: real implementation with pagination
   @Get()
-  findAll() {
-    return this.questionService.findAll();
+  async findAll(
+    @Query() query: any,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.questionService.findAll(query);
+      return successResponse(
+        res,
+        200,
+        'Questions fetched successfully',
+        result,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status || 500,
+        ),
+      );
+    }
   }
 
   @Permissions('read-question')
@@ -78,7 +101,7 @@ export class QuestionController {
       return successResponse(
         res,
         200,
-        'question updated Successfully',
+        'Question fetched successfully',
         question,
         null,
       );
@@ -86,7 +109,34 @@ export class QuestionController {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
-          error.status ? error.status : 500,
+          error.status || 500,
+        ),
+      );
+    }
+  }
+
+  @Permissions('update-question')
+  @Patch(':id')
+  async update(
+    @Param('id') id: string,
+    @Body() updateQuestionDto: UpdateQuestionDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.questionService.update(+id, updateQuestionDto);
+      return successResponse(
+        res,
+        200,
+        'Question updated successfully',
+        result,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status || 500,
         ),
       );
     }
@@ -104,7 +154,7 @@ export class QuestionController {
       return successResponse(
         res,
         200,
-        'Question status updated Successfully',
+        'Question status updated successfully',
         updatedQuestion,
         null,
       );
@@ -112,21 +162,47 @@ export class QuestionController {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
-          error.status ? error.status : 500,
+          error.status || 500,
         ),
       );
     }
   }
-  @Patch(':id')
-  update(
+
+  // ✅ FIXED: soft delete
+  @Delete(':id')
+  async remove(
     @Param('id') id: string,
-    @Body() updateQuestionDto: UpdateQuestionDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
   ) {
-    return this.questionService.update(+id, updateQuestionDto);
+    try {
+      const result = await this.questionService.remove(+id);
+      return successResponse(
+        res,
+        200,
+        'Question deleted successfully',
+        result,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status || 500,
+        ),
+      );
+    }
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.questionService.remove(+id);
+  // ✅ Stub for future Excel upload
+  @Post('bulk-upload')
+  async bulkUpload(@Res() res: Response) {
+    return successResponse(
+      res,
+      200,
+      'Bulk upload endpoint ready',
+      [],
+      null,
+    );
   }
 }

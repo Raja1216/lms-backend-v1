@@ -1,145 +1,173 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateChapterDto } from './dto/create-chapter.dto';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { generateSlug } from 'src/shared/generate-slug';
-import { User } from 'src/generated/prisma/browser';
+import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
+
 @Injectable()
 export class ChapterService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createChapterDto: CreateChapterDto) {
-    const { title, description, subjectIds } = createChapterDto;
-    const chapter = await this.prisma.chapter.create({
-      data: {
-        title,
-        description,
-        slug: generateSlug(title),
-      },
+  async create(dto: CreateChapterDto) {
+    const subject = await this.prisma.subject.findFirst({
+      where: { id: dto.subjectId, status: true },
     });
-    const subjectChapter: any[] = [];
-    subjectIds.forEach((element) => {
-      const chapterSubject = this.prisma.subjectChapter.create({
-        data: {
-          chapterId: chapter.id,
-          subjectId: element,
+
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
+    // Validate module if provided
+    if (dto.moduleId) {
+      const module = await this.prisma.module.findFirst({
+        where: {
+          id: dto.moduleId,
+          subjectId: dto.subjectId,
+          status: true,
         },
       });
-      subjectChapter.push(chapterSubject);
-    });
-    return { ...chapter, subjectChapters: await Promise.all(subjectChapter) };
-  }
 
-  findAll() {
-    return `This action returns all chapter`;
+      if (!module) {
+        throw new BadRequestException(
+          'Module does not belong to the given subject',
+        );
+      }
+    }
+
+    const slug = await generateUniqueCourseSlug(this.prisma, dto.title);
+
+    const chapter = await this.prisma.chapter.create({
+      data: {
+        title: dto.title,
+        description: dto.description ?? '',
+        slug,
+      },
+    });
+
+    // Attach to subject (always)
+    await this.prisma.subjectChapter.create({
+      data: {
+        subjectId: dto.subjectId,
+        chapterId: chapter.id,
+      },
+    });
+
+    // Attach to module (optional)
+    if (dto.moduleId) {
+      await this.prisma.moduleChapter.create({
+        data: {
+          moduleId: dto.moduleId,
+          chapterId: chapter.id,
+        },
+      });
+    }
+
+    return this.findOne(chapter.id);
   }
 
   async findOne(id: number) {
-    return await this.prisma.chapter.findUnique({
-      where: { id },
-      include: {
-        lessons: {
-          include: {
-            lesson: true,
-          },
-        },
-      },
-    });
-  }
-
-  async findBySlug(slug: string, user: User) {
-    const chapter = await this.prisma.chapter.findUnique({
-      where: { slug },
-      include: {
-        lessons: {
-          include: {
-            lesson: true,
-          },
-        },
-      },
-    });
-    if (!chapter) {
-      return null;
-    }
-    //add isComplete flag on lessons based on user progress
-    const completedLessons = await this.prisma.userXPEarned.findMany({
-      where: {
-        userId: user.id,
-        lessonId: { in: chapter.lessons.map((l) => l.lessonId) },
-      },
-    });
-    const mappedChapters = chapter.lessons.map((lesson) => {
-      const isComplete = completedLessons.some(
-        (cl) => cl.lessonId === lesson.lessonId,
-      );
-      return {
-        ...lesson,
-        isComplete,
-      };
-    });
-    return {
-      ...chapter,
-      lessons: mappedChapters,
-    };
-  }
-
-  async update(id: number, updateChapterDto: UpdateChapterDto) {
-    const { title, description, subjectIds } = updateChapterDto;
-    const existingChapter = await this.findOne(id);
-    if (!existingChapter) {
-      throw new NotFoundException('Chapter not found');
-    }
-    const chapter = await this.prisma.chapter.update({
-      where: { id },
-      data: {
-        title,
-        description,
-        slug: title ? generateSlug(title) : existingChapter.slug,
-      },
-    });
-    const chapterSubject: any[] = [];
-    if (subjectIds && subjectIds.length > 0) {
-      await this.prisma.subjectChapter.deleteMany({
-        where: { chapterId: id },
-      });
-      subjectIds.forEach((element) => {
-        const chapterSubjectCreate = this.prisma.subjectChapter.create({
-          data: {
-            chapterId: chapter.id,
-            subjectId: element,
-          },
-        });
-        chapterSubject.push(chapterSubjectCreate);
-      });
-    }
-    return { ...chapter, subjectChapters: await Promise.all(chapterSubject) };
-  }
-
-  async findChapterByTitle(title: string, id?: number): Promise<Boolean> {
-    const whereCondition: any = { title };
-    if (id) {
-      whereCondition.id = { not: id };
-    }
     const chapter = await this.prisma.chapter.findFirst({
-      where: whereCondition,
+      where: { id, status: true },
+      include: {
+        subjects: {
+          include: {
+            subject: true,
+          },
+        },
+        modules: {
+          include: {
+            module: true,
+          },
+        },
+      },
     });
-    return !!chapter;
-  }
 
-  async updateStatus(id: number) {
-    const existingChapter = await this.findOne(id);
-    if (!existingChapter) {
+    if (!chapter) {
       throw new NotFoundException('Chapter not found');
     }
-    return await this.prisma.chapter.update({
-      where: { id },
-      data: {
-        status: !existingChapter.status,
+
+    return chapter;
+  }
+
+  async findBySlug(slug: string) {
+    const chapter = await this.prisma.chapter.findFirst({
+      where: { slug, status: true },
+      include: {
+        subjects: {
+          include: {
+            subject: true,
+          },
+        },
+        modules: {
+          include: {
+            module: true,
+          },
+        },
+      },
+    });
+
+    if (!chapter) {
+      throw new NotFoundException('Chapter not found');
+    }
+
+    return chapter;
+  }
+
+  async findBySubject(subjectId: number) {
+    return this.prisma.subjectChapter.findMany({
+      where: {
+        subjectId,
+        chapter: { status: true },
+      },
+      include: {
+        chapter: true,
       },
     });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} chapter`;
+  async findByModule(moduleId: number) {
+    return this.prisma.moduleChapter.findMany({
+      where: {
+        moduleId,
+        chapter: { status: true },
+      },
+      include: {
+        chapter: true,
+      },
+    });
+  }
+
+  async update(id: number, dto: UpdateChapterDto) {
+    const existing = await this.findOne(id);
+
+    let slug = existing.slug;
+    if (dto.title && dto.title !== existing.title) {
+      slug = await generateUniqueCourseSlug(this.prisma, dto.title, id);
+    }
+
+    await this.prisma.chapter.update({
+      where: { id },
+      data: {
+        title: dto.title,
+        description: dto.description,
+        slug,
+      },
+    });
+
+    return this.findOne(id);
+  }
+
+  // ✅ SOFT DELETE
+  async remove(id: number) {
+    await this.findOne(id);
+
+    return this.prisma.chapter.update({
+      where: { id },
+      data: { status: false },
+    });
   }
 }

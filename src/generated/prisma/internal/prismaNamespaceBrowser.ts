@@ -61,6 +61,8 @@ export const ModelName = {
   CourseSubject: 'CourseSubject',
   Chapter: 'Chapter',
   SubjectChapter: 'SubjectChapter',
+  Module: 'Module',
+  ModuleChapter: 'ModuleChapter',
   Lesson: 'Lesson',
   LessonToChapter: 'LessonToChapter',
   Quiz: 'Quiz',
@@ -76,7 +78,11 @@ export const ModelName = {
   ForumReaction: 'ForumReaction',
   Payment: 'Payment',
   UserEnrolledCourse: 'UserEnrolledCourse',
-  UserXPEarned: 'UserXPEarned'
+  UserXPEarned: 'UserXPEarned',
+  CourseQuiz: 'CourseQuiz',
+  SubjectQuiz: 'SubjectQuiz',
+  ModuleQuiz: 'ModuleQuiz',
+  ChapterQuiz: 'ChapterQuiz'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -233,6 +239,31 @@ export const SubjectChapterScalarFieldEnum = {
 } as const
 
 export type SubjectChapterScalarFieldEnum = (typeof SubjectChapterScalarFieldEnum)[keyof typeof SubjectChapterScalarFieldEnum]
+
+
+export const ModuleScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  slug: 'slug',
+  description: 'description',
+  status: 'status',
+  subjectId: 'subjectId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ModuleScalarFieldEnum = (typeof ModuleScalarFieldEnum)[keyof typeof ModuleScalarFieldEnum]
+
+
+export const ModuleChapterScalarFieldEnum = {
+  id: 'id',
+  moduleId: 'moduleId',
+  chapterId: 'chapterId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ModuleChapterScalarFieldEnum = (typeof ModuleChapterScalarFieldEnum)[keyof typeof ModuleChapterScalarFieldEnum]
 
 
 export const LessonScalarFieldEnum = {
@@ -465,6 +496,46 @@ export const UserXPEarnedScalarFieldEnum = {
 export type UserXPEarnedScalarFieldEnum = (typeof UserXPEarnedScalarFieldEnum)[keyof typeof UserXPEarnedScalarFieldEnum]
 
 
+export const CourseQuizScalarFieldEnum = {
+  id: 'id',
+  courseId: 'courseId',
+  quizId: 'quizId',
+  createdAt: 'createdAt'
+} as const
+
+export type CourseQuizScalarFieldEnum = (typeof CourseQuizScalarFieldEnum)[keyof typeof CourseQuizScalarFieldEnum]
+
+
+export const SubjectQuizScalarFieldEnum = {
+  id: 'id',
+  subjectId: 'subjectId',
+  quizId: 'quizId',
+  createdAt: 'createdAt'
+} as const
+
+export type SubjectQuizScalarFieldEnum = (typeof SubjectQuizScalarFieldEnum)[keyof typeof SubjectQuizScalarFieldEnum]
+
+
+export const ModuleQuizScalarFieldEnum = {
+  id: 'id',
+  moduleId: 'moduleId',
+  quizId: 'quizId',
+  createdAt: 'createdAt'
+} as const
+
+export type ModuleQuizScalarFieldEnum = (typeof ModuleQuizScalarFieldEnum)[keyof typeof ModuleQuizScalarFieldEnum]
+
+
+export const ChapterQuizScalarFieldEnum = {
+  id: 'id',
+  chapterId: 'chapterId',
+  quizId: 'quizId',
+  createdAt: 'createdAt'
+} as const
+
+export type ChapterQuizScalarFieldEnum = (typeof ChapterQuizScalarFieldEnum)[keyof typeof ChapterQuizScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -561,6 +632,15 @@ export const ChapterOrderByRelevanceFieldEnum = {
 } as const
 
 export type ChapterOrderByRelevanceFieldEnum = (typeof ChapterOrderByRelevanceFieldEnum)[keyof typeof ChapterOrderByRelevanceFieldEnum]
+
+
+export const ModuleOrderByRelevanceFieldEnum = {
+  title: 'title',
+  slug: 'slug',
+  description: 'description'
+} as const
+
+export type ModuleOrderByRelevanceFieldEnum = (typeof ModuleOrderByRelevanceFieldEnum)[keyof typeof ModuleOrderByRelevanceFieldEnum]
 
 
 export const LessonOrderByRelevanceFieldEnum = {

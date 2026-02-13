@@ -17,6 +17,10 @@ import { UploadCsvModule } from './upload-csv/upload-csv.module';
 import { PortfolioModule } from './auth/portfolio/portfolio.module';
 import { ForumModule } from './forum/forum.module';
 
+import { UploadModule } from './upload/upload.module';
+import { ModuleModule } from './module/module.module';
+
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -35,6 +39,8 @@ import { ForumModule } from './forum/forum.module';
     UploadCsvModule,
     PortfolioModule,
     ForumModule,
+    UploadModule,
+    ModuleModule,
   ],
 })
 export class AppModule {}

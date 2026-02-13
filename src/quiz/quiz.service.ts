@@ -3,398 +3,245 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { generateSlug } from 'src/shared/generate-slug';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
+import { generateSlug } from 'src/shared/generate-slug';
 
 @Injectable()
 export class QuizService {
   constructor(private prisma: PrismaService) {}
 
+  /* ================= CREATE ================= */
+
   async create(createQuizDto: CreateQuizDto) {
-    const { title, lessonIds } = createQuizDto;
-    const slug = generateSlug(title);
+    const {
+      title,
+      courseId,
+      subjectId,
+      moduleId,
+      chapterId,
+      lessonId,
+    } = createQuizDto;
+
+    const attachIds = [courseId, subjectId, moduleId, chapterId, lessonId]
+      .filter((v) => v !== undefined);
+
+    if (attachIds.length !== 1) {
+      throw new BadRequestException(
+        'Quiz must be attached to exactly ONE level',
+      );
+    }
+
     const quiz = await this.prisma.quiz.create({
       data: {
         title,
+        slug: generateSlug(title),
         timeLimit: 0,
-        slug,
       },
     });
-    const lessonQuizs: any[] = [];
-    // Associate lessons with the quiz
-    for (const lessonId of lessonIds) {
-      const lessonQuiz = await this.prisma.lessonQuiz.create({
-        data: {
-          lessonId,
-          quizId: quiz.id,
-        },
+
+    if (courseId) {
+      await this.prisma.courseQuiz.create({
+        data: { courseId, quizId: quiz.id },
       });
-      lessonQuizs.push(lessonQuiz);
     }
-    return { ...quiz, lessons: lessonQuizs };
+
+    if (subjectId) {
+      await this.prisma.subjectQuiz.create({
+        data: { subjectId, quizId: quiz.id },
+      });
+    }
+
+    if (moduleId) {
+      await this.prisma.moduleQuiz.create({
+        data: { moduleId, quizId: quiz.id },
+      });
+    }
+
+    if (chapterId) {
+      await this.prisma.chapterQuiz.create({
+        data: { chapterId, quizId: quiz.id },
+      });
+    }
+
+    if (lessonId) {
+      await this.prisma.lessonQuiz.create({
+        data: { lessonId, quizId: quiz.id },
+      });
+    }
+
+    return quiz;
   }
 
-  findAll() {
-    return `This action returns all quiz`;
-  }
+  /* ================= READ ================= */
 
   async findOne(id: number) {
-    return await this.prisma.quiz.findUnique({
+    return this.prisma.quiz.findUnique({
       where: { id },
       include: {
         questions: {
           where: { status: true },
-          select: {
-            id: true,
-            question: true,
-            options: {
-              select: {
-                option: true,
-              },
-            },
-            type: true,
-            marks: true,
-          },
+          include: { options: true },
         },
       },
     });
   }
 
   async findBySlug(slug: string) {
-    return await this.prisma.quiz.findUnique({
+    return this.prisma.quiz.findUnique({
       where: { slug },
       include: {
         questions: {
           where: { status: true },
-          select: {
-            id: true,
-            question: true,
-            options: {
-              select: {
-                option: true,
-              },
-            },
-            type: true,
-            marks: true,
-          },
+          include: { options: true },
         },
       },
     });
   }
 
-  async update(id: number, updateQuizDto: UpdateQuizDto) {
-    const existingQuiz = await this.findOne(id);
-    if (!existingQuiz) {
-      throw new NotFoundException(`Quiz with ID ${id} not found`);
-    }
-    const { title, lessonIds } = updateQuizDto;
-    const slug = title ? generateSlug(title) : existingQuiz.slug;
+  /* ================= UPDATE ================= */
 
-    const updatedQuiz = await this.prisma.quiz.update({
+  async update(id: number, updateQuizDto: UpdateQuizDto) {
+    const quiz = await this.prisma.quiz.findUnique({ where: { id } });
+    if (!quiz) throw new NotFoundException('Quiz not found');
+
+    return this.prisma.quiz.update({
       where: { id },
       data: {
-        title: title ?? existingQuiz.title,
-        slug,
+        title: updateQuizDto.title ?? quiz.title,
+        slug: updateQuizDto.title
+          ? generateSlug(updateQuizDto.title)
+          : quiz.slug,
       },
     });
-    const lessonQuizs: any[] = [];
-
-    if (lessonIds) {
-      // Remove existing associations
-      await this.prisma.lessonQuiz.deleteMany({
-        where: { quizId: id },
-      });
-
-      // Create new associations
-      for (const lessonId of lessonIds) {
-        const lessonQuizes = await this.prisma.lessonQuiz.create({
-          data: {
-            lessonId,
-            quizId: id,
-          },
-        });
-        lessonQuizs.push(lessonQuizes);
-      }
-    }
-
-    return { ...updatedQuiz, lessons: lessonQuizs };
   }
 
   async updateStatus(id: number) {
-    const existingQuiz = await this.findOne(id);
-    if (!existingQuiz) {
-      throw new NotFoundException('Quiz Not Found');
-    }
-    return await this.prisma.quiz.update({
+    const quiz = await this.prisma.quiz.findUnique({ where: { id } });
+    if (!quiz) throw new NotFoundException('Quiz not found');
+
+    return this.prisma.quiz.update({
       where: { id },
-      data: {
-        status: !existingQuiz.status,
-      },
+      data: { status: !quiz.status },
     });
   }
 
+  /* ================= SUBMIT ================= */
+
   async submitQuiz(userId: number, quizId: number, submitData: SubmitQuizDto) {
-    // Fetch quiz with questions and correct answers
-    const quiz = await this.prisma.quiz.findUnique({
-      where: { id: quizId },
-      include: {
-        questions: {
-          include: {
-            options: true,
-          },
-        },
+
+    const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
+      where: {
+        quizId,
+        userId,
       },
     });
 
-    if (!quiz) {
-      throw new NotFoundException('Quiz not found');
+    if (alreadyAttempted) {
+      throw new BadRequestException('Quiz already attempted');
     }
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id: quizId },
+      include: {
+        questions: { include: { options: true } },
+      },
+    });
 
-    // Validate all questions are answered
-    const answeredQuestionIds = submitData.answers.map((a) => a.questionId);
-    const allQuestionIds = quiz.questions.map((q) => q.id);
+    if (!quiz) throw new NotFoundException('Quiz not found');
 
-    // const missingQuestions = allQuestionIds.filter(
-    //   (id) => !answeredQuestionIds.includes(id),
-    // );
-
-    // if (missingQuestions.length > 0) {
-    //   throw new BadRequestException(
-    //     `Missing answers for questions: ${missingQuestions.join(', ')}`,
-    //   );
-    // }
-
-    let correctAnswers = 0;
     let obtainedMarks = 0;
+    let correctAnswers = 0;
 
-    // Grade each answer
-    const questionAttempts = submitData.answers.map((userAnswer) => {
-      const question = quiz.questions.find(
-        (q) => q.id === userAnswer.questionId,
-      );
+    const answers = submitData.answers.map((a) => {
+      const q = quiz.questions.find((x) => x.id === a.questionId);
+      if (!q) throw new NotFoundException('Invalid question');
 
-      if (!question) {
-        throw new NotFoundException(
-          `Question ${userAnswer.questionId} not found`,
-        );
-      }
+      const correct = this.gradeAnswer(q, a.answer).isCorrect;
 
-      const result = this.gradeAnswer(question, userAnswer.answer);
-
-      if (result.isCorrect) {
+      if (correct) {
+        obtainedMarks += Number(q.marks);
         correctAnswers++;
-        obtainedMarks += Number(question.marks);
       }
 
       return {
-        questionId: question.id,
-        obtainedMarks: result.isCorrect ? Number(question.marks) : 0,
-        totalMarks: Number(question.marks),
-        isCorrect: result.isCorrect,
+        questionId: q.id,
+        obtainedMarks: correct ? Number(q.marks) : 0,
+        totalMarks: Number(q.marks),
+        isCorrect: correct,
       };
     });
 
-    // Create quiz attempt
-    const quizAttempt = await this.prisma.quizAttempt.create({
+    const attempt = await this.prisma.quizAttempt.create({
       data: {
         quizId,
         userId,
         obtainedMarks,
-        totalMarks: Number(quiz.totalMarks),
+        totalMarks: quiz.totalMarks,
         correctAnswers,
         totalQuestions: quiz.questions.length,
-        timeTaken: submitData.timeTaken || 0,
-        answers: {
-          create: questionAttempts,
-        },
+        timeTaken: submitData.timeTaken ?? 0,
+        answers: { create: answers },
       },
-      include: {
-        answers: {
-          include: {
-            question: {
-              include: {
-                options: true,
-              },
-            },
-          },
-        },
-      },
+      include: { answers: true },
     });
 
-    const passed = obtainedMarks >= Number(quiz.passMarks);
-    // If quiz passed, try awarding lesson XP
-    if (passed) {
-      // Find lesson connected to this quiz
-      const lesson = await this.prisma.lesson.findFirst({
+    /* 🎯 XP ONLY IF QUIZ IS ATTACHED TO LESSON */
+    const lessonQuiz = await this.prisma.lessonQuiz.findFirst({
+      where: { quizId },
+      include: { lesson: true },
+    });
+
+    if (lessonQuiz && obtainedMarks >= quiz.passMarks) {
+      const exists = await this.prisma.userXPEarned.findFirst({
         where: {
-          quizzes: {
-            some: {
-              quizId: quizId,
-            },
-          },
-        },
-        select: {
-          id: true,
-          noOfXpPoints: true,
+          userId,
+          lessonId: lessonQuiz.lessonId,
         },
       });
 
-      if (lesson) {
-        // Check if lesson XP already earned
-        const lessonXpAlreadyEarned = await this.prisma.userXPEarned.findFirst({
-          where: {
+      if (!exists) {
+        await this.prisma.userXPEarned.create({
+          data: {
             userId,
-            lessonId: lesson.id,
+            lessonId: lessonQuiz.lessonId,
+            quizId,
+            xpPoints: lessonQuiz.lesson.noOfXpPoints,
           },
         });
-
-        if (!lessonXpAlreadyEarned) {
-          // Award lesson XP
-          await this.prisma.$transaction([
-            this.prisma.userXPEarned.create({
-              data: {
-                userId,
-                lessonId: lesson.id,
-                quizId: quizId,
-                xpPoints: lesson.noOfXpPoints,
-              },
-            }),
-          ]);
-        }
       }
     }
-
+    const percentage =
+      quiz.totalMarks > 0
+      ? (obtainedMarks / quiz.totalMarks) * 100
+      : 0;
     return {
-      attemptId: quizAttempt.id,
+      attemptId: attempt.id,
       obtainedMarks,
-      totalMarks: Number(quiz.totalMarks),
-      passMarks: Number(quiz.passMarks),
-      correctAnswers,
-      totalQuestions: quiz.questions.length,
-      percentage: (obtainedMarks / Number(quiz.totalMarks)) * 100,
-      passed,
-      timeTaken: quizAttempt.timeTaken,
-      answers: quizAttempt.answers.map((attempt) => ({
-        questionId: attempt.questionId,
-        question: attempt.question.question,
-        isCorrect: attempt.isCorrect,
-        obtainedMarks: Number(attempt.obtainedMarks),
-        totalMarks: Number(attempt.totalMarks),
-        correctAnswer: this.getCorrectAnswer(attempt.question),
-      })),
+      totalMarks: quiz.totalMarks,
+      passMarks: quiz.passMarks,
+      percentage: percentage,
+      passed: obtainedMarks >= quiz.passMarks,
     };
   }
 
-  private gradeAnswer(
-    question: any,
-    userAnswer: string | string[],
-  ): { isCorrect: boolean } {
-    switch (question.type) {
-      case 'MCQ':
-      case 'TRUEORFALSE':
-        const correctOption = question.options.find((opt) => opt.isCorrect);
-        return {
-          isCorrect: correctOption
-            ? correctOption.option === userAnswer
-            : false,
-        };
+  /* ================= HELPERS ================= */
 
-      case 'FILLINTHEBLANK':
-        // Case-insensitive comparison, trim whitespace
-        const correctAnswer = question.answer?.toLowerCase().trim();
-        const userAnswerStr = String(userAnswer).toLowerCase().trim();
-        return {
-          isCorrect: correctAnswer === userAnswerStr,
-        };
-
-      case 'SHORTANSWER':
-      case 'DESCRIPTIVE':
-        // For these types, you might want to implement more sophisticated grading
-        // For now, we'll do a simple keyword matching or mark for manual review
-        // You could integrate AI-based grading here
-        return { isCorrect: false }; // Requires manual grading
-
-      default:
-        return { isCorrect: false };
-    }
-  }
-
-  private getCorrectAnswer(question: any): string {
-    switch (question.type) {
-      case 'MCQ':
-      case 'TRUEORFALSE':
-        const correctOption = question.options.find((opt) => opt.isCorrect);
-        return correctOption?.option || 'N/A';
-
-      case 'FILLINTHEBLANK':
-      case 'SHORTANSWER':
-      case 'DESCRIPTIVE':
-        return question.answer || 'N/A';
-
-      default:
-        return 'N/A';
-    }
-  }
-
-  async getQuizAttempts(userId: number, quizId: number) {
-    return this.prisma.quizAttempt.findMany({
-      where: {
-        userId,
-        quizId,
-      },
-      include: {
-        answers: {
-          include: {
-            question: true,
-          },
-        },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
-  }
-
-  async getAttemptDetails(attemptId: number, userId: number) {
-    const attempt = await this.prisma.quizAttempt.findFirst({
-      where: {
-        id: attemptId,
-        userId,
-      },
-      include: {
-        quiz: true,
-        answers: {
-          include: {
-            question: {
-              include: {
-                options: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!attempt) {
-      throw new NotFoundException('Quiz attempt not found');
+  private gradeAnswer(question: any, userAnswer: string | string[]) {
+    if (question.type === 'MCQ' || question.type === 'TRUEORFALSE') {
+      const correct = question.options.find((o) => o.isCorrect);
+      return { isCorrect: correct?.option === userAnswer };
     }
 
-    return attempt;
-  }
-  remove(id: number) {
-    return `This action removes a #${id} quiz`;
-  }
+    if (question.type === 'FILLINTHEBLANK') {
+      return {
+        isCorrect:
+          question.answer?.toLowerCase().trim() ===
+          String(userAnswer).toLowerCase().trim(),
+      };
+    }
 
-  async findQuizByTitle(title: string, id?: number): Promise<boolean> {
-    const quiz = await this.prisma.quiz.findFirst({
-      where: {
-        title: title,
-        ...(id && { id: { not: id } }),
-      },
-    });
-    return !!quiz;
+    return { isCorrect: false };
   }
 }

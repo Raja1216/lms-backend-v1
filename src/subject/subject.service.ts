@@ -1,8 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { generateSlug } from 'src/shared/generate-slug';
+import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
 
 @Injectable()
 export class SubjectService {
@@ -10,62 +10,76 @@ export class SubjectService {
 
   async create(createSubjectDto: CreateSubjectDto) {
     const { name, description, courseIds } = createSubjectDto;
-    const slug = generateSlug(name);
+
+    const slug = await generateUniqueCourseSlug(this.prisma, name);
+
     const subject = await this.prisma.subject.create({
       data: {
         name,
         description,
         slug,
       },
-      include: {
-        courses: true,
-      },
     });
-    const courseSubject: any[] = [];
-    if (courseIds && courseIds.length > 0) {
-      const courses = await this.prisma.course.findMany({
-        where: {
-          id: { in: courseIds },
-        },
-      });
+
+    if (courseIds?.length) {
       await this.prisma.courseSubject.createMany({
-        data: courses.map((course) => ({
-          courseId: course.id,
+        data: courseIds.map((courseId) => ({
+          courseId,
           subjectId: subject.id,
         })),
       });
-      courseSubject.push(...courses);
     }
-    return { ...subject, courses: courseSubject };
+
+    return this.findOne(subject.id);
   }
 
   async subjectsByCourseId(courseId: number) {
-    const courseSubjects = await this.prisma.courseSubject.findMany({
-      where: { courseId },
-      include: { subject: true, course: true },
+    return this.prisma.courseSubject.findMany({
+      where: {
+        courseId,
+        subject: { status: true },
+      },
+      include: {
+        subject: true,
+      },
     });
-    return courseSubjects;
   }
 
-  findAll() {
-    return `This action returns all subject`;
-  }
-
-  async findOne(id: number) {
-    const subject = await this.prisma.subject.findUnique({
-      where: { id },
+  async findAll() {
+    return this.prisma.subject.findMany({
+      where: {
+        status: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
       include: {
         courses: {
           include: {
             course: {
-              include: {
-                teachers: {
-                  include: {
-                    teacher: true,
-                  },
-                },
+              select: {
+                id: true,
+                title: true,
+                slug: true,
               },
             },
+          },
+        },
+      },
+    });
+  }
+
+
+  async findOne(id: number) {
+    const subject = await this.prisma.subject.findFirst({
+      where: {
+        id,
+        status: true,
+      },
+      include: {
+        courses: {
+          include: {
+            course: true,
           },
         },
         chapters: {
@@ -75,24 +89,24 @@ export class SubjectService {
         },
       },
     });
+
+    if (!subject) {
+      throw new NotFoundException('Subject not found');
+    }
+
     return subject;
   }
 
   async findOneBySlug(slug: string) {
-    const subject = await this.prisma.subject.findUnique({
-      where: { slug },
+    const subject = await this.prisma.subject.findFirst({
+      where: {
+        slug,
+        status: true,
+      },
       include: {
         courses: {
           include: {
-            course: {
-              include: {
-                teachers: {
-                  include: {
-                    teacher: true,
-                  },
-                },
-              },
-            },
+            course: true,
           },
         },
         chapters: {
@@ -102,35 +116,38 @@ export class SubjectService {
         },
       },
     });
-    return subject;
-  }
-  async update(id: number, updateSubjectDto: UpdateSubjectDto) {
-    const { name, description, courseIds } = updateSubjectDto;
-    const existingSubject = await this.findOne(id);
-    if (!existingSubject) {
+
+    if (!subject) {
       throw new NotFoundException('Subject not found');
     }
-    let slug = existingSubject?.slug;
-    if (name && name !== existingSubject.name) {
-      slug = generateSlug(name);
+
+    return subject;
+  }
+
+  async update(id: number, updateSubjectDto: UpdateSubjectDto) {
+    const existing = await this.findOne(id);
+    const { name, description, courseIds } = updateSubjectDto;
+
+    let slug = existing.slug;
+
+    if (name && name !== existing.name) {
+      slug = await generateUniqueCourseSlug(this.prisma, name, id);
     }
-    const updatedSubject = await this.prisma.subject.update({
+
+    await this.prisma.subject.update({
       where: { id },
       data: {
         name,
         description,
         slug,
       },
-      include: {
-        courses: true,
-      },
     });
-    if (courseIds && courseIds.length > 0) {
-      // First, remove existing course-subject relations
+
+    if (courseIds) {
       await this.prisma.courseSubject.deleteMany({
         where: { subjectId: id },
       });
-      // Then, create new relations
+
       await this.prisma.courseSubject.createMany({
         data: courseIds.map((courseId) => ({
           courseId,
@@ -138,34 +155,38 @@ export class SubjectService {
         })),
       });
     }
+
     return this.findOne(id);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} subject`;
+  // ✅ SOFT DELETE
+  async remove(id: number) {
+    await this.findOne(id);
+
+    return this.prisma.subject.update({
+      where: { id },
+      data: { status: false },
+    });
   }
 
   async updateStatus(id: number) {
     const subject = await this.findOne(id);
-    if (!subject) {
-      throw new NotFoundException('Subject not found');
-    }
-    const updatedSubject = await this.prisma.subject.update({
+
+    return this.prisma.subject.update({
       where: { id },
       data: {
         status: !subject.status,
       },
     });
-    return updatedSubject;
   }
+
   async findSubjectByName(name: string, id?: number): Promise<boolean> {
     const subject = await this.prisma.subject.findFirst({
-      where: id
-        ? {
-            name: name,
-            NOT: { id: id },
-          }
-        : { name: name },
+      where: {
+        name,
+        status: true,
+        ...(id && { id: { not: id } }),
+      },
     });
     return !!subject;
   }

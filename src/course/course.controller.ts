@@ -29,6 +29,8 @@ import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { createPagedResponse } from 'src/shared/create-paged-response';
 import { get } from 'http';
 import { User } from 'src/generated/prisma/browser';
+import { CreateFullCourseDto } from './dto/create-full-course.dto';
+
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('course')
@@ -264,6 +266,29 @@ export class CourseController {
       );
     }
   }
+
+  @Permissions('create-course')
+  @Post('full')
+    async createFull(
+      @Body() dto: CreateFullCourseDto,
+      @Res() res: Response,
+      @Next() next: NextFunction,
+    ) {
+        try {
+          const result = await this.courseService.createFullCourse(dto);
+          return successResponse(
+            res,
+            201,
+            'Full course created successfully',
+            result,
+            null,
+          );
+        } catch (error) {
+          return next(new ErrorHandler(error.message, error.status || 500));
+        }
+    }
+
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.courseService.remove(+id);
