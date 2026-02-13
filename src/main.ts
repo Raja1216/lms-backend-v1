@@ -8,11 +8,13 @@ import { ApiValidationPipe } from './validation.pipe';
 import { GlobalExceptionFilter } from './global-error-handler';
 import express from 'express';
 import { join } from 'path';
+import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  
+  app.use(bodyParser.json({ limit: '200mb' }));
+  app.use(bodyParser.urlencoded({ limit: '200mb', extended: true }));
   // validation
   app.useGlobalPipes(new ApiValidationPipe());
   app.useGlobalFilters(new GlobalExceptionFilter());
