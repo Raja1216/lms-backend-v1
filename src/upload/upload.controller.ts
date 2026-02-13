@@ -15,7 +15,7 @@ export class UploadController {
   @Post('file')
   @UseInterceptors(FileInterceptor('file', {
     limits: {
-      fileSize: 200 * 1024 * 1024, // 200MB
+      fileSize: 1024 * 1024 * 1024, // 200MB
     },
   }),)
   uploadFile(
