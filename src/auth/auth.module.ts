@@ -26,7 +26,6 @@ import { PorfileModule } from './porfile/porfile.module';
   // removed PrismaService from here
   providers: [AuthService, JwtStrategy,JwtAuthGuard],
   controllers: [AuthController],
-  exports: [AuthService,JwtAuthGuard,
-    JwtModule,],
+  exports: [AuthService,JwtAuthGuard,JwtModule],
 })
 export class AuthModule {}
