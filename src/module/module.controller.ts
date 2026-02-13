@@ -10,9 +10,9 @@ import {
   Next,
   UseGuards,
 } from '@nestjs/common';
-import { ChapterService } from './chapter.service';
-import { CreateChapterDto } from './dto/create-chapter.dto';
-import { UpdateChapterDto } from './dto/update-chapter.dto';
+import { ModuleService } from './module.service';
+import { CreateModuleDto } from './dto/create-module.dto';
+import { UpdateModuleDto } from './dto/update-module.dto';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { PermissionGuard } from 'src/guard/permission.guard';
 import { Permissions } from 'src/guard/premission.decorator';
@@ -21,20 +21,20 @@ import { successResponse } from 'src/utils/success-response';
 import { ErrorHandler } from 'src/utils/error-handler';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@Controller('chapters')
-export class ChapterController {
-  constructor(private readonly chapterService: ChapterService) {}
+@Controller('modules')
+export class ModuleController {
+  constructor(private readonly moduleService: ModuleService) {}
 
-  @Permissions('create-chapter')
+  @Permissions('create-module')
   @Post()
   async create(
-    @Body() dto: CreateChapterDto,
+    @Body() dto: CreateModuleDto,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
     try {
-      const result = await this.chapterService.create(dto);
-      return successResponse(res, 201, 'Chapter created successfully', result, null);
+      const result = await this.moduleService.create(dto);
+      return successResponse(res, 201, 'Module created successfully', result, null);
     } catch (error) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
@@ -47,22 +47,8 @@ export class ChapterController {
     @Next() next: NextFunction,
   ) {
     try {
-      const result = await this.chapterService.findBySubject(+subjectId);
-      return successResponse(res, 200, 'Chapters fetched successfully', result, null);
-    } catch (error) {
-      return next(new ErrorHandler(error.message, error.status || 500));
-    }
-  }
-
-  @Get('by-module/:moduleId')
-  async byModule(
-    @Param('moduleId') moduleId: number,
-    @Res() res: Response,
-    @Next() next: NextFunction,
-  ) {
-    try {
-      const result = await this.chapterService.findByModule(+moduleId);
-      return successResponse(res, 200, 'Chapters fetched successfully', result, null);
+      const result = await this.moduleService.findBySubject(+subjectId);
+      return successResponse(res, 200, 'Modules fetched successfully', result, null);
     } catch (error) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
@@ -75,8 +61,8 @@ export class ChapterController {
     @Next() next: NextFunction,
   ) {
     try {
-      const result = await this.chapterService.findBySlug(slug);
-      return successResponse(res, 200, 'Chapter fetched successfully', result, null);
+      const result = await this.moduleService.findBySlug(slug);
+      return successResponse(res, 200, 'Module fetched successfully', result, null);
     } catch (error) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
@@ -85,13 +71,13 @@ export class ChapterController {
   @Patch(':id')
   async update(
     @Param('id') id: number,
-    @Body() dto: UpdateChapterDto,
+    @Body() dto: UpdateModuleDto,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
     try {
-      const result = await this.chapterService.update(+id, dto);
-      return successResponse(res, 200, 'Chapter updated successfully', result, null);
+      const result = await this.moduleService.update(+id, dto);
+      return successResponse(res, 200, 'Module updated successfully', result, null);
     } catch (error) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
@@ -104,8 +90,8 @@ export class ChapterController {
     @Next() next: NextFunction,
   ) {
     try {
-      const result = await this.chapterService.remove(+id);
-      return successResponse(res, 200, 'Chapter deleted successfully', result, null);
+      const result = await this.moduleService.remove(+id);
+      return successResponse(res, 200, 'Module deleted successfully', result, null);
     } catch (error) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }

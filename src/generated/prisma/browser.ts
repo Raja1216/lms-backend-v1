@@ -68,6 +68,16 @@ export type Chapter = Prisma.ChapterModel
  */
 export type SubjectChapter = Prisma.SubjectChapterModel
 /**
+ * Model Module
+ * 
+ */
+export type Module = Prisma.ModuleModel
+/**
+ * Model ModuleChapter
+ * 
+ */
+export type ModuleChapter = Prisma.ModuleChapterModel
+/**
  * Model Lesson
  * 
  */
@@ -147,3 +157,23 @@ export type UserEnrolledCourse = Prisma.UserEnrolledCourseModel
  * 
  */
 export type UserXPEarned = Prisma.UserXPEarnedModel
+/**
+ * Model CourseQuiz
+ * 
+ */
+export type CourseQuiz = Prisma.CourseQuizModel
+/**
+ * Model SubjectQuiz
+ * 
+ */
+export type SubjectQuiz = Prisma.SubjectQuizModel
+/**
+ * Model ModuleQuiz
+ * 
+ */
+export type ModuleQuiz = Prisma.ModuleQuizModel
+/**
+ * Model ChapterQuiz
+ * 
+ */
+export type ChapterQuiz = Prisma.ChapterQuizModel

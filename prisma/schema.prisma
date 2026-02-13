@@ -25,6 +25,7 @@ enum QuestionType {
   SHORTANSWER
   DECRIPTIVE
 }
+
 enum Difficulty {
   easy
   medium
@@ -49,14 +50,14 @@ model User {
   updatedAt           DateTime             @updatedAt
   roles               Role[]               @relation("userroles")
   teacherCourses      CourseTeacher[]      @relation("TeacherCourses")
-  quizAttempts        QuizAttempt[]        @relation("UserQuizAttempts")
+  quizAttempts        QuizAttempt[]
   skills              UserSkill[]          @relation("UserSkill")
   projects            UserProject[]        @relation("userProjects")
   forums              CourForum[]          @relation("userForum")
   forumReactions      ForumReaction[]      @relation("UserForumReactions")
   payments            Payment[]            @relation("UserPayments")
   userEnrolledCourses UserEnrolledCourse[] @relation("UserEnrolledCourses")
-  xpEarned            UserXPEarned[]       @relation("userXpEarned")
+  xpEarned            UserXPEarned[]
 
   @@map("users")
 }
@@ -121,6 +122,7 @@ model Course {
   forums              CourForum[]          @relation("courseForum")
   payments            Payment[]            @relation("CoursePayments")
   userEnrolledCourses UserEnrolledCourse[] @relation("CourseEnrolledUsers")
+  courseQuizzes       CourseQuiz[]
 
   @@map("courses")
 }
@@ -148,6 +150,9 @@ model Subject {
   courses     CourseSubject[]  @relation("SubjectCourses")
   chapters    SubjectChapter[] @relation("SubjectChapters")
 
+  modules        Module[]
+  subjectQuizzes SubjectQuiz[]
+
   @@map("subjects")
 }
 
@@ -164,15 +169,18 @@ model CourseSubject {
 }
 
 model Chapter {
-  id          Int               @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   title       String
-  slug        String            @unique
-  status      Boolean           @default(true)
-  description String            @db.Text
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  subjects    SubjectChapter[]  @relation("SubjectChapters")
-  lessons     LessonToChapter[] @relation("LessonToChapters")
+  slug        String   @unique
+  status      Boolean  @default(true)
+  description String   @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subjects       SubjectChapter[]  @relation("SubjectChapters")
+  modules        ModuleChapter[]
+  lessons        LessonToChapter[] @relation("LessonToChapters")
+  chapterQuizzes ChapterQuiz[]
 
   @@map("chapters")
 }
@@ -187,6 +195,41 @@ model SubjectChapter {
   chapter   Chapter  @relation("SubjectChapters", fields: [chapterId], references: [id])
 
   @@map("subject_chapters")
+}
+
+model Module {
+  id          Int      @id @default(autoincrement())
+  title       String
+  slug        String   @unique
+  description String?  @db.Text
+  status      Boolean  @default(true)
+  subjectId   Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // ✅ OPPOSITE FIELD EXISTS IN Subject
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  // ✅ OPPOSITE FIELD EXISTS IN Chapter
+  chapters      ModuleChapter[]
+  moduleQuizzes ModuleQuiz[]
+
+  @@map("modules")
+}
+
+model ModuleChapter {
+  id        Int      @id @default(autoincrement())
+  moduleId  Int
+  chapterId Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ✅ Relation names consistent
+  module  Module  @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, chapterId])
+  @@map("module_chapters")
 }
 
 model Lesson {
@@ -205,8 +248,8 @@ model Lesson {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   chapters     LessonToChapter[] @relation("LessonToChapters")
-  quizzes      LessonQuiz[]      @relation("LessonQuiz")
-  xpEarned     UserXPEarned[]    @relation("lessonXpEarned")
+  quizzes      LessonQuiz[]
+  xpEarned     UserXPEarned[]
 
   @@map("lessons")
 }
@@ -224,19 +267,26 @@ model LessonToChapter {
 }
 
 model Quiz {
-  id           Int            @id @default(autoincrement())
-  title        String
-  slug         String         @unique
-  totalMarks   Int            @default(0) // calculated as sum of marks of all questions
-  passMarks    Int            @default(0) //auto calculated as 40% of total marks
-  timeLimit    Decimal        @db.Decimal(10, 2) // in minutes
-  questions    Question[]     @relation("quizQuestions")
-  status       Boolean        @default(true)
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  attempts     QuizAttempt[]  @relation("QuizAttempts")
-  lessons      LessonQuiz[]   @relation("QuizLesson")
-  userXPEarned UserXPEarned[] @relation("quizXpEarned")
+  id         Int      @id @default(autoincrement())
+  title      String
+  slug       String   @unique
+  totalMarks Int      @default(0)
+  passMarks  Int      @default(0)
+  timeLimit  Decimal  @db.Decimal(10, 2)
+  status     Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  questions Question[]
+
+  lessons LessonQuiz[]
+
+  courseQuizzes  CourseQuiz[]
+  subjectQuizzes SubjectQuiz[]
+  moduleQuizzes  ModuleQuiz[]
+  chapterQuizzes ChapterQuiz[]
+  quizAttempts   QuizAttempt[]
+  userXPEarneds  UserXPEarned[]
 
   @@map("quizzes")
 }
@@ -247,8 +297,12 @@ model LessonQuiz {
   quizId    Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  lesson    Lesson   @relation("LessonQuiz", fields: [lessonId], references: [id])
-  quiz      Quiz     @relation("QuizLesson", fields: [quizId], references: [id])
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, quizId])
+  @@map("lesson_quizzes")
 }
 
 model QuizAttempt {
@@ -256,18 +310,18 @@ model QuizAttempt {
   quizId Int
   userId Int
 
-  obtainedMarks Decimal @db.Decimal(10, 2)
-  totalMarks    Decimal @db.Decimal(10, 2)
-
+  obtainedMarks  Decimal  @db.Decimal(10, 2)
+  totalMarks     Decimal  @db.Decimal(10, 2)
   correctAnswers Int
   totalQuestions Int
-  timeTaken      Int // in minutes
+  timeTaken      Int
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  quiz    Quiz              @relation("QuizAttempts", fields: [quizId], references: [id])
-  user    User              @relation("UserQuizAttempts", fields: [userId], references: [id])
-  answers QuestionAttempt[] @relation("attemptedQuestions")
+  quiz             Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  answers QuestionAttempt[] @relation("AttemptAnswers")
 
   @@map("quiz_attempts")
 }
@@ -285,28 +339,29 @@ model QuestionAttempt {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  quizAttempt QuizAttempt @relation("attemptedQuestions", fields: [quizAttemptId], references: [id])
-  question    Question    @relation("QuestionAttempts", fields: [questionId], references: [id])
+  quizAttempt QuizAttempt @relation("AttemptAnswers", fields: [quizAttemptId], references: [id])
+  question    Question    @relation(fields: [questionId], references: [id])
 
   @@unique([quizAttemptId, questionId])
   @@map("question_attempts")
 }
 
 model Question {
-  id        Int               @id @default(autoincrement())
-  quizId    Int
-  question  String            @db.Text
-  status    Boolean           @default(true)
-  marks     Int
-  duration  Decimal           @default(0) @db.Decimal(10, 2) // in minutes
-  type      QuestionType      @default(MCQ)
-  difficulty   Difficulty        @default(medium)
-  answer    String?           @db.Text
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  quiz      Quiz              @relation("quizQuestions", fields: [quizId], references: [id])
-  options   QuestionOption[]  @relation("questionOptions")
-  attempts  QuestionAttempt[] @relation("QuestionAttempts")
+  id         Int          @id @default(autoincrement())
+  quizId     Int
+  question   String       @db.Text
+  status     Boolean      @default(true)
+  marks      Int
+  duration   Decimal      @default(0) @db.Decimal(10, 2)
+  type       QuestionType @default(MCQ)
+  difficulty Difficulty   @default(medium)
+  answer     String?      @db.Text
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  quiz             Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  questionAttempts QuestionAttempt[]
+  options  QuestionOption[] @relation("QuestionOptions")
 
   @@map("questions")
 }
@@ -319,7 +374,7 @@ model QuestionOption {
   isCorrect  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  question   Question @relation("questionOptions", fields: [questionId], references: [id])
+  question Question @relation("QuestionOptions", fields: [questionId], references: [id])
 
   @@map("question_options")
 }
@@ -443,9 +498,62 @@ model UserXPEarned {
   quizId    Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  user      User     @relation("userXpEarned", fields: [userId], references: [id], onDelete: Cascade)
-  lesson    Lesson?  @relation("lessonXpEarned", fields: [lessonId], references: [id], onDelete: Cascade)
-  quiz      Quiz?    @relation("quizXpEarned", fields: [quizId], references: [id], onDelete: Cascade)
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson? @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  quiz   Quiz?   @relation(fields: [quizId], references: [id], onDelete: Cascade)
 
   @@map("user_xp_earneds")
+}
+
+model CourseQuiz {
+  id        Int      @id @default(autoincrement())
+  courseId  Int
+  quizId    Int
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, quizId])
+  @@map("course_quizzes")
+}
+
+model SubjectQuiz {
+  id        Int      @id @default(autoincrement())
+  subjectId Int
+  quizId    Int
+  createdAt DateTime @default(now())
+
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  quiz    Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([subjectId, quizId])
+  @@map("subject_quizzes")
+}
+
+model ModuleQuiz {
+  id        Int      @id @default(autoincrement())
+  moduleId  Int
+  quizId    Int
+  createdAt DateTime @default(now())
+
+  module Module @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quiz   Quiz   @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, quizId])
+  @@map("module_quizzes")
+}
+
+model ChapterQuiz {
+  id        Int      @id @default(autoincrement())
+  chapterId Int
+  quizId    Int
+  createdAt DateTime @default(now())
+
+  chapter Chapter @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  quiz    Quiz    @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([chapterId, quizId])
+  @@map("chapter_quizzes")
 }

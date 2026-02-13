@@ -1,6 +1,6 @@
 import { IsInt, IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
 
-export class CreateChapterDto {
+export class CreateModuleDto {
   @IsString()
   @IsNotEmpty()
   @Length(3, 255)
@@ -12,8 +12,4 @@ export class CreateChapterDto {
 
   @IsInt()
   subjectId: number;
-
-  @IsInt()
-  @IsOptional()
-  moduleId?: number;
 }
