@@ -13,8 +13,12 @@ import * as bodyParser from 'body-parser';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  app.use(bodyParser.json({ limit: '200mb' }));
-  app.use(bodyParser.urlencoded({ limit: '200mb', extended: true }));
+  app.use(bodyParser.json({ limit: '1gb' }));
+  app.use(bodyParser.urlencoded({ limit: '1gb', extended: true }));
+  app.use(
+    express.json({ limit: '1gb' }),
+    express.urlencoded({ limit: '1gb', extended: true }),
+  );
   // validation
   app.useGlobalPipes(new ApiValidationPipe());
   app.useGlobalFilters(new GlobalExceptionFilter());
