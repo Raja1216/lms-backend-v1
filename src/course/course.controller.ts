@@ -40,7 +40,7 @@ export class CourseController {
     private readonly userService: UserService,
   ) {}
 
-  @Permissions('create-course')
+  @Permissions('course-create')
   @Post()
   async create(
     @Body() createCourseDto: CreateCourseDto,
@@ -112,7 +112,7 @@ export class CourseController {
     }
   }
 
-  @Permissions('read-course')
+  @Permissions('course-read')
   @Get('by-id/:id')
   async findOne(
     @Param('id') id: string,
@@ -267,7 +267,7 @@ export class CourseController {
     }
   }
 
-  @Permissions('create-course')
+  @Permissions('course-create')
   @Post('full')
     async createFull(
       @Body() dto: CreateFullCourseDto,
