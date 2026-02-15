@@ -11,6 +11,7 @@ import {
   UseGuards,
   Request,
   ParseIntPipe,
+  Query,
 } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
@@ -30,7 +31,7 @@ export class QuizController {
 
   /* ================= CREATE ================= */
 
-  @Permissions('create-quiz')
+  @Permissions('quiz-create')
   @Post()
   async create(
     @Body() dto: CreateQuizDto,
@@ -50,9 +51,35 @@ export class QuizController {
     }
   }
 
+  @Permissions('quiz-read')
+  @Get()
+  async findAll(
+    @Query() query: any,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const quizzes = await this.quizService.findAll(query);
+      return successResponse(
+        res,
+        200,
+        'Quizzes fetched successfully',
+        quizzes,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ?? 500,
+        ),
+      );
+    }
+  }
+
   /* ================= READ ================= */
 
-  @Permissions('read-quiz')
+  @Permissions('quiz-read')
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -93,7 +120,7 @@ export class QuizController {
 
   /* ================= UPDATE ================= */
 
-  @Permissions('update-quiz')
+  @Permissions('quiz-update')
   @Patch(':id')
   async update(
     @Param('id', ParseIntPipe) id: number,
@@ -114,7 +141,7 @@ export class QuizController {
     }
   }
 
-  @Permissions('update-quiz')
+  @Permissions('quiz-update')
   @Patch('status/:id')
   async updateStatus(
     @Param('id', ParseIntPipe) id: number,
@@ -169,12 +196,9 @@ export class QuizController {
 
   /* ================= DELETE ================= */
 
-  @Permissions('delete-quiz')
+  @Permissions('quiz-delete')
   @Delete(':id')
-  async remove(
-    @Param('id', ParseIntPipe) id: number,
-    @Res() res: Response,
-  ) {
+  async remove(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
     return successResponse(
       res,
       200,

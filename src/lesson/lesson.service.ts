@@ -11,6 +11,7 @@ import path from 'path/win32';
 import { generateSlug } from 'src/shared/generate-slug';
 import { User } from 'src/generated/prisma/browser';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
+import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 
 @Injectable()
 export class LessonService {
@@ -41,14 +42,14 @@ export class LessonService {
         );
         documentUrl = process.env.APP_URL + '/' + relativePath;
       } else {
-          documentUrl = documentContent;
-        }
+        documentUrl = documentContent;
+      }
     }
     const lesson = await this.prisma.lesson.create({
       data: {
         title,
         description,
-        slug: await generateUniqueCourseSlug(this.prisma, title),
+        slug: await generateUniqueSlugForTable(this.prisma, 'lesson', title),
         topicName,
         docUrl: documentUrl,
         videoUrl,
@@ -84,7 +85,6 @@ export class LessonService {
     });
   }
 
-
   findOne(id: number) {
     return this.prisma.lesson.findUnique({
       where: { id },
@@ -98,71 +98,84 @@ export class LessonService {
     });
   }
 
+  async findByChapter(chapterId: number) {
+    return this.prisma.lessonToChapter.findMany({
+      where: {
+        chapterId,
+        lesson: {
+          status: true, // only active lessons
+        },
+      },
+      include: {
+        lesson: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+  }
+
   async update(id: number, updateLessonDto: UpdateLessonDto) {
     const existingLesson = await this.findOne(id);
     if (!existingLesson) {
       throw new NotFoundException('Lesson not found');
     }
+
     const {
       title,
       description,
       lessonType,
-      documentContent,
+      documentContent, // now expected as URL
       videoUrl,
       topicName,
       chapterIds,
       NumberOfPages,
       noOfXpPoints,
     } = updateLessonDto;
-    let documentUrl: string | null = null;
-    if (documentContent) {
-      if (documentContent.startsWith('data:')) {
-        const savedFile = await Base64FileUtil.saveBase64File(
-          documentContent,
-          'uploads/lessons/documents',
-        );
-        const relativePath = path.posix.join(
-          'uploads/lessons/documents',
-          savedFile.fileName,
-        );
-        documentUrl = process.env.APP_URL + '/' + relativePath;
-    } else {
-      documentUrl = documentContent;
-    }
-    }
+
     const updatedLesson = await this.prisma.lesson.update({
       where: { id },
       data: {
         title,
         description,
-        slug: title ? await generateUniqueCourseSlug(this.prisma, title, id) : undefined,
+        slug: title
+          ? await generateUniqueSlugForTable(this.prisma, 'lesson', title)
+          : undefined,
         topicName,
-        docUrl: documentUrl,
+        docUrl: documentContent ?? undefined, // 👈 store URL directly
         videoUrl,
         type: lessonType,
         NoOfPages: NumberOfPages,
         noOfXpPoints: noOfXpPoints,
       },
     });
+
     const lessonToChapter: any[] = [];
+
     if (chapterIds && chapterIds.length > 0) {
       await this.prisma.lessonToChapter.deleteMany({
         where: { lessonId: id },
       });
+
       for (const chapterId of chapterIds) {
         await this.prisma.lessonToChapter.create({
           data: {
             lessonId: updatedLesson.id,
-            chapterId: chapterId,
+            chapterId,
           },
         });
+
         lessonToChapter.push({
           lessonId: updatedLesson.id,
-          chapterId: chapterId,
+          chapterId,
         });
       }
     }
-    return { ...updatedLesson, chapters: lessonToChapter };
+
+    return {
+      ...updatedLesson,
+      chapters: lessonToChapter,
+    };
   }
 
   async remove(id: number) {
@@ -176,7 +189,6 @@ export class LessonService {
       data: { status: false },
     });
   }
-
 
   async updateStatus(id: number) {
     const lesson = await this.findOne(id);

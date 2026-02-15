@@ -7,9 +7,9 @@ import { Readable } from 'stream';
 @Injectable()
 export class UploadService {
   private readonly ftpConfig = {
-    host: '82.180.65.58',
-    user: 'u389084088',
-    password: process.env.FTP_PASSWORD,
+    host: 'ftp.edudigm.in',
+    user: 'u389084088.eduvarsefile143',
+    password: '5^R5G^bdLjppOoLl',
     port: 21,
     secure: false,
   };

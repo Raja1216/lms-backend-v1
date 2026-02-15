@@ -27,7 +27,7 @@ export class CreateLessonDto {
   @IsUrl()
   @IsOptional()
   videoUrl?: string;
-  @IsBase64()
+  @IsUrl()
   @IsOptional()
   documentContent?: string;
   @IsOptional()

@@ -3,6 +3,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateModuleDto } from './dto/create-module.dto';
 import { UpdateModuleDto } from './dto/update-module.dto';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
+import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 
 @Injectable()
 export class ModuleService {
@@ -17,7 +18,11 @@ export class ModuleService {
       throw new NotFoundException('Subject not found');
     }
 
-    const slug = await generateUniqueCourseSlug(this.prisma, dto.title);
+    const slug = await generateUniqueSlugForTable(
+      this.prisma,
+      'module',
+      dto.title,
+    );
 
     return this.prisma.module.create({
       data: {
@@ -82,7 +87,7 @@ export class ModuleService {
 
     let slug = existing.slug;
     if (dto.title && dto.title !== existing.title) {
-      slug = await generateUniqueCourseSlug(this.prisma, dto.title, id);
+      slug = await generateUniqueSlugForTable(this.prisma, 'module', dto.title);
     }
 
     return this.prisma.module.update({

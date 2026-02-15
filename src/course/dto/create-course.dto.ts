@@ -1,4 +1,4 @@
-import { IsString, Length, IsNumber } from 'class-validator';
+import { IsString, Length, IsNumber, IsOptional } from 'class-validator';
 import { IsBase64 } from '../../custom-validator/IsBase64.validator';
 
 export class CreateCourseDto {
@@ -7,8 +7,9 @@ export class CreateCourseDto {
   title: string;
   @IsString()
   description: string;
-  @IsBase64({ message: 'Thumbnail must be a valid Base64 string or data URL' })
-  thumbnail: string;
+  @IsOptional()
+  @IsString()
+  thumbnail?: string;
   @IsString()
   grade: string;
   @IsString()

@@ -8,6 +8,8 @@ import { LessonService } from 'src/lesson/lesson.service';
 @Module({
   imports: [AuthModule, UserModule, LessonModule],
   controllers: [QuizController],
+  exports: [QuizService],
   providers: [QuizService, LessonService],
+  
 })
 export class QuizModule {}
