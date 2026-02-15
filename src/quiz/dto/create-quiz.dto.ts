@@ -6,6 +6,18 @@ export class CreateQuizDto {
 
   @IsOptional()
   @IsInt()
+  timeLimit?: number; // seconds
+
+  @IsOptional()
+  @IsInt()
+  passMarks?: number;
+
+  @IsOptional()
+  @IsInt()
+  totalMarks?: number;
+
+  @IsOptional()
+  @IsInt()
   courseId?: number;
 
   @IsOptional()
@@ -24,3 +36,4 @@ export class CreateQuizDto {
   @IsInt()
   lessonId?: number;
 }
+

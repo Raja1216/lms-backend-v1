@@ -23,10 +23,18 @@ export class QuizService {
       moduleId,
       chapterId,
       lessonId,
+      timeLimit,
+      passMarks,
+      totalMarks,
     } = createQuizDto;
 
-    const attachIds = [courseId, subjectId, moduleId, chapterId, lessonId]
-      .filter((v) => v !== undefined);
+    const attachIds = [
+      courseId,
+      subjectId,
+      moduleId,
+      chapterId,
+      lessonId,
+    ].filter((v) => v !== undefined);
 
     if (attachIds.length !== 1) {
       throw new BadRequestException(
@@ -38,7 +46,10 @@ export class QuizService {
       data: {
         title,
         slug: generateSlug(title),
-        timeLimit: 0,
+        timeLimit: timeLimit ?? 0,
+        passMarks: passMarks ?? 0,
+        totalMarks: totalMarks ?? 0,
+        status: true,
       },
     });
 
@@ -47,25 +58,21 @@ export class QuizService {
         data: { courseId, quizId: quiz.id },
       });
     }
-
     if (subjectId) {
       await this.prisma.subjectQuiz.create({
         data: { subjectId, quizId: quiz.id },
       });
     }
-
     if (moduleId) {
       await this.prisma.moduleQuiz.create({
         data: { moduleId, quizId: quiz.id },
       });
     }
-
     if (chapterId) {
       await this.prisma.chapterQuiz.create({
         data: { chapterId, quizId: quiz.id },
       });
     }
-
     if (lessonId) {
       await this.prisma.lessonQuiz.create({
         data: { lessonId, quizId: quiz.id },
@@ -76,6 +83,79 @@ export class QuizService {
   }
 
   /* ================= READ ================= */
+
+  async findAll(query: any) {
+    const {
+      courseId,
+      subjectId,
+      moduleId,
+      chapterId,
+      lessonId,
+      status = true,
+      page = 1,
+      limit = 20,
+    } = query;
+
+    const attachIds = [
+      courseId,
+      subjectId,
+      moduleId,
+      chapterId,
+      lessonId,
+    ].filter((v) => v !== undefined);
+
+    if (attachIds.length > 1) {
+      throw new BadRequestException('Filter by only ONE level at a time');
+    }
+
+    const where: any = {
+      status: status === 'false' ? false : true,
+    };
+
+    // Base query
+    const baseQuery: any = {
+      where,
+      include: {
+        questions: false,
+      },
+      skip: (page - 1) * limit,
+      take: +limit,
+      orderBy: { createdAt: 'desc' },
+    };
+
+    // LEVEL FILTERS
+    if (courseId) {
+      baseQuery.where.courseQuizzes = {
+        some: { courseId: +courseId },
+      };
+    }
+
+    if (subjectId) {
+      baseQuery.where.subjectQuizzes = {
+        some: { subjectId: +subjectId },
+      };
+    }
+
+    if (moduleId) {
+      baseQuery.where.moduleQuizzes = {
+        some: { moduleId: +moduleId },
+      };
+    }
+
+    if (chapterId) {
+      baseQuery.where.chapterQuizzes = {
+        some: { chapterId: +chapterId },
+      };
+    }
+
+    if (lessonId) {
+      baseQuery.where.lessons = {
+        some: { lessonId: +lessonId },
+      };
+    }
+
+    return this.prisma.quiz.findMany(baseQuery);
+  }
 
   async findOne(id: number) {
     return this.prisma.quiz.findUnique({
@@ -103,17 +183,18 @@ export class QuizService {
 
   /* ================= UPDATE ================= */
 
-  async update(id: number, updateQuizDto: UpdateQuizDto) {
+  async update(id: number, dto: UpdateQuizDto) {
     const quiz = await this.prisma.quiz.findUnique({ where: { id } });
     if (!quiz) throw new NotFoundException('Quiz not found');
 
     return this.prisma.quiz.update({
       where: { id },
       data: {
-        title: updateQuizDto.title ?? quiz.title,
-        slug: updateQuizDto.title
-          ? generateSlug(updateQuizDto.title)
-          : quiz.slug,
+        title: dto.title ?? quiz.title,
+        slug: dto.title ? generateSlug(dto.title) : quiz.slug,
+        timeLimit: dto.timeLimit ?? quiz.timeLimit,
+        passMarks: dto.passMarks ?? quiz.passMarks,
+        totalMarks: dto.totalMarks ?? quiz.totalMarks,
       },
     });
   }
@@ -131,7 +212,6 @@ export class QuizService {
   /* ================= SUBMIT ================= */
 
   async submitQuiz(userId: number, quizId: number, submitData: SubmitQuizDto) {
-
     const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
       where: {
         quizId,
@@ -172,13 +252,16 @@ export class QuizService {
         isCorrect: correct,
       };
     });
-
+    const totalMarks = quiz.questions.reduce(
+      (sum, q) => sum + Number(q.marks),
+      0,
+    );
     const attempt = await this.prisma.quizAttempt.create({
       data: {
         quizId,
         userId,
         obtainedMarks,
-        totalMarks: quiz.totalMarks,
+        totalMarks,
         correctAnswers,
         totalQuestions: quiz.questions.length,
         timeTaken: submitData.timeTaken ?? 0,
@@ -212,14 +295,11 @@ export class QuizService {
         });
       }
     }
-    const percentage =
-      quiz.totalMarks > 0
-      ? (obtainedMarks / quiz.totalMarks) * 100
-      : 0;
+    const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
     return {
       attemptId: attempt.id,
       obtainedMarks,
-      totalMarks: quiz.totalMarks,
+      totalMarks,
       passMarks: quiz.passMarks,
       percentage: percentage,
       passed: obtainedMarks >= quiz.passMarks,
@@ -243,5 +323,60 @@ export class QuizService {
     }
 
     return { isCorrect: false };
+  }
+
+  async createQuizAndAttach(
+    tx: any,
+    quizData: {
+      title: string;
+      timeLimit?: number;
+      passMarks?: number;
+      totalMarks?: number;
+    },
+    attach: {
+      courseId?: number;
+      subjectId?: number;
+      moduleId?: number;
+      chapterId?: number;
+      lessonId?: number;
+    },
+  ) {
+    const quiz = await tx.quiz.create({
+      data: {
+        title: quizData.title,
+        slug: generateSlug(quizData.title),
+        timeLimit: quizData.timeLimit ?? 0,
+        passMarks: quizData.passMarks ?? 0,
+        totalMarks: quizData.totalMarks ?? 0,
+      },
+    });
+
+    if (attach.courseId) {
+      await tx.courseQuiz.create({
+        data: { courseId: attach.courseId, quizId: quiz.id },
+      });
+    }
+    if (attach.subjectId) {
+      await tx.subjectQuiz.create({
+        data: { subjectId: attach.subjectId, quizId: quiz.id },
+      });
+    }
+    if (attach.moduleId) {
+      await tx.moduleQuiz.create({
+        data: { moduleId: attach.moduleId, quizId: quiz.id },
+      });
+    }
+    if (attach.chapterId) {
+      await tx.chapterQuiz.create({
+        data: { chapterId: attach.chapterId, quizId: quiz.id },
+      });
+    }
+    if (attach.lessonId) {
+      await tx.lessonQuiz.create({
+        data: { lessonId: attach.lessonId, quizId: quiz.id },
+      });
+    }
+
+    return quiz;
   }
 }

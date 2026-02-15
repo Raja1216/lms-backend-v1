@@ -7,6 +7,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateChapterDto } from './dto/create-chapter.dto';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
+import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 
 @Injectable()
 export class ChapterService {
@@ -38,7 +39,13 @@ export class ChapterService {
       }
     }
 
-    const slug = await generateUniqueCourseSlug(this.prisma, dto.title);
+    const slug = await generateUniqueSlugForTable(
+      this.prisma,
+      'chapter',
+      dto.title,
+    );
+
+    // = await generateUniqueCourseSlug(this.prisma, dto.title);
 
     const chapter = await this.prisma.chapter.create({
       data: {
@@ -146,7 +153,11 @@ export class ChapterService {
 
     let slug = existing.slug;
     if (dto.title && dto.title !== existing.title) {
-      slug = await generateUniqueCourseSlug(this.prisma, dto.title, id);
+      slug = await generateUniqueSlugForTable(
+        this.prisma,
+        'chapter',
+        dto.title,
+      );
     }
 
     await this.prisma.chapter.update({
