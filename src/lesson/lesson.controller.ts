@@ -24,6 +24,7 @@ import { PermissionGuard } from 'src/guard/permission.guard';
 import { Permissions } from 'src/guard/premission.decorator';
 import { ChapterService } from 'src/chapter/chapter.service';
 import { User } from 'src/generated/prisma/browser';
+import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('lesson')
@@ -33,7 +34,7 @@ export class LessonController {
     private readonly chapterService: ChapterService,
   ) {}
 
-  @Permissions('create-lesson')
+  @Permissions('lesson-create')
   @Post()
   async create(
     @Body() createLessonDto: CreateLessonDto,
@@ -77,7 +78,7 @@ export class LessonController {
     return this.lessonService.findAll();
   }
 
-  @Permissions('read-lesson')
+  @Permissions('lesson-read')
   @Get(':id')
   async findOne(
     @Param('id') id: string,
@@ -106,7 +107,40 @@ export class LessonController {
     }
   }
 
-  @Permissions('update-lesson')
+  @Permissions('lesson-read')
+  @Get('/by-chapter/:chapterId')
+  async findByChapter(
+    @Param('chapterId') chapterId: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      // validate chapter exists
+      await this.chapterService.findOne(+chapterId);
+
+      const result = await this.lessonService.findByChapter(+chapterId);
+
+      // optional: flatten response
+      const lessons = result.map((item) => item.lesson);
+
+      return successResponse(
+        res,
+        200,
+        'Lessons fetched successfully',
+        lessons,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ?? 500,
+        ),
+      );
+    }
+  }
+
+  @Permissions('lesson-update')
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -150,6 +184,7 @@ export class LessonController {
       );
     }
   }
+
   @Get('/slug/:slug')
   async findBySlug(
     @Param('slug') slug: string,
@@ -178,7 +213,7 @@ export class LessonController {
     }
   }
 
-  @Permissions('update-lesson')
+  @Permissions('lesson-update')
   @Patch('/status/:id')
   async updateStatus(
     @Param('id') id: string,

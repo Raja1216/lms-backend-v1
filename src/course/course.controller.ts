@@ -31,7 +31,6 @@ import { get } from 'http';
 import { User } from 'src/generated/prisma/browser';
 import { CreateFullCourseDto } from './dto/create-full-course.dto';
 
-
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('course')
 export class CourseController {
@@ -138,7 +137,7 @@ export class CourseController {
     }
   }
 
-  @Permissions('update-course')
+  @Permissions('course-update')
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -186,7 +185,29 @@ export class CourseController {
     }
   }
 
-  @Permissions('update-course')
+  @Permissions('course-update')
+  @Patch('full/:id')
+  async updateFullCourse(
+    @Param('id') id: string,
+    @Body() dto: CreateFullCourseDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.courseService.updateFullCourse(+id, dto);
+      return successResponse(
+        res,
+        200,
+        'Full course updated successfully',
+        result,
+        null,
+      );
+    } catch (error) {
+      return next(new ErrorHandler(error.message, error.status || 500));
+    }
+  }
+
+  @Permissions('course-update')
   @Patch(':id/status')
   async updateCourseStatus(
     @Param('id') id: string,
@@ -217,7 +238,7 @@ export class CourseController {
     @Param('slug') slug: string,
     @Next() next: NextFunction,
     @Res() res: Response,
-    @Req() req: {user: User},
+    @Req() req: { user: User },
   ) {
     try {
       const result = await this.courseService.findCourseBySlug(slug, req.user);
@@ -269,25 +290,24 @@ export class CourseController {
 
   @Permissions('course-create')
   @Post('full')
-    async createFull(
-      @Body() dto: CreateFullCourseDto,
-      @Res() res: Response,
-      @Next() next: NextFunction,
-    ) {
-        try {
-          const result = await this.courseService.createFullCourse(dto);
-          return successResponse(
-            res,
-            201,
-            'Full course created successfully',
-            result,
-            null,
-          );
-        } catch (error) {
-          return next(new ErrorHandler(error.message, error.status || 500));
-        }
+  async createFull(
+    @Body() dto: CreateFullCourseDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.courseService.createFullCourse(dto);
+      return successResponse(
+        res,
+        201,
+        'Full course created successfully',
+        result,
+        null,
+      );
+    } catch (error) {
+      return next(new ErrorHandler(error.message, error.status || 500));
     }
-
+  }
 
   @Delete(':id')
   remove(@Param('id') id: string) {

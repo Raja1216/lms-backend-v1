@@ -1,8 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateSubjectDto } from './dto/create-subject.dto';
 import { UpdateSubjectDto } from './dto/update-subject.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
+import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 
 @Injectable()
 export class SubjectService {
@@ -11,7 +16,7 @@ export class SubjectService {
   async create(createSubjectDto: CreateSubjectDto) {
     const { name, description, courseIds } = createSubjectDto;
 
-    const slug = await generateUniqueCourseSlug(this.prisma, name);
+    const slug = await generateUniqueSlugForTable(this.prisma, 'subject', name);
 
     const subject = await this.prisma.subject.create({
       data: {
@@ -68,7 +73,6 @@ export class SubjectService {
       },
     });
   }
-
 
   async findOne(id: number) {
     const subject = await this.prisma.subject.findFirst({
@@ -131,7 +135,7 @@ export class SubjectService {
     let slug = existing.slug;
 
     if (name && name !== existing.name) {
-      slug = await generateUniqueCourseSlug(this.prisma, name, id);
+      slug = await generateUniqueSlugForTable(this.prisma, 'subject', name);
     }
 
     await this.prisma.subject.update({

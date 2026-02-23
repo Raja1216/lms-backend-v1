@@ -3,9 +3,10 @@ import { CourseService } from './course.service';
 import { CourseController } from './course.controller';
 import { UserModule } from 'src/user/user.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { QuizModule } from 'src/quiz/quiz.module';
 
 @Module({
-  imports: [UserModule, AuthModule],
+  imports: [UserModule, AuthModule, QuizModule],
   controllers: [CourseController],
   providers: [CourseService],
 })

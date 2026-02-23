@@ -1,4 +1,12 @@
-import { IsArray, IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { QuizPayloadDto } from 'src/quiz/dto/quiz-payload.dto';
 
 class ContentDto {
   @IsString() title: string;
@@ -8,16 +16,22 @@ class ContentDto {
   @IsOptional() description?: string;
   @IsOptional() duration?: string;
   @IsOptional() noOfXpPoints?: number;
+  @IsOptional()
+  quiz?: QuizPayloadDto;
 }
 
 class ChapterDto {
   @IsString() title: string;
   @IsOptional() @IsArray() contents?: ContentDto[];
+  @IsOptional()
+  quiz?: QuizPayloadDto;
 }
 
 class ModuleDto {
   @IsString() title: string;
   @IsOptional() @IsArray() chapters?: ChapterDto[];
+  @IsOptional()
+  quiz?: QuizPayloadDto;
 }
 
 class SubjectDto {
@@ -26,6 +40,8 @@ class SubjectDto {
   @IsBoolean() hasModules: boolean;
   @IsOptional() @IsArray() modules?: ModuleDto[];
   @IsOptional() @IsArray() chapters?: ChapterDto[];
+  @IsOptional()
+  quiz?: QuizPayloadDto;
 }
 
 export class CreateFullCourseDto {
@@ -38,4 +54,7 @@ export class CreateFullCourseDto {
   @IsString() duration: string;
   @IsArray() teacherIds: number[];
   @IsArray() subjects: SubjectDto[];
+
+  @IsOptional()
+  quiz?: QuizPayloadDto;
 }
