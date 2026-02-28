@@ -13,6 +13,7 @@ import { LessonType } from 'src/generated/prisma/enums';
 import { Prisma } from 'src/generated/prisma/client';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 import { QuizService } from 'src/quiz/quiz.service';
+import { UploadService } from 'src/upload/upload.service';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ export class CourseService {
   constructor(
     private prisma: PrismaService,
     private quizService: QuizService,
+    private readonly uploaService: UploadService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -38,15 +40,25 @@ export class CourseService {
     let thumbnailPath = thumbnail;
 
     if (thumbnail?.startsWith('data:')) {
-      const savedFile = await Base64FileUtil.saveBase64File(
-        thumbnail,
-        'upload/course-thumbnails',
+      const matches = thumbnail.match(/^data:(.+);base64,(.+)$/);
+
+      if (!matches) {
+        throw new BadRequestException('Invalid base64 thumbnail');
+      }
+
+      const mimeType = matches[1];
+      const base64Data = matches[2];
+
+      const extension = mimeType.split('/')[1]; // image/png → png
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      const uploaded = await this.uploaService.uploadBufferViaFtp(
+        buffer,
+        `thumbnail.${extension}`,
+        'image',
       );
-      const relativePath = path.posix.join(
-        'uploads/category-icons',
-        savedFile.fileName,
-      );
-      thumbnailPath = process.env.APP_URL + '/' + relativePath;
+
+      thumbnailPath = uploaded.url;
     }
 
     const slug = await generateUniqueSlugForTable(this.prisma, 'course', title);
@@ -105,7 +117,7 @@ export class CourseService {
           },
           _count: {
             select: {
-              subjects: true, // 👈 SUBJECT COUNT
+              subjects: true,
             },
           },
         },
@@ -147,10 +159,33 @@ export class CourseService {
       );
     }
 
-    const { teacherIds, price, discountedPrice, ...rest } = updateCourseDto;
+    const { teacherIds, price, discountedPrice, thumbnail, ...rest } =
+      updateCourseDto;
+    let thumUrl = thumbnail;
+    if (thumbnail?.startsWith('data:')) {
+      const matches = thumbnail.match(/^data:(.+);base64,(.+)$/);
 
+      if (!matches) {
+        throw new BadRequestException('Invalid base64 thumbnail');
+      }
+
+      const mimeType = matches[1];
+      const base64Data = matches[2];
+
+      const extension = mimeType.split('/')[1]; // image/png → png
+      const buffer = Buffer.from(base64Data, 'base64');
+
+      const uploaded = await this.uploaService.uploadBufferViaFtp(
+        buffer,
+        `thumbnail.${extension}`,
+        'image',
+      );
+
+      thumUrl = uploaded.url;
+    }
     const data: Prisma.CourseUpdateInput = {
       ...rest,
+      thumbnail: thumUrl ?? existing.thumbnail,
       slug,
       price: price ? new Prisma.Decimal(price) : undefined,
       discountedPrice: discountedPrice
@@ -158,10 +193,9 @@ export class CourseService {
         : undefined,
     };
 
-    // ✅ handle teachers properly
     if (teacherIds) {
       data.teachers = {
-        deleteMany: {}, // remove existing teachers
+        deleteMany: {},
         create: teacherIds.map((teacherId) => ({
           teacherId,
         })),
@@ -212,7 +246,6 @@ export class CourseService {
     };
   }
 
-  // ✅ SOFT DELETE
   async remove(id: number) {
     await this.findOne(id);
 

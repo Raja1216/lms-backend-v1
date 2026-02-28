@@ -133,7 +133,7 @@ model CourseTeacher {
   teacherId Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  course    Course   @relation("CourseTeachers", fields: [courseId], references: [id])
+  course    Course   @relation("CourseTeachers", fields: [courseId], references: [id], onDelete: Cascade)
   teacher   User     @relation("TeacherCourses", fields: [teacherId], references: [id])
 
   @@map("course_teachers")
@@ -162,7 +162,7 @@ model CourseSubject {
   subjectId Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  course    Course   @relation("CourseSubjects", fields: [courseId], references: [id])
+  course    Course   @relation("CourseSubjects", fields: [courseId], references: [id], onDelete: Cascade)
   subject   Subject  @relation("SubjectCourses", fields: [subjectId], references: [id])
 
   @@map("course_subjects")
