@@ -59,14 +59,16 @@ export class LessonService {
       },
     });
     const lessonToChapter: any[] = [];
-    for (const chapterId of chapterIds) {
-      await this.prisma.lessonToChapter.create({
-        data: {
-          lessonId: lesson.id,
-          chapterId: chapterId,
-        },
-      });
-      lessonToChapter.push({ lessonId: lesson.id, chapterId: chapterId });
+    if (chapterIds && chapterIds.length > 0) {
+      for (const chapterId of chapterIds) {
+        await this.prisma.lessonToChapter.create({
+          data: {
+            lessonId: lesson.id,
+            chapterId: chapterId,
+          },
+        });
+        lessonToChapter.push({ lessonId: lesson.id, chapterId: chapterId });
+      }
     }
     return { ...lesson, chapters: lessonToChapter };
   }

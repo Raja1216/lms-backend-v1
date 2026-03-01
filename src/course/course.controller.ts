@@ -58,7 +58,7 @@ export class CourseController {
         if (!teacher) {
           throw new NotFoundException('Teacher not found');
         }
-        if (!teacher.roles.some((role) => role.name === 'teacher')) {
+        if (!teacher.roles.some((role) => role.name === 'Teacher')) {
           throw new BadRequestException('User is not assigned as a teacher');
         }
       }
@@ -162,7 +162,7 @@ export class CourseController {
           if (!teacher) {
             throw new NotFoundException('Teacher not found');
           }
-          if (!teacher.roles.some((role) => role.name === 'teacher')) {
+          if (!teacher.roles.some((role) => role.name === 'Teacher')) {
             throw new BadRequestException('User is not assigned as a teacher');
           }
         }
@@ -232,7 +232,7 @@ export class CourseController {
       );
     }
   }
-
+   
   @Get(':slug')
   async findCourseBySlug(
     @Param('slug') slug: string,
@@ -310,7 +310,17 @@ export class CourseController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.courseService.remove(+id);
+  async remove(@Param('id') id: string, @Res() res: Response, @Next() next: NextFunction) {
+    try {
+      await this.courseService.remove(+id);
+      return successResponse(res, 200, 'Course removed successfully', null, null);
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
   }
 }

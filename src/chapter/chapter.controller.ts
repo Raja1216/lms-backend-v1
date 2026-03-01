@@ -9,6 +9,7 @@ import {
   Res,
   Next,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ChapterService } from './chapter.service';
 import { CreateChapterDto } from './dto/create-chapter.dto';
@@ -19,13 +20,14 @@ import { Permissions } from 'src/guard/premission.decorator';
 import { Response, NextFunction } from 'express';
 import { successResponse } from 'src/utils/success-response';
 import { ErrorHandler } from 'src/utils/error-handler';
-
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { createPagedResponse } from 'src/shared/create-paged-response';
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('chapters')
 export class ChapterController {
   constructor(private readonly chapterService: ChapterService) {}
 
-  @Permissions('create-chapter')
+  @Permissions('chapter-create')
   @Post()
   async create(
     @Body() dto: CreateChapterDto,
@@ -35,6 +37,20 @@ export class ChapterController {
     try {
       const result = await this.chapterService.create(dto);
       return successResponse(res, 201, 'Chapter created successfully', result, null);
+    } catch (error) {
+      return next(new ErrorHandler(error.message, error.status || 500));
+    }
+  }
+  @Permissions('chapter-read')
+  @Get()
+  async findAll(
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query() PaginationDto: PaginationDto,
+  ) {
+    try {
+      const {chapters, total, page, limit} = await this.chapterService.findAll(PaginationDto);
+      return successResponse(res, 200, 'Chapters fetched successfully', createPagedResponse(chapters, page, limit, total), null);
     } catch (error) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }

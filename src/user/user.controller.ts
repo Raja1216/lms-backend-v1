@@ -124,6 +124,29 @@ export class UserController {
       );
     }
   }
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('read-users')
+  @ApiBearerAuth('access-token')
+  @Get('teacher')
+  async getTeachers(@Res() res: Response, @Next() next: NextFunction) {
+    try {
+      const teachers = await this.svc.getTeachers();
+      return successResponse(
+        res,
+        200,
+        'Teachers retrieved successfully',
+        teachers,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard, PermissionGuard)

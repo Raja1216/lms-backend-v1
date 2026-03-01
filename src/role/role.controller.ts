@@ -11,6 +11,7 @@ import {
   Next,
   Query,
   Catch,
+  Put,
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -116,6 +117,29 @@ export class RoleController {
     try {
       const role = await this.roleService.update(+id, updateRoleDto);
       return successResponse(res, 200, 'Role updated successfully', role, {});
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('update-roles')
+  @Put('reload-super-admin')
+  async reloadSuperAdmin(@Res() res: Response, @Next() next: NextFunction) {
+    try {
+      const role = await this.roleService.reloadSuperAdmin();
+      return successResponse(
+        res,
+        200,
+        'Super Admin role reloaded successfully',
+        role,
+        {},
+      );
     } catch (error) {
       return next(
         new ErrorHandler(

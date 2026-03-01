@@ -71,4 +71,34 @@ export class UploadService {
       client.close();
     }
   }
+   async uploadBufferViaFtp(
+    buffer: Buffer,
+    originalName: string,
+    type: string,
+  ) {
+    const client = new Client();
+    const extension = extname(originalName);
+    const filename = `${uuid()}${extension}`;
+    const remoteDir = `${this.baseRemotePath}/content/${type}`;
+
+    try {
+      await client.access(this.ftpConfig);
+
+      await client.ensureDir(remoteDir);
+      await client.cd(remoteDir);
+
+      const stream = Readable.from(buffer);
+      await client.uploadFrom(stream, filename);
+
+      return {
+        url: `${this.basePublicUrl}/content/${type}/${filename}`,
+        filename,
+      };
+    } catch (error) {
+      console.error('FTP upload error:', error);
+      throw new BadRequestException(error?.message || 'File upload failed');
+    } finally {
+      client.close();
+    }
+  }
 }

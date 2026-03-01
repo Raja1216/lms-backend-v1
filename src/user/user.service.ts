@@ -309,6 +309,23 @@ export class UserService {
     return updatedUser;
   }
 
+  async getTeachers() {
+    return await this.prisma.user.findMany({
+      where: {
+        roles: {
+          some: {
+            name: 'teacher',
+          },
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    });
+  }
+
   async getUserProfile(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -449,7 +466,7 @@ export class UserService {
         const totalAttempts = quizAttempts.length;
         const averageScore =
           totalAttempts > 0 ? Math.round(totalScore / totalAttempts) : 0;
-        
+
         return {
           userId: enrollment.user.id,
           name: enrollment.user.name,

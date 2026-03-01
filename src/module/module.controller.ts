@@ -9,6 +9,7 @@ import {
   Res,
   Next,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ModuleService } from './module.service';
 import { CreateModuleDto } from './dto/create-module.dto';
@@ -19,6 +20,8 @@ import { Permissions } from 'src/guard/premission.decorator';
 import { Response, NextFunction } from 'express';
 import { successResponse } from 'src/utils/success-response';
 import { ErrorHandler } from 'src/utils/error-handler';
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { createPagedResponse } from 'src/shared/create-paged-response';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('modules')
@@ -39,7 +42,20 @@ export class ModuleController {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
-
+  // @Permissions('read-module')
+  @Get()
+  async findAll(
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query() PaginationDto: PaginationDto,
+  ) {
+    try {
+      const {modules, total, page, limit} = await this.moduleService.findAll(PaginationDto);
+      return successResponse(res, 200, 'Modules fetched successfully', createPagedResponse(modules, total, page, limit), null);
+    } catch (error) {
+      return next(new ErrorHandler(error.message, error.status || 500));
+    }
+  }
   @Get('by-subject/:subjectId')
   async bySubject(
     @Param('subjectId') subjectId: number,
