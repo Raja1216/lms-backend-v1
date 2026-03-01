@@ -8,6 +8,7 @@ import { CreateChapterDto } from './dto/create-chapter.dto';
 import { UpdateChapterDto } from './dto/update-chapter.dto';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
 
 @Injectable()
 export class ChapterService {
@@ -98,6 +99,33 @@ export class ChapterService {
     }
 
     return chapter;
+  }
+
+  async findAll(paginationDto: PaginationDto) {
+    const { keyword, page = 1, limit = 10 } = paginationDto;
+    const skip=(page-1)*limit;
+    const chapters= await this.prisma.chapter.findMany({
+      where: {
+        title: {
+          contains: keyword,
+        },
+        status: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      skip,
+      take: limit,
+    });
+    const total= await this.prisma.chapter.count({
+      where: {
+        title: {
+          contains: keyword,
+        },
+        status: true,
+      },
+    });
+    return {chapters,total, page, limit};
   }
 
   async findBySlug(slug: string) {

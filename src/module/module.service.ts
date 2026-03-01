@@ -4,6 +4,7 @@ import { CreateModuleDto } from './dto/create-module.dto';
 import { UpdateModuleDto } from './dto/update-module.dto';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
 
 @Injectable()
 export class ModuleService {
@@ -33,7 +34,32 @@ export class ModuleService {
       },
     });
   }
-
+  async findAll(paginationDto: PaginationDto) {
+    const { keyword, page = 1, limit = 10 } = paginationDto;
+    const skip=(page-1)*limit;
+    const modules= await this.prisma.module.findMany({
+      where: {
+        title: {
+          contains: keyword,
+        },
+        status: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+      skip,
+      take: limit,
+    });
+    const total= await this.prisma.module.count({
+      where: {
+        title: {
+          contains: keyword,
+        },
+        status: true,
+      },
+    });
+    return {modules,total, page, limit};
+  }
   async findBySubject(subjectId: number) {
     return this.prisma.module.findMany({
       where: {

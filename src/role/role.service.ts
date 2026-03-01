@@ -115,6 +115,25 @@ export class RoleService {
     });
   }
 
+  async reloadSuperAdmin() {
+    const superAdminRole = await this.prismaService.role.findUnique({
+      where: { slug: 'super-admin' },
+    });
+    if (!superAdminRole) {
+      throw new NotFoundException('Super Admin role not found');
+    }
+    const allPermissions = await this.prismaService.permission.findMany();
+    return await this.prismaService.role.update({
+      where: { id: superAdminRole.id },
+      data: {
+        permissions: {
+          set: [], // remove old permissions
+          connect: allPermissions.map((permission) => ({ id: permission.id })),
+        },
+      },
+    });
+  }
+
   async remove(id: number) {
     const role = await this.prismaService.role.findUnique({
       where: { id },

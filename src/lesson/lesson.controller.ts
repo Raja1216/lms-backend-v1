@@ -48,10 +48,12 @@ export class LessonController {
       if (isLessonExist) {
         throw new ConflictException('Lesson with this title already exists');
       }
-      for (const chapterId of chapterIds) {
-        const chapter = await this.chapterService.findOne(chapterId);
-        if (!chapter) {
-          throw new NotFoundException(`Some Invalid Chapter  are selected`);
+      if (chapterIds && chapterIds.length > 0) {
+        for (const chapterId of chapterIds) {
+          const chapter = await this.chapterService.findOne(chapterId);
+          if (!chapter) {
+            throw new NotFoundException(`Some Invalid Chapter  are selected`);
+          }
         }
       }
 
@@ -107,7 +109,7 @@ export class LessonController {
     }
   }
 
-  @Permissions('lesson-read')
+  // @Permissions('lesson-read')
   @Get('/by-chapter/:chapterId')
   async findByChapter(
     @Param('chapterId') chapterId: string,
