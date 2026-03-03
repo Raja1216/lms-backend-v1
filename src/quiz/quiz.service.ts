@@ -7,13 +7,11 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
-import { generateSlug } from 'src/shared/generate-slug';
+import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 
 @Injectable()
 export class QuizService {
   constructor(private prisma: PrismaService) {}
-
-  /* ================= CREATE ================= */
 
   async create(createQuizDto: CreateQuizDto) {
     const {
@@ -45,7 +43,7 @@ export class QuizService {
     const quiz = await this.prisma.quiz.create({
       data: {
         title,
-        slug: generateSlug(title),
+        slug: await generateUniqueSlugForTable(this.prisma, 'quiz', title),
         timeLimit: timeLimit ?? 0,
         passMarks: passMarks ?? 0,
         totalMarks: totalMarks ?? 0,
@@ -82,7 +80,6 @@ export class QuizService {
     return quiz;
   }
 
-  /* ================= READ ================= */
 
   async findAll(query: any) {
     const {
@@ -181,17 +178,19 @@ export class QuizService {
     });
   }
 
-  /* ================= UPDATE ================= */
-
   async update(id: number, dto: UpdateQuizDto) {
     const quiz = await this.prisma.quiz.findUnique({ where: { id } });
     if (!quiz) throw new NotFoundException('Quiz not found');
+
+    const slug = dto.title
+      ? await generateUniqueSlugForTable(this.prisma, 'quiz', dto.title)
+      : quiz.slug;
 
     return this.prisma.quiz.update({
       where: { id },
       data: {
         title: dto.title ?? quiz.title,
-        slug: dto.title ? generateSlug(dto.title) : quiz.slug,
+        slug,
         timeLimit: dto.timeLimit ?? quiz.timeLimit,
         passMarks: dto.passMarks ?? quiz.passMarks,
         totalMarks: dto.totalMarks ?? quiz.totalMarks,
@@ -344,7 +343,11 @@ export class QuizService {
     const quiz = await tx.quiz.create({
       data: {
         title: quizData.title,
-        slug: generateSlug(quizData.title),
+        slug: await generateUniqueSlugForTable(
+          this.prisma,
+          'quiz',
+          quizData.title,
+        ),
         timeLimit: quizData.timeLimit ?? 0,
         passMarks: quizData.passMarks ?? 0,
         totalMarks: quizData.totalMarks ?? 0,

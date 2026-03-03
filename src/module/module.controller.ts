@@ -28,7 +28,7 @@ import { createPagedResponse } from 'src/shared/create-paged-response';
 export class ModuleController {
   constructor(private readonly moduleService: ModuleService) {}
 
-  @Permissions('create-module')
+  @Permissions('module-create')
   @Post()
   async create(
     @Body() dto: CreateModuleDto,
