@@ -32,7 +32,7 @@ export class SubjectController {
     private readonly courseService: CourseService,
   ) {}
 
-  @Permissions('create-subject')
+  @Permissions('subject-create')
   @Post()
   async create(
     @Body() createSubjectDto: CreateSubjectDto,
@@ -101,7 +101,7 @@ export class SubjectController {
     return this.subjectService.findAll();
   }
 
-  @Permissions('read-subject')
+  @Permissions('subject-read')
   @Get('by-id/:id')
   async findOne(
     @Param('id') id: string,
