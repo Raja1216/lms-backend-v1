@@ -80,7 +80,6 @@ export class QuizService {
     return quiz;
   }
 
-
   async findAll(query: any) {
     const {
       courseId,
@@ -109,61 +108,111 @@ export class QuizService {
       status: status === 'false' ? false : true,
     };
 
-    // Base query
-    const baseQuery: any = {
-      where,
-      include: {
-        questions: false,
-      },
-      skip: (page - 1) * limit,
-      take: +limit,
-      orderBy: { createdAt: 'desc' },
-    };
-
-    // LEVEL FILTERS
+    // Level filters
     if (courseId) {
-      baseQuery.where.courseQuizzes = {
+      where.courseQuizzes = {
         some: { courseId: +courseId },
       };
     }
 
     if (subjectId) {
-      baseQuery.where.subjectQuizzes = {
+      where.subjectQuizzes = {
         some: { subjectId: +subjectId },
       };
     }
 
     if (moduleId) {
-      baseQuery.where.moduleQuizzes = {
+      where.moduleQuizzes = {
         some: { moduleId: +moduleId },
       };
     }
 
     if (chapterId) {
-      baseQuery.where.chapterQuizzes = {
+      where.chapterQuizzes = {
         some: { chapterId: +chapterId },
       };
     }
 
     if (lessonId) {
-      baseQuery.where.lessons = {
+      where.lessons = {
         some: { lessonId: +lessonId },
       };
     }
 
-    return this.prisma.quiz.findMany(baseQuery);
+    const quizzes = await this.prisma.quiz.findMany({
+      where,
+      include: {
+        lessons: true,
+        courseQuizzes: true,
+        subjectQuizzes: true,
+        moduleQuizzes: true,
+        chapterQuizzes: true,
+      },
+      skip: (page - 1) * limit,
+      take: +limit,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return quizzes.map((quiz) => ({
+      id: quiz.id,
+      title: quiz.title,
+      slug: quiz.slug,
+      totalMarks: quiz.totalMarks,
+      passMarks: quiz.passMarks,
+      timeLimit: quiz.timeLimit,
+      status: quiz.status,
+      createdAt: quiz.createdAt,
+      updatedAt: quiz.updatedAt,
+
+      courseId: quiz.courseQuizzes?.[0]?.courseId ?? null,
+      subjectId: quiz.subjectQuizzes?.[0]?.subjectId ?? null,
+      moduleId: quiz.moduleQuizzes?.[0]?.moduleId ?? null,
+      chapterId: quiz.chapterQuizzes?.[0]?.chapterId ?? null,
+      lessonId: quiz.lessons?.[0]?.lessonId ?? null,
+    }));
   }
 
   async findOne(id: number) {
-    return this.prisma.quiz.findUnique({
+    const quiz = await this.prisma.quiz.findUnique({
       where: { id },
       include: {
         questions: {
           where: { status: true },
-          include: { options: true },
+          include: {
+            options: true,
+          },
         },
+        lessons: true,
+        courseQuizzes: true,
+        subjectQuizzes: true,
+        moduleQuizzes: true,
+        chapterQuizzes: true,
       },
     });
+
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+
+    return {
+      id: quiz.id,
+      title: quiz.title,
+      slug: quiz.slug,
+      totalMarks: quiz.totalMarks,
+      passMarks: quiz.passMarks,
+      timeLimit: quiz.timeLimit,
+      status: quiz.status,
+      createdAt: quiz.createdAt,
+      updatedAt: quiz.updatedAt,
+
+      courseId: quiz.courseQuizzes?.[0]?.courseId ?? null,
+      subjectId: quiz.subjectQuizzes?.[0]?.subjectId ?? null,
+      moduleId: quiz.moduleQuizzes?.[0]?.moduleId ?? null,
+      chapterId: quiz.chapterQuizzes?.[0]?.chapterId ?? null,
+      lessonId: quiz.lessons?.[0]?.lessonId ?? null,
+
+      questions: quiz.questions,
+    };
   }
 
   async findBySlug(slug: string) {
