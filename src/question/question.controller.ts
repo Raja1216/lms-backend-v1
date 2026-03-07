@@ -31,7 +31,7 @@ export class QuestionController {
     private readonly quizService: QuizService,
   ) {}
 
-  @Permissions('create-question')
+  @Permissions('question-create')
   @Post()
   async create(
     @Body() createQuestionDto: CreateQuestionDto,
@@ -89,7 +89,7 @@ export class QuestionController {
     }
   }
 
-  @Permissions('read-question')
+  @Permissions('question-read')
   @Get(':id')
   async findOne(
     @Param('id') id: string,
@@ -115,7 +115,7 @@ export class QuestionController {
     }
   }
 
-  @Permissions('update-question')
+  @Permissions('question-update')
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -142,7 +142,7 @@ export class QuestionController {
     }
   }
 
-  @Permissions('update-question')
+  @Permissions('question-update')
   @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
