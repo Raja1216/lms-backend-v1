@@ -39,6 +39,26 @@ export class ChapterService {
         );
       }
     }
+    if (dto.subjectId) {
+      const existingChapter = await this.prisma.subjectChapter.findFirst({
+        where: {
+          subjectId: dto.subjectId,
+          chapter: {
+            title: dto.title,
+            status: true,
+          },
+        },
+        include: {
+          chapter: true,
+        },
+      });
+
+      if (existingChapter) {
+        throw new BadRequestException(
+          'A chapter with the same title already exists for this subject',
+        );
+      }
+    }
 
     const slug = await generateUniqueSlugForTable(
       this.prisma,
@@ -56,13 +76,14 @@ export class ChapterService {
       },
     });
 
-    // Attach to subject (always)
-    await this.prisma.subjectChapter.create({
-      data: {
-        subjectId: dto.subjectId,
-        chapterId: chapter.id,
-      },
-    });
+    if (dto.subjectId) {
+      await this.prisma.subjectChapter.create({
+        data: {
+          subjectId: dto.subjectId,
+          chapterId: chapter.id,
+        },
+      });
+    }
 
     // Attach to module (optional)
     if (dto.moduleId) {
@@ -103,8 +124,8 @@ export class ChapterService {
 
   async findAll(paginationDto: PaginationDto) {
     const { keyword, page = 1, limit = 10 } = paginationDto;
-    const skip=(page-1)*limit;
-    const chapters= await this.prisma.chapter.findMany({
+    const skip = (page - 1) * limit;
+    const chapters = await this.prisma.chapter.findMany({
       where: {
         title: {
           contains: keyword,
@@ -117,7 +138,7 @@ export class ChapterService {
       skip,
       take: limit,
     });
-    const total= await this.prisma.chapter.count({
+    const total = await this.prisma.chapter.count({
       where: {
         title: {
           contains: keyword,
@@ -125,7 +146,7 @@ export class ChapterService {
         status: true,
       },
     });
-    return {chapters,total, page, limit};
+    return { chapters, total, page, limit };
   }
 
   async findBySlug(slug: string) {
@@ -196,11 +217,36 @@ export class ChapterService {
         slug,
       },
     });
+    if (dto.subjectId && dto.subjectId !== existing.subjects[0]?.subjectId) {
+      // Remove old subject association
+      await this.prisma.subjectChapter.deleteMany({
+        where: { chapterId: id, subjectId: dto.subjectId },
+      });
+      // Add new subject association
+      await this.prisma.subjectChapter.create({
+        data: {
+          subjectId: dto.subjectId,
+          chapterId: id,
+        },
+      });
+    }
+    if (dto.moduleId && dto.moduleId !== existing.modules[0]?.moduleId) {
+      // Remove old module association
+      await this.prisma.moduleChapter.deleteMany({
+        where: { chapterId: id, moduleId: dto.moduleId },
+      });
+      // Add new module association
+      await this.prisma.moduleChapter.create({
+        data: {
+          moduleId: dto.moduleId,
+          chapterId: id,
+        },
+      });
+    }
 
     return this.findOne(id);
   }
 
-  // ✅ SOFT DELETE
   async remove(id: number) {
     await this.findOne(id);
 
