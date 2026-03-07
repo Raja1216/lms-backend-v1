@@ -24,7 +24,7 @@ import { Permissions } from 'src/guard/premission.decorator';
 import { QuizService } from 'src/quiz/quiz.service';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@Controller('questions') // ✅ plural (recommended)
+@Controller('questions') 
 export class QuestionController {
   constructor(
     private readonly questionService: QuestionService,
@@ -63,7 +63,7 @@ export class QuestionController {
     }
   }
 
-  // ✅ FIXED: real implementation with pagination
+  @Permissions('question-read')
   @Get()
   async findAll(
     @Query() query: any,
@@ -168,7 +168,7 @@ export class QuestionController {
     }
   }
 
-  // ✅ FIXED: soft delete
+  @Permissions('question-delete')
   @Delete(':id')
   async remove(
     @Param('id') id: string,
@@ -194,7 +194,7 @@ export class QuestionController {
     }
   }
 
-  // ✅ Stub for future Excel upload
+
   @Post('bulk-upload')
   async bulkUpload(@Res() res: Response) {
     return successResponse(
