@@ -105,7 +105,7 @@ export class QuizService {
     }
 
     const where: any = {
-      status: status === 'false' ? false : true,
+      status: true,
     };
 
     // Level filters
