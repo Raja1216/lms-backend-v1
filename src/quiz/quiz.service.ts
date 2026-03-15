@@ -315,7 +315,7 @@ export class QuizService {
     });
   }
 
-  /* ================= SUBMIT ================= */
+
 
   async submitQuiz(userId: number, quizId: number, submitData: SubmitQuizDto) {
     const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
