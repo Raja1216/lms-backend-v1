@@ -36,8 +36,8 @@ export class ModuleService {
   }
   async findAll(paginationDto: PaginationDto) {
     const { keyword, page = 1, limit = 10 } = paginationDto;
-    const skip=(page-1)*limit;
-    const modules= await this.prisma.module.findMany({
+    const skip = (page - 1) * limit;
+    const modules = await this.prisma.module.findMany({
       where: {
         title: {
           contains: keyword,
@@ -50,7 +50,7 @@ export class ModuleService {
       skip,
       take: limit,
     });
-    const total= await this.prisma.module.count({
+    const total = await this.prisma.module.count({
       where: {
         title: {
           contains: keyword,
@@ -58,7 +58,7 @@ export class ModuleService {
         status: true,
       },
     });
-    return {modules,total, page, limit};
+    return { modules, total, page, limit };
   }
   async findBySubject(subjectId: number) {
     return this.prisma.module.findMany({
@@ -71,6 +71,11 @@ export class ModuleService {
       },
       include: {
         chapters: {
+          where: {
+            chapter: {
+              status: true, // ✅ filter inactive chapters
+            },
+          },
           include: {
             chapter: true,
           },
