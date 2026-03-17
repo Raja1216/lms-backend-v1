@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, Length, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, Length, IsNumber, IsArray } from 'class-validator';
 
 export class CreateSubjectDto {
   @IsString()
@@ -10,6 +10,7 @@ export class CreateSubjectDto {
   @IsNotEmpty()
   description: string;
 
+  @IsArray()
   @IsNumber({}, { each: true })
-  courseIds: number[];
+  courseIds?: number[];
 }

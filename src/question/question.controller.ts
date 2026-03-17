@@ -24,14 +24,14 @@ import { Permissions } from 'src/guard/premission.decorator';
 import { QuizService } from 'src/quiz/quiz.service';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
-@Controller('questions') // ✅ plural (recommended)
+@Controller('questions') 
 export class QuestionController {
   constructor(
     private readonly questionService: QuestionService,
     private readonly quizService: QuizService,
   ) {}
 
-  @Permissions('create-question')
+  @Permissions('question-create')
   @Post()
   async create(
     @Body() createQuestionDto: CreateQuestionDto,
@@ -63,7 +63,7 @@ export class QuestionController {
     }
   }
 
-  // ✅ FIXED: real implementation with pagination
+  @Permissions('question-read')
   @Get()
   async findAll(
     @Query() query: any,
@@ -89,7 +89,7 @@ export class QuestionController {
     }
   }
 
-  @Permissions('read-question')
+  @Permissions('question-read')
   @Get(':id')
   async findOne(
     @Param('id') id: string,
@@ -115,7 +115,7 @@ export class QuestionController {
     }
   }
 
-  @Permissions('update-question')
+  @Permissions('question-update')
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -142,7 +142,7 @@ export class QuestionController {
     }
   }
 
-  @Permissions('update-question')
+  @Permissions('question-update')
   @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
@@ -168,7 +168,7 @@ export class QuestionController {
     }
   }
 
-  // ✅ FIXED: soft delete
+  @Permissions('question-delete')
   @Delete(':id')
   async remove(
     @Param('id') id: string,
@@ -194,7 +194,7 @@ export class QuestionController {
     }
   }
 
-  // ✅ Stub for future Excel upload
+
   @Post('bulk-upload')
   async bulkUpload(@Res() res: Response) {
     return successResponse(

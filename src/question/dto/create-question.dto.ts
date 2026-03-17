@@ -13,7 +13,7 @@ import {
   ValidateNested,
   IsNotEmpty,
 } from 'class-validator';
-import { QuestionType } from 'src/generated/prisma/enums';
+import { QuestionType,Difficulty } from 'src/generated/prisma/enums';
 export class CreateQuestionDto {
   @IsNumber()
   @Min(1)
@@ -48,6 +48,9 @@ export class CreateQuestionItemDto {
   @IsOptional()
   @IsString()
   answer?: string;
+
+  @IsEnum(Difficulty)
+  difficulty: Difficulty;
 
   // duration in minutes
   @IsNotEmpty()

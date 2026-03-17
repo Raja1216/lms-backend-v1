@@ -279,6 +279,7 @@ export const LessonScalarFieldEnum = {
   noOfXpPoints: 'noOfXpPoints',
   type: 'type',
   docUrl: 'docUrl',
+  sortOrder: 'sortOrder',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

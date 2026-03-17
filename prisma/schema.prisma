@@ -245,6 +245,7 @@ model Lesson {
   noOfXpPoints Int               @default(0)
   type         LessonType        @default(video)
   docUrl       String?
+  sortOrder    Int?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   chapters     LessonToChapter[] @relation("LessonToChapters")
@@ -318,8 +319,8 @@ model QuizAttempt {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  quiz             Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
-  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   answers QuestionAttempt[] @relation("AttemptAnswers")
 
@@ -361,7 +362,7 @@ model Question {
 
   quiz             Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
   questionAttempts QuestionAttempt[]
-  options  QuestionOption[] @relation("QuestionOptions")
+  options          QuestionOption[]  @relation("QuestionOptions")
 
   @@map("questions")
 }
@@ -374,7 +375,7 @@ model QuestionOption {
   isCorrect  Boolean  @default(false)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  question Question @relation("QuestionOptions", fields: [questionId], references: [id])
+  question   Question @relation("QuestionOptions", fields: [questionId], references: [id])
 
   @@map("question_options")
 }

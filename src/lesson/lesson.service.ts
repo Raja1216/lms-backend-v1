@@ -28,6 +28,7 @@ export class LessonService {
       topicName,
       NumberOfPages,
       noOfXpPoints,
+      sortOrder,
     } = createLessonDto;
     let documentUrl: string | null = null;
     if (documentContent) {
@@ -56,6 +57,7 @@ export class LessonService {
         type: lessonType,
         NoOfPages: NumberOfPages,
         noOfXpPoints: noOfXpPoints,
+        sortOrder: sortOrder,
       },
     });
     const lessonToChapter: any[] = [];
@@ -76,7 +78,7 @@ export class LessonService {
   async findAll() {
     return this.prisma.lesson.findMany({
       where: { status: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { sortOrder: 'asc' },
       include: {
         chapters: {
           include: {
@@ -133,6 +135,7 @@ export class LessonService {
       chapterIds,
       NumberOfPages,
       noOfXpPoints,
+      sortOrder,
     } = updateLessonDto;
 
     const updatedLesson = await this.prisma.lesson.update({
@@ -149,15 +152,16 @@ export class LessonService {
         type: lessonType,
         NoOfPages: NumberOfPages,
         noOfXpPoints: noOfXpPoints,
+        sortOrder: sortOrder,
       },
     });
 
     const lessonToChapter: any[] = [];
 
+    await this.prisma.lessonToChapter.deleteMany({
+      where: { lessonId: id },
+    });
     if (chapterIds && chapterIds.length > 0) {
-      await this.prisma.lessonToChapter.deleteMany({
-        where: { lessonId: id },
-      });
 
       for (const chapterId of chapterIds) {
         await this.prisma.lessonToChapter.create({

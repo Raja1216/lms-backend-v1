@@ -105,7 +105,7 @@ export class QuizService {
     }
 
     const where: any = {
-      status: status === 'false' ? false : true,
+      status: true,
     };
 
     // Level filters
@@ -228,14 +228,25 @@ export class QuizService {
   }
 
   async update(id: number, dto: UpdateQuizDto) {
-    const quiz = await this.prisma.quiz.findUnique({ where: { id } });
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id },
+      include: {
+        courseQuizzes: true,
+        subjectQuizzes: true,
+        moduleQuizzes: true,
+        chapterQuizzes: true,
+        lessons: true,
+      },
+    });
+
     if (!quiz) throw new NotFoundException('Quiz not found');
 
     const slug = dto.title
       ? await generateUniqueSlugForTable(this.prisma, 'quiz', dto.title)
       : quiz.slug;
 
-    return this.prisma.quiz.update({
+    // Update quiz basic fields
+    const updatedQuiz = await this.prisma.quiz.update({
       where: { id },
       data: {
         title: dto.title ?? quiz.title,
@@ -245,6 +256,53 @@ export class QuizService {
         totalMarks: dto.totalMarks ?? quiz.totalMarks,
       },
     });
+
+    // Handle relationship updates if provided
+    const { courseId, subjectId, moduleId, chapterId, lessonId } = dto as any;
+
+    if (
+      courseId !== undefined ||
+      subjectId !== undefined ||
+      moduleId !== undefined ||
+      chapterId !== undefined ||
+      lessonId !== undefined
+    ) {
+      // Delete existing relationships
+      await this.prisma.courseQuiz.deleteMany({ where: { quizId: id } });
+      await this.prisma.subjectQuiz.deleteMany({ where: { quizId: id } });
+      await this.prisma.moduleQuiz.deleteMany({ where: { quizId: id } });
+      await this.prisma.chapterQuiz.deleteMany({ where: { quizId: id } });
+      await this.prisma.lessonQuiz.deleteMany({ where: { quizId: id } });
+
+      // Create new relationship
+      if (courseId) {
+        await this.prisma.courseQuiz.create({
+          data: { courseId, quizId: id },
+        });
+      }
+      if (subjectId) {
+        await this.prisma.subjectQuiz.create({
+          data: { subjectId, quizId: id },
+        });
+      }
+      if (moduleId) {
+        await this.prisma.moduleQuiz.create({
+          data: { moduleId, quizId: id },
+        });
+      }
+      if (chapterId) {
+        await this.prisma.chapterQuiz.create({
+          data: { chapterId, quizId: id },
+        });
+      }
+      if (lessonId) {
+        await this.prisma.lessonQuiz.create({
+          data: { lessonId, quizId: id },
+        });
+      }
+    }
+
+    return updatedQuiz;
   }
 
   async updateStatus(id: number) {
@@ -257,7 +315,7 @@ export class QuizService {
     });
   }
 
-  /* ================= SUBMIT ================= */
+
 
   async submitQuiz(userId: number, quizId: number, submitData: SubmitQuizDto) {
     const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
@@ -353,8 +411,6 @@ export class QuizService {
       passed: obtainedMarks >= quiz.passMarks,
     };
   }
-
-  /* ================= HELPERS ================= */
 
   private gradeAnswer(question: any, userAnswer: string | string[]) {
     if (question.type === 'MCQ' || question.type === 'TRUEORFALSE') {

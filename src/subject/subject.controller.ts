@@ -46,12 +46,14 @@ export class SubjectController {
       if (isSubjectExist) {
         throw new ConflictException('Subject with this name already exists');
       }
+      if (courseIds && courseIds.length > 0) {
       for (const courseId of courseIds) {
         const course = await this.courseService.findOne(courseId);
         if (!course) {
           throw new NotFoundException('Course not found');
         }
       }
+    }
       const result = await this.subjectService.create(createSubjectDto);
       return successResponse(
         res,

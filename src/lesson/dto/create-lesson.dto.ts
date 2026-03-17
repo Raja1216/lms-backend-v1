@@ -44,4 +44,8 @@ export class CreateLessonDto {
   @IsOptional()
   @IsNumber()
   noOfXpPoints?: number;
+
+  @IsOptional()
+  @IsNumber()
+  sortOrder?: number;
 }
