@@ -19,6 +19,8 @@ import { ForumModule } from './forum/forum.module';
 
 import { UploadModule } from './upload/upload.module';
 import { ModuleModule } from './module/module.module';
+import { ProjectModule } from './project/project.module';
+import { ProjectSubmissionModule } from './project/project-submission/project-submission.module';
 
 
 @Module({
@@ -41,6 +43,8 @@ import { ModuleModule } from './module/module.module';
     ForumModule,
     UploadModule,
     ModuleModule,
+    ProjectModule,
+    ProjectSubmissionModule,
   ],
 })
 export class AppModule {}

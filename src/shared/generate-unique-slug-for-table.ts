@@ -10,7 +10,8 @@ export async function generateUniqueSlugForTable(
     | 'module'
     | 'chapter'
     | 'lesson'
-    | 'quiz',
+    | 'quiz'
+    | 'project',
   title: string,
 ) {
   const baseSlug = slugify(title, {

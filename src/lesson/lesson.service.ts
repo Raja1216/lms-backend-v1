@@ -107,14 +107,16 @@ export class LessonService {
       where: {
         chapterId,
         lesson: {
-          status: true, // only active lessons
+          status: true, // filter relation here ✅
         },
       },
       include: {
-        lesson: true,
+        lesson: true, // only include relation
       },
       orderBy: {
-        createdAt: 'asc',
+        lesson: {
+          sortOrder: 'asc',
+        },
       },
     });
   }
@@ -162,7 +164,6 @@ export class LessonService {
       where: { lessonId: id },
     });
     if (chapterIds && chapterIds.length > 0) {
-
       for (const chapterId of chapterIds) {
         await this.prisma.lessonToChapter.create({
           data: {
