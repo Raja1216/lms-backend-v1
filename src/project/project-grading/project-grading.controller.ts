@@ -28,7 +28,7 @@ import { CoursePerformanceQueryDto } from './dto/grading.dto';
 @Controller('project-grading')
 export class ProjectGradingController {
   constructor(private readonly projectGradingService: ProjectGradingService) {}
-  @Permissions('create-grades')
+  @Permissions('grades-create')
   @Post(':submissionId/manual')
   async gradeManual(
     @Param('submissionId', ParseIntPipe) submissionId: number,
@@ -62,7 +62,7 @@ export class ProjectGradingController {
       );
     }
   }
-  @Permissions('create-grades')
+  @Permissions('grades-create')
   @Post(':submissionId/rubric')
   async gradeRubric(
     @Param('submissionId', ParseIntPipe) submissionId: number,
@@ -97,7 +97,7 @@ export class ProjectGradingController {
     }
   }
 
-  @Permissions('update-grades')
+  @Permissions('grades-update')
   @Put(':submissionId/publish')
   async publishGrade(
     @Param('submissionId', ParseIntPipe) submissionId: number,
@@ -127,7 +127,7 @@ export class ProjectGradingController {
     }
   }
 
-  @Permissions('read-grades')
+  @Permissions('grades-read')
   @Get(':submissionId')
   async getGrade(
     @Param('submissionId', ParseIntPipe) submissionId: number,
@@ -174,7 +174,7 @@ export class ProjectGradingController {
       );
     }
   }
-  @Permissions('read-grades')
+  @Permissions('grades-read')
   @Get('project/:projectId/grades')
   async listByProject(
     @Param('projectId', ParseIntPipe) projectId: number,
@@ -196,7 +196,7 @@ export class ProjectGradingController {
       );
     }
   }
-  @Permissions('read-grades')
+  @Permissions('grades-read')
   @Get('performance/course')
   async getCoursePerformance(
     @Query() query: CoursePerformanceQueryDto,
