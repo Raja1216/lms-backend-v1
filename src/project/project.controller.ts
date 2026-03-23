@@ -26,6 +26,7 @@ import { PermissionGuard } from 'src/guard/permission.guard';
 import { Permissions } from 'src/guard/premission.decorator';
 import { User } from 'src/generated/prisma/browser';
 import { UpsertGradeScaleDto } from './dto/grade-scale.dto';
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('project')
 export class ProjectController {
@@ -87,7 +88,37 @@ export class ProjectController {
       );
     }
   }
-
+  @Get('course/:courseSlug')
+  async findProjectsByCourseSlug(
+    @Param('courseSlug') courseSlug: string,
+    @Query() paginationDto: PaginationDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @NestJsRequest() req: { user: User },
+  ) {
+    try {
+      const { data, page, limit, total } =
+        await this.projectService.findProjectsByCourseSlug(
+          courseSlug,
+          req.user.id,
+          paginationDto,
+        );
+      return successResponse(
+        res,
+        200,
+        'Projects retrieved successfully',
+        createPagedResponse(data, page, limit, total),
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
   @Permissions('project-read')
   @Get(':id')
   async findOne(
