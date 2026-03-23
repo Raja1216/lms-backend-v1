@@ -9,6 +9,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { QueryProjectDto } from './dto/query-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
 @Injectable()
 export class ProjectService {
   constructor(private readonly prisma: PrismaService) {}
@@ -90,6 +91,32 @@ export class ProjectService {
     ]);
 
     return { data, total, page, limit };
+  }
+  async findProjectsByCourseSlug(courseSlug: string, userId: number, paginationDto: PaginationDto) {
+    const course = await this.prisma.course.findUnique({
+      where: { slug: courseSlug },
+    });
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+    // If user is not enrolled in the course, they should not see any projects
+    const enrollment = await this.prisma.userEnrolledCourse.findFirst({
+      where: { courseId: course.id, userId },
+    });
+    if (!enrollment) {
+      throw new NotFoundException('Course not found');
+    }
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+    return this.prisma.project.findMany({
+      where: { courseId: course.id },
+      include: { rubrics: true, course: { select: { title: true } } },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit,    }).then(async (data) => {
+      const total = await this.prisma.project.count({ where: { courseId: course.id } });
+      return { data, total, page, limit };
+    });
   }
 
   async findOne(id: number) {
