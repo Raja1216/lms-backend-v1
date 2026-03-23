@@ -32,6 +32,36 @@ enum Difficulty {
   hard
 }
 
+enum SubmissionType {
+  pdf
+  video
+  image
+  link
+  text
+}
+
+enum GradingMethod {
+  manual
+  rubric
+}
+
+enum SubmissionStatus {
+  not_submitted
+  submitted
+  late_submitted
+  under_review
+  graded
+  re_submitted
+}
+
+enum LetterGrade {
+  A_PLUS
+  A
+  B
+  C
+  F
+}
+
 model User {
   id                  Int                  @id @default(autoincrement())
   uuid                String               @unique @default(uuid())
@@ -58,6 +88,9 @@ model User {
   payments            Payment[]            @relation("UserPayments")
   userEnrolledCourses UserEnrolledCourse[] @relation("UserEnrolledCourses")
   xpEarned            UserXPEarned[]
+  teacherProjects     Project[]            @relation("TeacherProjects")
+  studentSubmissions  ProjectSubmission[]  @relation("StudentSubmissions")
+  gradesGiven         ProjectGrade[]       @relation("TeacherGrades")
 
   @@map("users")
 }
@@ -123,6 +156,8 @@ model Course {
   payments            Payment[]            @relation("CoursePayments")
   userEnrolledCourses UserEnrolledCourse[] @relation("CourseEnrolledUsers")
   courseQuizzes       CourseQuiz[]
+  projects            Project[]            @relation("CourseProjects")
+  gradeScale          GradeScale?          @relation("CourseGradeScale")
 
   @@map("courses")
 }
@@ -557,4 +592,175 @@ model ChapterQuiz {
 
   @@unique([chapterId, quizId])
   @@map("chapter_quizzes")
+}
+
+model Project {
+  id             Int            @id @default(autoincrement())
+  courseId       Int
+  createdBy      Int
+  title          String
+  slug           String         @unique
+  description    String         @db.Text
+  submissionType SubmissionType @default(pdf)
+  deadline       DateTime
+  maxMarks       Int
+  gradingMethod  GradingMethod  @default(manual)
+  /// Weight of this project in the course final score (0–100)
+  weightPercent  Decimal        @default(0) @db.Decimal(5, 2)
+  allowLate      Boolean        @default(false)
+  /// Max file size per upload in MB
+  maxFileSizeMb  Int            @default(50)
+  status         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  course      Course              @relation("CourseProjects", fields: [courseId], references: [id], onDelete: Cascade)
+  creator     User                @relation("TeacherProjects", fields: [createdBy], references: [id])
+  rubrics     ProjectRubric[]     @relation("ProjectRubrics")
+  submissions ProjectSubmission[] @relation("ProjectSubmissions")
+
+  @@map("projects")
+}
+
+/// Rubric criteria for a project (only used when gradingMethod = rubric)
+model ProjectRubric {
+  id          Int     @id @default(autoincrement())
+  projectId   Int
+  title       String
+  description String? @db.Text
+  /// Weight % of this criterion — all rubrics for a project must sum to 100
+  weight      Decimal @db.Decimal(5, 2)
+  maxMarks    Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project       @relation("ProjectRubrics", fields: [projectId], references: [id], onDelete: Cascade)
+  grades  RubricGrade[] @relation("RubricGrades")
+
+  @@map("project_rubrics")
+}
+
+/// A student's submission for a project (one per student per project)
+model ProjectSubmission {
+  id          Int              @id @default(autoincrement())
+  projectId   Int
+  studentId   Int
+  status      SubmissionStatus @default(not_submitted)
+  description String?          @db.Text
+  /// Increments on every re-submission
+  version     Int              @default(1)
+  submittedAt DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  project Project             @relation("ProjectSubmissions", fields: [projectId], references: [id], onDelete: Cascade)
+  student User                @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  files   SubmissionFile[]    @relation("SubmissionFiles")
+  grade   ProjectGrade?       @relation("SubmissionGrade")
+  history SubmissionHistory[] @relation("SubmissionHistory")
+
+  /// One submission record per student per project
+  @@unique([projectId, studentId])
+  @@map("project_submissions")
+}
+
+/// Files or external links attached to a submission
+model SubmissionFile {
+  id           Int            @id @default(autoincrement())
+  submissionId Int
+  fileType     SubmissionType
+  fileUrl      String
+  originalName String?
+  fileSizeKb   Int?
+  /// Which submission version this file was uploaded in
+  version      Int            @default(1)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  submission ProjectSubmission @relation("SubmissionFiles", fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("submission_files")
+}
+
+/// Snapshot of a submission saved before each re-submission
+model SubmissionHistory {
+  id            Int              @id @default(autoincrement())
+  submissionId  Int
+  version       Int
+  status        SubmissionStatus
+  description   String?          @db.Text
+  snapshottedAt DateTime         @default(now())
+
+  submission ProjectSubmission @relation("SubmissionHistory", fields: [submissionId], references: [id], onDelete: Cascade)
+
+  @@map("submission_history")
+}
+
+/// Grade record for a submission — supports both manual and rubric grading
+model ProjectGrade {
+  id            Int          @id @default(autoincrement())
+  submissionId  Int          @unique
+  teacherId     Int
+  obtainedMarks Decimal      @db.Decimal(10, 2)
+  totalMarks    Decimal      @db.Decimal(10, 2)
+  percentage    Decimal      @db.Decimal(5, 2)
+  letterGrade   LetterGrade?
+  feedback      String?      @db.Text
+  /// When false the student cannot see this grade yet
+  isPublished   Boolean      @default(false)
+  gradedAt      DateTime     @default(now())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  submission   ProjectSubmission @relation("SubmissionGrade", fields: [submissionId], references: [id], onDelete: Cascade)
+  teacher      User              @relation("TeacherGrades", fields: [teacherId], references: [id])
+  rubricGrades RubricGrade[]     @relation("GradeRubrics")
+
+  @@map("project_grades")
+}
+
+/// Per-criterion marks when rubric grading is used
+model RubricGrade {
+  id        Int      @id @default(autoincrement())
+  gradeId   Int
+  rubricId  Int
+  marks     Decimal  @db.Decimal(10, 2)
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  grade  ProjectGrade  @relation("GradeRubrics", fields: [gradeId], references: [id], onDelete: Cascade)
+  rubric ProjectRubric @relation("RubricGrades", fields: [rubricId], references: [id], onDelete: Cascade)
+
+  @@unique([gradeId, rubricId])
+  @@map("rubric_grades")
+}
+
+/// Custom percentage → letter grade mapping for a course (optional)
+model GradeScale {
+  id        Int      @id @default(autoincrement())
+  courseId  Int      @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course Course           @relation("CourseGradeScale", fields: [courseId], references: [id], onDelete: Cascade)
+  bands  GradeScaleBand[] @relation("ScaleBands")
+
+  @@map("grade_scales")
+}
+
+/// Each percentage band in a grade scale
+model GradeScaleBand {
+  id          Int         @id @default(autoincrement())
+  scaleId     Int
+  minPercent  Decimal     @db.Decimal(5, 2)
+  maxPercent  Decimal     @db.Decimal(5, 2)
+  letterGrade LetterGrade
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  scale GradeScale @relation("ScaleBands", fields: [scaleId], references: [id], onDelete: Cascade)
+
+  @@map("grade_scale_bands")
 }
