@@ -68,10 +68,12 @@ export class ProjectGradingService {
 
     const percentage = calcPercentage(dto.obtainedMarks, project.maxMarks);
     const bands = await this.resolveBands(project.courseId);
-    const letterGrade = calcLetterGrade(
-      percentage,
-      bands.length ? bands : undefined,
-    );
+    // const letterGrade = calcLetterGrade(
+    //   percentage,
+    //   bands.length ? bands : undefined,
+    // );
+    const letterGrade = dto.letterGrade      ? dto.letterGrade
+      : calcLetterGrade(percentage, bands.length ? bands : undefined);
 
     return this.prisma.$transaction(async (tx) => {
       // Upsert grade (supports re-grading)
