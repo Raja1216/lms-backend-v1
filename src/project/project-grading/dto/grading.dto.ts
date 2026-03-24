@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -9,8 +10,9 @@ import {
   Max,
   Min,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
-
+import { LetterGrade } from 'src/generated/prisma/enums';
 export class ManualGradeDto {
   @ApiProperty({ example: 85, description: 'Marks obtained by student' })
   @IsNumber()
@@ -23,6 +25,14 @@ export class ManualGradeDto {
   @IsOptional()
   @IsString()
   feedback?: string;
+
+  @ApiPropertyOptional({
+    example: LetterGrade.A,
+    description: 'Optional letter grade (e.g., A_PLUS, A, B, C, F)',
+  })
+  @IsOptional()
+  @IsEnum(LetterGrade)
+  letterGrade?: LetterGrade;
 }
 
 export class RubricCriterionGradeDto {
