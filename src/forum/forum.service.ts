@@ -12,7 +12,10 @@ import { RoleService } from 'src/role/role.service';
 
 @Injectable()
 export class ForumService {
-  constructor(private readonly prisma: PrismaService, private readonly roleService: RoleService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly roleService: RoleService,
+  ) {}
 
   async getDashboardData(user: User, paginationDto: PaginationDto) {
     const { page = 1, limit = 10 } = paginationDto;
@@ -63,10 +66,9 @@ export class ForumService {
     //  Courses for the user's grade
     const [courses, totalCourses] = await Promise.all([
       this.prisma.course.findMany({
-        where: {
-          grade: userData.classGrade,
-          status: true,
-        },
+        where: isAdmin
+          ? { status: true }
+          : { grade: userData.classGrade!, status: true },
         skip,
         take: limit,
         select: {
@@ -90,10 +92,9 @@ export class ForumService {
       }),
 
       this.prisma.course.count({
-        where: {
-          grade: userData.classGrade,
-          status: true,
-        },
+        where: isAdmin
+          ? { status: true }
+          : { grade: userData.classGrade!, status: true },
       }),
     ]);
 
@@ -137,10 +138,10 @@ export class ForumService {
     if (!isAdmin && !userData?.classGrade) {
       return { discussions: [], total: 0, page, limit };
     }
-    const course = await this.prisma.course.findUnique({
+    const course = await this.prisma.course.findFirst({
       where: isAdmin
         ? { slug: courseSlug }
-        : { slug: courseSlug, grade: userData.classGrade },
+        : { slug: courseSlug, grade: userData.classGrade! },
     });
     if (!course) {
       throw new NotFoundException('Invalid course');
@@ -152,7 +153,7 @@ export class ForumService {
         parentId: null,
         course: isAdmin
           ? { slug: courseSlug }
-          : { grade: userData?.classGrade, slug: courseSlug },
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -199,7 +200,7 @@ export class ForumService {
         status: true,
         course: isAdmin
           ? { slug: courseSlug }
-          : { grade: userData?.classGrade, slug: courseSlug },
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
     });
     return { discussions: formattedDiscussions, course, total, page, limit };
@@ -250,10 +251,10 @@ export class ForumService {
     if (!isAdmin && !userData?.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
-    const course = await this.prisma.course.findUnique({
+    const course = await this.prisma.course.findFirst({
       where: isAdmin
         ? { slug: courseSlug }
-        : { slug: courseSlug, grade: userData.classGrade },
+        : { slug: courseSlug, grade: userData.classGrade! },
     });
     if (!course) {
       throw new NotFoundException('Invalid course');
@@ -304,7 +305,7 @@ export class ForumService {
         status: true,
         course: isAdmin
           ? { slug: courseSlug }
-          : { grade: userData?.classGrade, slug: courseSlug },
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
       orderBy: { createdAt: 'asc' },
       select: {
@@ -349,7 +350,7 @@ export class ForumService {
         status: true,
         course: isAdmin
           ? { slug: courseSlug }
-          : { grade: userData?.classGrade, slug: courseSlug },
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
     });
 
@@ -374,7 +375,7 @@ export class ForumService {
         status: true,
         course: isAdmin
           ? { slug: courseSlug }
-          : { grade: userData?.classGrade, slug: courseSlug },
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
       select: {
         id: true,
@@ -548,15 +549,4 @@ export class ForumService {
       return { message: 'Reaction added successfully', data };
     }
   }
-
-  async getUserRole(userId: number) {
-  const userRole = await this.prisma.userroles.findFirst({
-    where: { userId: userId },
-    include: {
-      role: true, // assuming relation exists
-    },
-  });
-
-  return userRole?.role?.name || null;
-}
 }

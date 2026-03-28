@@ -149,18 +149,30 @@ export class RoleService {
   }
 
   async getUserRole(userId: number): Promise<string | null> {
-    const userRole = await this.prismaService.userroles.findFirst({
-      where: { userId },
-      include: {
-        role: true, // make sure relation exists in prisma
-      },
-    });
+  const user = await this.prismaService.user.findUnique({
+    where: { id: userId },
+    include: {
+      roles: true,
+    },
+  });
 
-    return userRole?.role?.slug || null; // use slug (better than name)
-  }
+  if (!user || user.roles.length === 0) return null;
+
+  return user.roles[0].slug; // or name
+}
 
   async isAdmin(userId: number): Promise<boolean> {
-    const role = await this.getUserRole(userId);
-    return role === 'admin' || role === 'super-admin';
-  }
+  const user = await this.prismaService.user.findUnique({
+    where: { id: userId },
+    include: {
+      roles: true,
+    },
+  });
+
+  if (!user) return false;
+
+  return user.roles.some(
+    (role) => role.slug === 'admin' || role.slug === 'super-admin',
+  );
+}
 }
