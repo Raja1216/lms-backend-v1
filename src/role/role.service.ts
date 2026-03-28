@@ -147,4 +147,20 @@ export class RoleService {
     }
     throw new BadRequestException('Something went wrong');
   }
+
+  async getUserRole(userId: number): Promise<string | null> {
+    const userRole = await this.prismaService.userroles.findFirst({
+      where: { userId },
+      include: {
+        role: true, // make sure relation exists in prisma
+      },
+    });
+
+    return userRole?.role?.slug || null; // use slug (better than name)
+  }
+
+  async isAdmin(userId: number): Promise<boolean> {
+    const role = await this.getUserRole(userId);
+    return role === 'admin' || role === 'super-admin';
+  }
 }
