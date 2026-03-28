@@ -26,7 +26,16 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
+
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
     const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
     if (!isAdmin && !userData?.classGrade) {
       return {
         stats: {
@@ -134,7 +143,15 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
     const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
     if (!isAdmin && !userData?.classGrade) {
       return { discussions: [], total: 0, page, limit };
     }
@@ -247,7 +264,15 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
     const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
     if (!isAdmin && !userData?.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
@@ -294,7 +319,15 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
     const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
     if (!isAdmin && !userData?.classGrade) {
       return { replies: [], total: 0, page, limit };
     }
@@ -365,7 +398,15 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
     const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
     if (!isAdmin && !userData?.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
