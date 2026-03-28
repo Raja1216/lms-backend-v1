@@ -25,9 +25,8 @@ async function bootstrap() {
 
   // ENABLE CORS (allow everything for dev)
   app.enableCors({
-    origin: true, // reflect request origin — fine for dev
-    credentials: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    origin: '*',
+    credentials: false,
   });
 
   // Swagger config...
