@@ -24,21 +24,11 @@ async function bootstrap() {
   app.useGlobalFilters(new GlobalExceptionFilter());
 
   // ENABLE CORS (allow everything for dev)
-app.enableCors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'https://dev-lms.edudigm.in',
-    ];
-
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS blocked'));
-    }
-  },
-  credentials: true,
-});
+  app.enableCors({
+    origin: true, // reflect request origin — fine for dev
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  });
 
   // Swagger config...
   const config = new DocumentBuilder()
