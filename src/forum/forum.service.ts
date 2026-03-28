@@ -8,10 +8,11 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { CreateDiscussionDto } from './dto/create-discussion.dto';
 import { ForumReactUnreactDto } from './dto/forum-react-unreact.dto';
+import { RoleService } from 'src/role/role.service';
 
 @Injectable()
 export class ForumService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly roleService: RoleService) {}
 
   async getDashboardData(user: User, paginationDto: PaginationDto) {
     const { page = 1, limit = 10 } = paginationDto;
@@ -22,7 +23,7 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    const isAdmin = user.role === 'superadmin';
+    const isAdmin = await this.roleService.isAdmin(user.id);
     if (!isAdmin && !userData?.classGrade) {
       return {
         stats: {
@@ -132,7 +133,7 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    const isAdmin = user.role === 'superadmin';
+    const isAdmin = await this.roleService.isAdmin(user.id);
     if (!isAdmin && !userData?.classGrade) {
       return { discussions: [], total: 0, page, limit };
     }
@@ -245,7 +246,7 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    const isAdmin = user.role === 'superadmin';
+    const isAdmin = await this.roleService.isAdmin(user.id);
     if (!isAdmin && !userData?.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
@@ -292,7 +293,7 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    const isAdmin = user.role === 'superadmin';
+    const isAdmin = await this.roleService.isAdmin(user.id);
     if (!isAdmin && !userData?.classGrade) {
       return { replies: [], total: 0, page, limit };
     }
@@ -363,7 +364,7 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    const isAdmin = user.role === 'superadmin';
+    const isAdmin = await this.roleService.isAdmin(user.id);
     if (!isAdmin && !userData?.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
@@ -415,7 +416,7 @@ export class ForumService {
     return discussion;
   }
   async updateDiscussionStatus(user: User, discussionId: number) {
-    const isAdmin = user.role === 'superadmin';
+    const isAdmin = await this.roleService.isAdmin(user.id);
     const whereCondition = isAdmin
       ? { id: discussionId }
       : { id: discussionId, userId: user.id };
@@ -434,7 +435,7 @@ export class ForumService {
     return discussion;
   }
   async deleteDiscussion(user: User, discussionId: number) {
-    const isAdmin = user.role === 'superadmin';
+    const isAdmin = await this.roleService.isAdmin(user.id);
     const whereCondition = isAdmin
       ? { id: discussionId }
       : { id: discussionId, userId: user.id };
@@ -493,7 +494,7 @@ export class ForumService {
         }
       }
     }
-    const isAdmin = user.role === 'superadmin';
+    const isAdmin = await this.roleService.isAdmin(user.id);
     const whereCondition = isAdmin
       ? { id: discussionId }
       : { id: discussionId, userId: user.id };
@@ -547,4 +548,15 @@ export class ForumService {
       return { message: 'Reaction added successfully', data };
     }
   }
+
+  async getUserRole(userId: number) {
+  const userRole = await this.prisma.userroles.findFirst({
+    where: { userId: userId },
+    include: {
+      role: true, // assuming relation exists
+    },
+  });
+
+  return userRole?.role?.name || null;
+}
 }
