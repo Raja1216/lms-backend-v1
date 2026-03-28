@@ -25,10 +25,14 @@ async function bootstrap() {
 
   // ENABLE CORS (allow everything for dev)
   app.enableCors({
-    origin: true, // reflect request origin — fine for dev
-    credentials: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  });
+  origin: [
+    'http://localhost:3000',
+    'https://dev-lms.edudigm.in',
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+});
 
   // Swagger config...
   const config = new DocumentBuilder()
