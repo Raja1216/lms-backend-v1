@@ -22,8 +22,8 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-
-    if (!userData?.classGrade) {
+    const isAdmin = user.role === 'superadmin';
+    if (!isAdmin && !userData?.classGrade) {
       return {
         stats: {
           totalDiscussions: 0,
@@ -132,11 +132,14 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData?.classGrade) {
+    const isAdmin = user.role === 'superadmin';
+    if (!isAdmin && !userData?.classGrade) {
       return { discussions: [], total: 0, page, limit };
     }
     const course = await this.prisma.course.findUnique({
-      where: { slug: courseSlug, grade: userData.classGrade },
+      where: isAdmin
+        ? { slug: courseSlug }
+        : { slug: courseSlug, grade: userData.classGrade },
     });
     if (!course) {
       throw new NotFoundException('Invalid course');
@@ -146,10 +149,9 @@ export class ForumService {
       where: {
         status: true,
         parentId: null,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { grade: userData?.classGrade, slug: courseSlug },
       },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -194,13 +196,12 @@ export class ForumService {
     const total = await this.prisma.courForum.count({
       where: {
         status: true,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { grade: userData?.classGrade, slug: courseSlug },
       },
     });
-    return { discussions: formattedDiscussions, course,total, page, limit };
+    return { discussions: formattedDiscussions, course, total, page, limit };
   }
   async createDiscussion(
     user: User,
@@ -244,11 +245,14 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData?.classGrade) {
+    const isAdmin = user.role === 'superadmin';
+    if (!isAdmin && !userData?.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
     const course = await this.prisma.course.findUnique({
-      where: { slug: courseSlug, grade: userData.classGrade },
+      where: isAdmin
+        ? { slug: courseSlug }
+        : { slug: courseSlug, grade: userData.classGrade },
     });
     if (!course) {
       throw new NotFoundException('Invalid course');
@@ -288,7 +292,8 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData?.classGrade) {
+    const isAdmin = user.role === 'superadmin';
+    if (!isAdmin && !userData?.classGrade) {
       return { replies: [], total: 0, page, limit };
     }
 
@@ -296,10 +301,9 @@ export class ForumService {
       where: {
         parentId: forumId,
         status: true,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { grade: userData?.classGrade, slug: courseSlug },
       },
       orderBy: { createdAt: 'asc' },
       select: {
@@ -342,10 +346,9 @@ export class ForumService {
       where: {
         parentId: forumId,
         status: true,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { grade: userData?.classGrade, slug: courseSlug },
       },
     });
 
@@ -360,17 +363,17 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData?.classGrade) {
+    const isAdmin = user.role === 'superadmin';
+    if (!isAdmin && !userData?.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
     const discussion = await this.prisma.courForum.findFirst({
       where: {
         id: discussionId,
         status: true,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { grade: userData?.classGrade, slug: courseSlug },
       },
       select: {
         id: true,
@@ -412,22 +415,32 @@ export class ForumService {
     return discussion;
   }
   async updateDiscussionStatus(user: User, discussionId: number) {
-    const existingDiscussion = await this.prisma.courForum.findUnique({
-      where: { id: discussionId, userId: user.id },
+    const isAdmin = user.role === 'superadmin';
+    const whereCondition = isAdmin
+      ? { id: discussionId }
+      : { id: discussionId, userId: user.id };
+
+    const existingDiscussion = await this.prisma.courForum.findFirst({
+      where: whereCondition,
     });
     if (!existingDiscussion) {
       throw new NotFoundException('Discussion not found or unauthorized');
     }
     const status = existingDiscussion.status;
     const discussion = await this.prisma.courForum.update({
-      where: { id: discussionId, userId: user.id },
+      where: whereCondition,
       data: { status: !status },
     });
     return discussion;
   }
   async deleteDiscussion(user: User, discussionId: number) {
+    const isAdmin = user.role === 'superadmin';
+    const whereCondition = isAdmin
+      ? { id: discussionId }
+      : { id: discussionId, userId: user.id };
+
     const discussion = await this.prisma.courForum.deleteMany({
-      where: { id: discussionId, userId: user.id },
+      where: whereCondition,
     });
     return discussion;
   }
@@ -480,9 +493,13 @@ export class ForumService {
         }
       }
     }
+    const isAdmin = user.role === 'superadmin';
+    const whereCondition = isAdmin
+      ? { id: discussionId }
+      : { id: discussionId, userId: user.id };
 
     const updatedDiscussion = await this.prisma.courForum.update({
-      where: { id: discussionId, userId: user.id },
+      where: whereCondition,
       data: {
         title: updateData.title,
         content: updateData.content,
