@@ -28,7 +28,7 @@ app.enableCors({
   origin: (origin, callback) => {
     const allowedOrigins = [
       'http://localhost:3000',
-      'https://lms-backend.edudigm.in',
+      'https://dev-lms.edudigm.in',
     ];
 
     if (!origin || allowedOrigins.includes(origin)) {
