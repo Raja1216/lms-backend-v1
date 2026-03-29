@@ -28,7 +28,7 @@ export class ManualGradeDto {
 
   @ApiPropertyOptional({
     example: LetterGrade.A,
-    description: 'Optional letter grade (e.g., A_PLUS, A, B, C, F)',
+    description: 'Optional letter grade (e.g., A+, A, B, C, F)',
   })
   @IsOptional()
   @IsEnum(LetterGrade)
