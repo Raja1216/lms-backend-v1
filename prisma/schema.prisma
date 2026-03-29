@@ -55,10 +55,13 @@ enum SubmissionStatus {
 }
 
 enum LetterGrade {
-  A_PLUS
+  A+
   A
   B
+  B+
+  C+
   C
+  D
   F
 }
 
