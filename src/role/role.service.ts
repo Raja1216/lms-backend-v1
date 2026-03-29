@@ -147,4 +147,32 @@ export class RoleService {
     }
     throw new BadRequestException('Something went wrong');
   }
+
+  async getUserRole(userId: number): Promise<string | null> {
+  const user = await this.prismaService.user.findUnique({
+    where: { id: userId },
+    include: {
+      roles: true,
+    },
+  });
+
+  if (!user || user.roles.length === 0) return null;
+
+  return user.roles[0].slug; // or name
+}
+
+  async isAdmin(userId: number): Promise<boolean> {
+  const user = await this.prismaService.user.findUnique({
+    where: { id: userId },
+    include: {
+      roles: true,
+    },
+  });
+
+  if (!user) return false;
+
+  return user.roles.some(
+    (role) => role.slug === 'admin' || role.slug === 'super-admin',
+  );
+}
 }

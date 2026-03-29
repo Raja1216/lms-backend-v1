@@ -8,10 +8,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 import { CreateDiscussionDto } from './dto/create-discussion.dto';
 import { ForumReactUnreactDto } from './dto/forum-react-unreact.dto';
+import { RoleService } from 'src/role/role.service';
 
 @Injectable()
 export class ForumService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly roleService: RoleService,
+  ) {}
 
   async getDashboardData(user: User, paginationDto: PaginationDto) {
     const { page = 1, limit = 10 } = paginationDto;
@@ -23,7 +27,16 @@ export class ForumService {
       select: { classGrade: true },
     });
 
-    if (!userData?.classGrade) {
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
+    if (!isAdmin && !userData?.classGrade) {
       return {
         stats: {
           totalDiscussions: 0,
@@ -62,10 +75,9 @@ export class ForumService {
     //  Courses for the user's grade
     const [courses, totalCourses] = await Promise.all([
       this.prisma.course.findMany({
-        where: {
-          grade: userData.classGrade,
-          status: true,
-        },
+        where: isAdmin
+          ? { status: true }
+          : { grade: userData.classGrade!, status: true },
         skip,
         take: limit,
         select: {
@@ -89,10 +101,9 @@ export class ForumService {
       }),
 
       this.prisma.course.count({
-        where: {
-          grade: userData.classGrade,
-          status: true,
-        },
+        where: isAdmin
+          ? { status: true }
+          : { grade: userData.classGrade!, status: true },
       }),
     ]);
 
@@ -132,11 +143,22 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData?.classGrade) {
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
+    if (!isAdmin && !userData?.classGrade) {
       return { discussions: [], total: 0, page, limit };
     }
-    const course = await this.prisma.course.findUnique({
-      where: { slug: courseSlug, grade: userData.classGrade },
+    const course = await this.prisma.course.findFirst({
+      where: isAdmin
+        ? { slug: courseSlug }
+        : { slug: courseSlug, grade: userData.classGrade! },
     });
     if (!course) {
       throw new NotFoundException('Invalid course');
@@ -146,10 +168,9 @@ export class ForumService {
       where: {
         status: true,
         parentId: null,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -194,13 +215,12 @@ export class ForumService {
     const total = await this.prisma.courForum.count({
       where: {
         status: true,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
     });
-    return { discussions: formattedDiscussions, course,total, page, limit };
+    return { discussions: formattedDiscussions, course, total, page, limit };
   }
   async createDiscussion(
     user: User,
@@ -244,11 +264,22 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData?.classGrade) {
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
-    const course = await this.prisma.course.findUnique({
-      where: { slug: courseSlug, grade: userData.classGrade },
+    if (!isAdmin && !userData?.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
+    const course = await this.prisma.course.findFirst({
+      where: isAdmin
+        ? { slug: courseSlug }
+        : { slug: courseSlug, grade: userData.classGrade! },
     });
     if (!course) {
       throw new NotFoundException('Invalid course');
@@ -288,7 +319,16 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData?.classGrade) {
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
+    if (!isAdmin && !userData?.classGrade) {
       return { replies: [], total: 0, page, limit };
     }
 
@@ -296,10 +336,9 @@ export class ForumService {
       where: {
         parentId: forumId,
         status: true,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
       orderBy: { createdAt: 'asc' },
       select: {
@@ -342,10 +381,9 @@ export class ForumService {
       where: {
         parentId: forumId,
         status: true,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
     });
 
@@ -360,17 +398,25 @@ export class ForumService {
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData?.classGrade) {
+    if (!userData) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isAdmin = await this.roleService.isAdmin(user.id);
+
+    if (!isAdmin && !userData.classGrade) {
+      throw new NotFoundException('User class grade not found');
+    }
+    if (!isAdmin && !userData?.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
     const discussion = await this.prisma.courForum.findFirst({
       where: {
         id: discussionId,
         status: true,
-        course: {
-          grade: userData?.classGrade,
-          slug: courseSlug,
-        },
+        course: isAdmin
+          ? { slug: courseSlug }
+          : { slug: courseSlug, grade: userData.classGrade! },
       },
       select: {
         id: true,
@@ -412,22 +458,32 @@ export class ForumService {
     return discussion;
   }
   async updateDiscussionStatus(user: User, discussionId: number) {
-    const existingDiscussion = await this.prisma.courForum.findUnique({
-      where: { id: discussionId, userId: user.id },
+    const isAdmin = await this.roleService.isAdmin(user.id);
+    const whereCondition = isAdmin
+      ? { id: discussionId }
+      : { id: discussionId, userId: user.id };
+
+    const existingDiscussion = await this.prisma.courForum.findFirst({
+      where: whereCondition,
     });
     if (!existingDiscussion) {
       throw new NotFoundException('Discussion not found or unauthorized');
     }
     const status = existingDiscussion.status;
     const discussion = await this.prisma.courForum.update({
-      where: { id: discussionId, userId: user.id },
+      where: whereCondition,
       data: { status: !status },
     });
     return discussion;
   }
   async deleteDiscussion(user: User, discussionId: number) {
+    const isAdmin = await this.roleService.isAdmin(user.id);
+    const whereCondition = isAdmin
+      ? { id: discussionId }
+      : { id: discussionId, userId: user.id };
+
     const discussion = await this.prisma.courForum.deleteMany({
-      where: { id: discussionId, userId: user.id },
+      where: whereCondition,
     });
     return discussion;
   }
@@ -480,9 +536,13 @@ export class ForumService {
         }
       }
     }
+    const isAdmin = await this.roleService.isAdmin(user.id);
+    const whereCondition = isAdmin
+      ? { id: discussionId }
+      : { id: discussionId, userId: user.id };
 
     const updatedDiscussion = await this.prisma.courForum.update({
-      where: { id: discussionId, userId: user.id },
+      where: whereCondition,
       data: {
         title: updateData.title,
         content: updateData.content,
