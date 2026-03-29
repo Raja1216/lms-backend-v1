@@ -12,6 +12,7 @@ import {
   Request,
   ParseIntPipe,
   Query,
+  Request as NestjsRequest,
 } from '@nestjs/common';
 import { QuizService } from './quiz.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
@@ -23,6 +24,7 @@ import { PermissionGuard } from 'src/guard/permission.guard';
 import { Permissions } from 'src/guard/premission.decorator';
 import { successResponse } from 'src/utils/success-response';
 import { ErrorHandler } from 'src/utils/error-handler';
+import { User } from 'src/generated/prisma/client';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('quiz')
@@ -57,9 +59,10 @@ export class QuizController {
     @Query() query: any,
     @Res() res: Response,
     @Next() next: NextFunction,
+    @NestjsRequest() user: User,
   ) {
     try {
-      const quizzes = await this.quizService.findAll(query);
+      const quizzes = await this.quizService.findAll(query, user.id);
       return successResponse(
         res,
         200,

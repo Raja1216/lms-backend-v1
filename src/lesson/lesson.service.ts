@@ -102,16 +102,45 @@ export class LessonService {
     });
   }
 
-  async findByChapter(chapterId: number) {
-    return this.prisma.lessonToChapter.findMany({
+  async findByChapter(chapterId: number, userId: number) {
+    const result = await this.prisma.lessonToChapter.findMany({
       where: {
         chapterId,
         lesson: {
-          status: true, // filter relation here ✅
+          status: true,
         },
       },
       include: {
-        lesson: true, // only include relation
+        lesson: {
+          include: {
+           
+            chapters: {
+              select: {
+                chapter: {
+                  select: {
+                    subjects: {
+                      select: {
+                        subject: {
+                          select: {
+                            courses: {
+                              select: {
+                                course: {
+                                  select: {
+                                    id: true,
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       },
       orderBy: {
         lesson: {
@@ -119,6 +148,56 @@ export class LessonService {
         },
       },
     });
+
+    // Extract all courseIds and lessonIds first (avoid N+1 queries)
+    const lessonIds = result.map((r) => r.lesson.id);
+
+    const courseIds = [
+      ...new Set(
+        result.flatMap((item) =>
+          item.lesson.chapters.flatMap((lc) =>
+            lc.chapter.subjects.flatMap((cs) =>
+              cs.subject.courses.map((c) => c.course.id),
+            ),
+          ),
+        ),
+      ),
+    ];
+
+    // Fetch enrollments in one query
+    const enrollments = await this.prisma.userEnrolledCourse.findMany({
+      where: {
+        userId,
+        courseId: { in: courseIds.length ? courseIds : [0] },
+      },
+    });
+
+    // Fetch completed lessons in one query
+    const completedLessons = await this.prisma.userXPEarned.findMany({
+      where: {
+        userId,
+        lessonId: { in: lessonIds.length ? lessonIds : [0] },
+      },
+    });
+
+    const enrolledCourseSet = new Set(enrollments.map((e) => e.courseId));
+    const completedLessonSet = new Set(completedLessons.map((c) => c.lessonId));
+
+    const lessonsWithStatus = result.map((item) => {
+      const courseId = item.lesson.chapters.flatMap((lc) =>
+        lc.chapter.subjects.flatMap((cs) =>
+          cs.subject.courses.map((c) => c.course.id),
+        ),
+      )[0]; // take first safely
+
+      return {
+        lesson:item.lesson,
+        isUserEnrolled: courseId ? enrolledCourseSet.has(courseId) : false,
+        isCompleted: completedLessonSet.has(item.lesson.id),
+      };
+    });
+
+    return lessonsWithStatus;
   }
 
   async update(id: number, updateLessonDto: UpdateLessonDto) {

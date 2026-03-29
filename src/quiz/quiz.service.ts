@@ -80,14 +80,13 @@ export class QuizService {
     return quiz;
   }
 
-  async findAll(query: any) {
+  async findAll(query: any, userId: number) {
     const {
       courseId,
       subjectId,
       moduleId,
       chapterId,
       lessonId,
-      status = true,
       page = 1,
       limit = 20,
     } = query;
@@ -104,40 +103,13 @@ export class QuizService {
       throw new BadRequestException('Filter by only ONE level at a time');
     }
 
-    const where: any = {
-      status: true,
-    };
+    const where: any = { status: true };
 
-    // Level filters
-    if (courseId) {
-      where.courseQuizzes = {
-        some: { courseId: +courseId },
-      };
-    }
-
-    if (subjectId) {
-      where.subjectQuizzes = {
-        some: { subjectId: +subjectId },
-      };
-    }
-
-    if (moduleId) {
-      where.moduleQuizzes = {
-        some: { moduleId: +moduleId },
-      };
-    }
-
-    if (chapterId) {
-      where.chapterQuizzes = {
-        some: { chapterId: +chapterId },
-      };
-    }
-
-    if (lessonId) {
-      where.lessons = {
-        some: { lessonId: +lessonId },
-      };
-    }
+    if (courseId) where.courseQuizzes = { some: { courseId: +courseId } };
+    if (subjectId) where.subjectQuizzes = { some: { subjectId: +subjectId } };
+    if (moduleId) where.moduleQuizzes = { some: { moduleId: +moduleId } };
+    if (chapterId) where.chapterQuizzes = { some: { chapterId: +chapterId } };
+    if (lessonId) where.lessons = { some: { lessonId: +lessonId } };
 
     const quizzes = await this.prisma.quiz.findMany({
       where,
@@ -153,23 +125,175 @@ export class QuizService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return quizzes.map((quiz) => ({
-      id: quiz.id,
-      title: quiz.title,
-      slug: quiz.slug,
-      totalMarks: quiz.totalMarks,
-      passMarks: quiz.passMarks,
-      timeLimit: quiz.timeLimit,
-      status: quiz.status,
-      createdAt: quiz.createdAt,
-      updatedAt: quiz.updatedAt,
+    const allSubjectIds = [
+      ...new Set(
+        quizzes.flatMap((q) => q.subjectQuizzes.map((s) => s.subjectId)),
+      ),
+    ];
+    const allModuleIds = [
+      ...new Set(
+        quizzes.flatMap((q) => q.moduleQuizzes.map((m) => m.moduleId)),
+      ),
+    ];
+    const allChapterIds = [
+      ...new Set(
+        quizzes.flatMap((q) => q.chapterQuizzes.map((c) => c.chapterId)),
+      ),
+    ];
+    const allLessonIds = [
+      ...new Set(quizzes.flatMap((q) => q.lessons.map((l) => l.lessonId))),
+    ];
 
-      courseId: quiz.courseQuizzes?.[0]?.courseId ?? null,
-      subjectId: quiz.subjectQuizzes?.[0]?.subjectId ?? null,
-      moduleId: quiz.moduleQuizzes?.[0]?.moduleId ?? null,
-      chapterId: quiz.chapterQuizzes?.[0]?.chapterId ?? null,
-      lessonId: quiz.lessons?.[0]?.lessonId ?? null,
-    }));
+    const [subjects, modules, chapters, lessons] = await Promise.all([
+      allSubjectIds.length
+        ? this.prisma.courseSubject.findMany({
+            where: { subjectId: { in: allSubjectIds } },
+            select: { subjectId: true, courseId: true },
+          })
+        : [],
+
+      allModuleIds.length
+        ? this.prisma.module.findMany({
+            where: { id: { in: allModuleIds } },
+            select: {
+              id: true,
+              subject: { select: { courses: { select: { courseId: true } } } },
+            },
+          })
+        : [],
+
+      allChapterIds.length
+        ? this.prisma.subjectChapter.findMany({
+            where: { chapterId: { in: allChapterIds } },
+            select: {
+              chapterId: true,
+              subject: { select: { courses: { select: { courseId: true } } } },
+            },
+          })
+        : [],
+
+      allLessonIds.length
+        ? this.prisma.lessonToChapter.findMany({
+            where: { lessonId: { in: allLessonIds } },
+            select: {
+              lessonId: true,
+              chapter: {
+                select: {
+                  subjects: {
+                    select: {
+                      subject: {
+                        select: { courses: { select: { courseId: true } } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          })
+        : [],
+    ]);
+
+    const subjectCourseMap = new Map<number, Set<number>>();
+    for (const row of subjects as { subjectId: number; courseId: number }[]) {
+      if (!subjectCourseMap.has(row.subjectId))
+        subjectCourseMap.set(row.subjectId, new Set());
+      subjectCourseMap.get(row.subjectId)!.add(row.courseId);
+    }
+    const moduleCourseMap = new Map<number, Set<number>>();
+    for (const mod of modules as any[]) {
+      const ids = new Set<number>(
+        mod.subject.courses.map((c: any) => c.courseId),
+      );
+      moduleCourseMap.set(mod.id, ids);
+    }
+    const chapterCourseMap = new Map<number, Set<number>>();
+    for (const sc of chapters as any[]) {
+      if (!chapterCourseMap.has(sc.chapterId))
+        chapterCourseMap.set(sc.chapterId, new Set());
+      for (const c of sc.subject.courses)
+        chapterCourseMap.get(sc.chapterId)!.add(c.courseId);
+    }
+    const lessonCourseMap = new Map<number, Set<number>>();
+    for (const ltc of lessons as any[]) {
+      if (!lessonCourseMap.has(ltc.lessonId))
+        lessonCourseMap.set(ltc.lessonId, new Set());
+      for (const sc of ltc.chapter.subjects)
+        for (const c of sc.subject.courses)
+          lessonCourseMap.get(ltc.lessonId)!.add(c.courseId);
+    }
+    const quizCourseMap = new Map<number, Set<number>>();
+
+    for (const quiz of quizzes) {
+      const ids = new Set<number>();
+
+      for (const cq of quiz.courseQuizzes) ids.add(cq.courseId);
+
+      for (const sq of quiz.subjectQuizzes)
+        subjectCourseMap.get(sq.subjectId)?.forEach((id) => ids.add(id));
+
+      for (const mq of quiz.moduleQuizzes)
+        moduleCourseMap.get(mq.moduleId)?.forEach((id) => ids.add(id));
+
+      for (const chq of quiz.chapterQuizzes)
+        chapterCourseMap.get(chq.chapterId)?.forEach((id) => ids.add(id));
+
+      for (const lq of quiz.lessons)
+        lessonCourseMap.get(lq.lessonId)?.forEach((id) => ids.add(id));
+
+      quizCourseMap.set(quiz.id, ids);
+    }
+    const allCourseIds = [
+      ...new Set([...quizCourseMap.values()].flatMap((s) => [...s])),
+    ];
+
+    const quizIds = quizzes.map((q) => q.id);
+
+    const [enrollments, completedQuizzes] = await Promise.all([
+      allCourseIds.length
+        ? this.prisma.userEnrolledCourse.findMany({
+            where: { userId, courseId: { in: allCourseIds } },
+            select: { courseId: true },
+          })
+        : [],
+      quizIds.length
+        ? this.prisma.quizAttempt.findMany({
+            where: { userId, quizId: { in: quizIds } },
+            select: { quizId: true },
+          })
+        : [],
+    ]);
+
+    const enrolledSet = new Set(
+      (enrollments as { courseId: number }[]).map((e) => e.courseId),
+    );
+    const completedSet = new Set(
+      (completedQuizzes as { quizId: number }[]).map((c) => c.quizId),
+    );
+    return quizzes.map((quiz) => {
+      const quizCourseIds = quizCourseMap.get(quiz.id) ?? new Set<number>();
+      const isUserEnrolled = [...quizCourseIds].some((id) =>
+        enrolledSet.has(id),
+      );
+
+      return {
+        id: quiz.id,
+        title: quiz.title,
+        slug: quiz.slug,
+        totalMarks: quiz.totalMarks,
+        passMarks: quiz.passMarks,
+        timeLimit: quiz.timeLimit,
+        status: quiz.status,
+        createdAt: quiz.createdAt,
+        updatedAt: quiz.updatedAt,
+        courseId: quiz.courseQuizzes?.[0]?.courseId ?? null,
+        subjectId: quiz.subjectQuizzes?.[0]?.subjectId ?? null,
+        moduleId: quiz.moduleQuizzes?.[0]?.moduleId ?? null,
+        chapterId: quiz.chapterQuizzes?.[0]?.chapterId ?? null,
+        lessonId: quiz.lessons?.[0]?.lessonId ?? null,
+        isUserEnrolled,
+        isCompleted: completedSet.has(quiz.id),
+      };
+    });
   }
 
   async findOne(id: number) {
@@ -314,8 +438,6 @@ export class QuizService {
       data: { status: !quiz.status },
     });
   }
-
-
 
   async submitQuiz(userId: number, quizId: number, submitData: SubmitQuizDto) {
     const alreadyAttempted = await this.prisma.quizAttempt.findFirst({

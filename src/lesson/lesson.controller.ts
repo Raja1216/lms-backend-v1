@@ -12,6 +12,7 @@ import {
   ConflictException,
   NotFoundException,
   UseGuards,
+  Request as NestjsRequest,
 } from '@nestjs/common';
 import { LessonService } from './lesson.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
@@ -115,21 +116,19 @@ export class LessonController {
     @Param('chapterId') chapterId: string,
     @Res() res: Response,
     @Next() next: NextFunction,
+    @NestjsRequest() user:User
   ) {
     try {
       // validate chapter exists
       await this.chapterService.findOne(+chapterId);
 
-      const result = await this.lessonService.findByChapter(+chapterId);
-
-      // optional: flatten response
-      const lessons = result.map((item) => item.lesson);
+      const result = await this.lessonService.findByChapter(+chapterId,user.id);
 
       return successResponse(
         res,
         200,
         'Lessons fetched successfully',
-        lessons,
+        result,
         null,
       );
     } catch (error) {
