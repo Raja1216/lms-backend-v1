@@ -59,10 +59,10 @@ export class QuizController {
     @Query() query: any,
     @Res() res: Response,
     @Next() next: NextFunction,
-    @NestjsRequest() user: User,
+    @NestjsRequest() req: {user: User},
   ) {
     try {
-      const quizzes = await this.quizService.findAll(query, user.id);
+      const quizzes = await this.quizService.findAll(query, req.user.id);
       return successResponse(
         res,
         200,
