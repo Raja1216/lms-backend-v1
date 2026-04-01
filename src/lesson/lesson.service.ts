@@ -103,6 +103,7 @@ export class LessonService {
   }
 
   async findByChapter(chapterId: number, userId: number) {
+    console.log("userId in service:", userId);
     const result = await this.prisma.lessonToChapter.findMany({
       where: {
         chapterId,

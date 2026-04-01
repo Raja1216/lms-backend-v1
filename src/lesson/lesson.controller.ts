@@ -116,13 +116,13 @@ export class LessonController {
     @Param('chapterId') chapterId: string,
     @Res() res: Response,
     @Next() next: NextFunction,
-    @NestjsRequest() user:User
+    @NestjsRequest() req: {user:User},
   ) {
     try {
       // validate chapter exists
       await this.chapterService.findOne(+chapterId);
 
-      const result = await this.lessonService.findByChapter(+chapterId,user.id);
+      const result = await this.lessonService.findByChapter(+chapterId,req.user.id);
 
       return successResponse(
         res,
