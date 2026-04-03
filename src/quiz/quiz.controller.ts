@@ -53,7 +53,7 @@ export class QuizController {
     }
   }
 
-  @Permissions('quiz-read')
+  // @Permissions('quiz-read')
   @Get()
   async findAll(
     @Query() query: any,
@@ -82,7 +82,7 @@ export class QuizController {
 
   /* ================= READ ================= */
 
-  @Permissions('quiz-read')
+  // @Permissions('quiz-read')
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
