@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
@@ -339,16 +340,159 @@ export class QuizService {
     };
   }
 
-  async findBySlug(slug: string) {
-    return this.prisma.quiz.findUnique({
+  async findBySlug(slug: string, userId: number) {
+    // Get user roles
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { roles: true },
+    });
+
+    const isPrivileged = user?.roles?.some(
+      (r) => r.name === 'Super Admin' || r.name === 'TEACHER',
+    );
+
+    // Get quiz with all mappings (needed for enrollment logic)
+    const quiz = await this.prisma.quiz.findUnique({
       where: { slug },
       include: {
         questions: {
           where: { status: true },
-          include: { options: true },
+          select: {
+            id: true,
+            question: true,
+            marks: true,
+            duration: true,
+            type: true,
+            difficulty: true,
+            options: {
+              where: { status: true },
+              select: {
+                id: true,
+                option: true,
+              },
+            },
+          },
         },
+        lessons: true,
+        courseQuizzes: true,
+        subjectQuizzes: true,
+        moduleQuizzes: true,
+        chapterQuizzes: true,
       },
     });
+
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+
+    // If privileged → skip enrollment check
+    if (!isPrivileged) {
+      const courseIds = new Set<number>();
+
+      // Direct course
+      quiz.courseQuizzes.forEach((cq) => courseIds.add(cq.courseId));
+
+      // Subject → Course
+      if (quiz.subjectQuizzes.length) {
+        const subjects = await this.prisma.courseSubject.findMany({
+          where: {
+            subjectId: {
+              in: quiz.subjectQuizzes.map((s) => s.subjectId),
+            },
+          },
+          select: { courseId: true },
+        });
+        subjects.forEach((s) => courseIds.add(s.courseId));
+      }
+
+      // Module → Subject → Course
+      if (quiz.moduleQuizzes.length) {
+        const modules = await this.prisma.module.findMany({
+          where: {
+            id: { in: quiz.moduleQuizzes.map((m) => m.moduleId) },
+          },
+          select: {
+            subject: {
+              select: {
+                courses: { select: { courseId: true } },
+              },
+            },
+          },
+        });
+
+        modules.forEach((m) =>
+          m.subject.courses.forEach((c) => courseIds.add(c.courseId)),
+        );
+      }
+
+      // Chapter → Subject → Course
+      if (quiz.chapterQuizzes.length) {
+        const chapters = await this.prisma.subjectChapter.findMany({
+          where: {
+            chapterId: {
+              in: quiz.chapterQuizzes.map((c) => c.chapterId),
+            },
+          },
+          select: {
+            subject: {
+              select: {
+                courses: { select: { courseId: true } },
+              },
+            },
+          },
+        });
+
+        chapters.forEach((ch) =>
+          ch.subject.courses.forEach((c) => courseIds.add(c.courseId)),
+        );
+      }
+
+      // Lesson → Chapter → Subject → Course
+      if (quiz.lessons.length) {
+        const lessons = await this.prisma.lessonToChapter.findMany({
+          where: {
+            lessonId: { in: quiz.lessons.map((l) => l.lessonId) },
+          },
+          select: {
+            chapter: {
+              select: {
+                subjects: {
+                  select: {
+                    subject: {
+                      select: {
+                        courses: { select: { courseId: true } },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        });
+
+        lessons.forEach((l) =>
+          l.chapter.subjects.forEach((sc) =>
+            sc.subject.courses.forEach((c) => courseIds.add(c.courseId)),
+          ),
+        );
+      }
+
+      // Check enrollment
+      if (courseIds.size > 0) {
+        const enrollment = await this.prisma.userEnrolledCourse.findFirst({
+          where: {
+            userId,
+            courseId: { in: [...courseIds] },
+          },
+        });
+
+        if (!enrollment) {
+          throw new ForbiddenException('You are not enrolled in this course');
+        }
+      }
+    }
+
+    return quiz;
   }
 
   async update(id: number, dto: UpdateQuizDto) {
@@ -536,7 +680,7 @@ export class QuizService {
 
   private gradeAnswer(question: any, userAnswer: string | string[]) {
     if (question.type === 'MCQ' || question.type === 'TRUEORFALSE') {
-      const correct = question.options.find((o) => o.isCorrect);
+      const correct = question.options.find((o: any) => o.isCorrect);
       return { isCorrect: correct?.option === userAnswer };
     }
 
