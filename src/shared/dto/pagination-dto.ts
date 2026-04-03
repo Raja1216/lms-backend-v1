@@ -17,4 +17,8 @@ export class PaginationDto {
   @IsInt({message: 'Limit must be an integer'})
   @Min(1, {message: 'Limit must be at least 1'})
   limit?: number = 10;
+
+  @IsOptional()
+  @IsString({ message: 'Grade must be a string' })
+  grade?: string; 
 }
