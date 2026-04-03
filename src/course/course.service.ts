@@ -88,13 +88,20 @@ export class CourseService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { page = 1, limit = 10, keyword = null } = paginationDto;
+    const {
+      page = 1,
+      limit = 10,
+      grade = null,
+      keyword = null,
+    } = paginationDto;
     const skip = (page - 1) * limit;
 
     const whereClause: any = {
       status: true,
     };
-
+    if (grade) {
+      whereClause.grade = grade;
+    }
     if (keyword) {
       whereClause.OR = [
         { title: { contains: keyword } },
