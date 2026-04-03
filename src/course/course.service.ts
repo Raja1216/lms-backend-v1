@@ -97,9 +97,9 @@ export class CourseService {
 
     if (keyword) {
       whereClause.OR = [
-        { title: { contains: keyword, mode: 'insensitive' } },
-        { slug: { contains: keyword, mode: 'insensitive' } },
-        { description: { contains: keyword, mode: 'insensitive' } },
+        { title: { contains: keyword } },
+        { slug: { contains: keyword } },
+        { description: { contains: keyword } },
       ];
     }
 
