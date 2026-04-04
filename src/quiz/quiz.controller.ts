@@ -77,6 +77,8 @@ export class QuizController {
     }
   }
 
+  /* ================= READ ================= */
+
   @Permissions('quiz-read')
   @Get(':id')
   async findOne(
@@ -117,7 +119,7 @@ export class QuizController {
     }
   }
 
-  /* ================= UPDATE ================= */
+ 
 
   @Permissions('quiz-update')
   @Patch(':id')
