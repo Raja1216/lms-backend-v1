@@ -64,7 +64,7 @@ export class UploadService {
         filename: file.originalname,
         size: file.size,
       };
-    } catch (error) {
+    } catch (error:any) {
       console.error('FTP upload error:', error);
       throw new BadRequestException(error?.message || 'File upload failed');
     } finally {
@@ -94,7 +94,7 @@ export class UploadService {
         url: `${this.basePublicUrl}/content/${type}/${filename}`,
         filename,
       };
-    } catch (error) {
+    } catch (error:any) {
       console.error('FTP upload error:', error);
       throw new BadRequestException(error?.message || 'File upload failed');
     } finally {

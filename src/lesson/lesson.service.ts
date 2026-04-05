@@ -12,10 +12,10 @@ import { generateSlug } from 'src/shared/generate-slug';
 import { User } from 'src/generated/prisma/browser';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
-
+import { UploadService } from 'src/upload/upload.service';
 @Injectable()
 export class LessonService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private uploadService: UploadService) {}
 
   async create(createLessonDto: CreateLessonDto) {
     const {
@@ -31,21 +31,22 @@ export class LessonService {
       sortOrder,
     } = createLessonDto;
     let documentUrl: string | null = null;
-    if (documentContent) {
-      if (documentContent.startsWith('data:')) {
-        const savedFile = await Base64FileUtil.saveBase64File(
-          documentContent,
-          'uploads/lessons/documents',
-        );
-        const relativePath = path.posix.join(
-          'uploads/lessons/documents',
-          savedFile.fileName,
-        );
-        documentUrl = process.env.APP_URL + '/' + relativePath;
-      } else {
-        documentUrl = documentContent;
-      }
-    }
+   if (documentContent) {
+  if (documentContent.startsWith('data:')) {
+    const { buffer, extension } =
+      Base64FileUtil.parseBase64(documentContent);
+
+    const uploaded = await this.uploadService.uploadBufferViaFtp(
+      buffer,
+      `document.${extension}`,
+      'lesson-documents',
+    );
+
+    documentUrl = uploaded.url;
+  } else {
+    documentUrl = documentContent;
+  }
+}
     const lesson = await this.prisma.lesson.create({
       data: {
         title,

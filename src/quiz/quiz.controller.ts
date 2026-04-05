@@ -31,8 +31,6 @@ import { User } from 'src/generated/prisma/client';
 export class QuizController {
   constructor(private readonly quizService: QuizService) {}
 
-  /* ================= CREATE ================= */
-
   @Permissions('quiz-create')
   @Post()
   async create(
@@ -43,7 +41,7 @@ export class QuizController {
     try {
       const quiz = await this.quizService.create(dto);
       return successResponse(res, 201, 'Quiz created successfully', quiz, null);
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -53,13 +51,12 @@ export class QuizController {
     }
   }
 
-  // @Permissions('quiz-read')
   @Get()
   async findAll(
     @Query() query: any,
     @Res() res: Response,
     @Next() next: NextFunction,
-    @NestjsRequest() req: {user: User},
+    @NestjsRequest() req: { user: User },
   ) {
     try {
       const quizzes = await this.quizService.findAll(query, req.user.id);
@@ -70,7 +67,7 @@ export class QuizController {
         quizzes,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -82,7 +79,7 @@ export class QuizController {
 
   /* ================= READ ================= */
 
-  // @Permissions('quiz-read')
+  @Permissions('quiz-read')
   @Get(':id')
   async findOne(
     @Param('id', ParseIntPipe) id: number,
@@ -92,7 +89,7 @@ export class QuizController {
     try {
       const quiz = await this.quizService.findOne(id);
       return successResponse(res, 200, 'Quiz fetched successfully', quiz, null);
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -107,11 +104,12 @@ export class QuizController {
     @Param('slug') slug: string,
     @Res() res: Response,
     @Next() next: NextFunction,
+    @NestjsRequest() req: { user: User },
   ) {
     try {
-      const quiz = await this.quizService.findBySlug(slug);
+      const quiz = await this.quizService.findBySlug(slug, req.user.id);
       return successResponse(res, 200, 'Quiz fetched successfully', quiz, null);
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -121,7 +119,7 @@ export class QuizController {
     }
   }
 
-  /* ================= UPDATE ================= */
+ 
 
   @Permissions('quiz-update')
   @Patch(':id')
@@ -134,7 +132,7 @@ export class QuizController {
     try {
       const quiz = await this.quizService.update(id, dto);
       return successResponse(res, 200, 'Quiz updated successfully', quiz, null);
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -160,7 +158,7 @@ export class QuizController {
         quiz,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -170,13 +168,11 @@ export class QuizController {
     }
   }
 
-  /* ================= SUBMIT ================= */
-
   @Post(':quizId/submit')
   async submit(
     @Param('quizId', ParseIntPipe) quizId: number,
     @Body() dto: SubmitQuizDto,
-    @Request() req,
+    @NestjsRequest() req: { user: User },
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
@@ -187,7 +183,7 @@ export class QuizController {
         dto,
       );
       return successResponse(res, 200, 'Quiz submitted', result, null);
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -196,8 +192,6 @@ export class QuizController {
       );
     }
   }
-
-  /* ================= DELETE ================= */
 
   @Permissions('quiz-delete')
   @Delete(':id')
