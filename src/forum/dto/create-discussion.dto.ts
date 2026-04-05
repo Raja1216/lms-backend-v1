@@ -17,7 +17,19 @@ export class CreateDiscussionDto {
 
   @IsString()
   @IsNotEmpty()
-  content: string;
+  content!: string;
+
+  @IsOptional()
+  @IsNumber()
+  lessonId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  subjectId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  chapterId?: number;
 
   @IsOptional()
   @IsNumber()
@@ -33,5 +45,5 @@ export class CreateDiscussionDto {
 export class AttachmentDto {
   @IsString()
   @IsNotEmpty()
-  fileBase64: string;
+  fileBase64!: string;
 }

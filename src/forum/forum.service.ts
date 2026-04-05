@@ -195,6 +195,9 @@ export class ForumService {
             email: true,
           },
         },
+        lesson: true,
+        chapter: true,
+        subject: true,
         reaction: {
           where: { userId: user.id },
           select: {
@@ -283,6 +286,15 @@ export class ForumService {
         userId: user.id,
         courseId: course.id,
         parentId: createDiscussionDto.forumId || null,
+        lessonId: createDiscussionDto.lessonId
+          ? createDiscussionDto.lessonId
+          : null,
+        subjectId: createDiscussionDto.subjectId
+          ? createDiscussionDto.subjectId
+          : null,
+        chapterId: createDiscussionDto.chapterId
+          ? createDiscussionDto.chapterId
+          : null,
       },
     });
 
@@ -350,6 +362,9 @@ export class ForumService {
             email: true,
           },
         },
+        lesson: true,
+        chapter: true,
+        subject: true,
         reaction: {
           where: { userId: user.id },
           select: {
@@ -429,6 +444,9 @@ export class ForumService {
         },
         createdAt: true,
         updatedAt: true,
+        lesson: true,
+        chapter: true,
+        subject: true,
       },
     });
     const isReact = await this.prisma.forumReaction.findFirst({
@@ -534,6 +552,15 @@ export class ForumService {
       data: {
         title: updateData.title,
         content: updateData.content,
+        lessonId: updateData.lessonId
+          ? updateData.lessonId
+          : discussion.lessonId,
+        subjectId: updateData.subjectId
+          ? updateData.subjectId
+          : discussion.subjectId,
+        chapterId: updateData.chapterId
+          ? updateData.chapterId
+          : discussion.chapterId,
       },
     });
     if (updateData.attachments) {

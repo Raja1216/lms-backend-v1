@@ -16,6 +16,9 @@ export class QuestionService {
     const { quizId, questions } = createQuestionDto;
 
     // ✅ Validation for TRUE/FALSE
+    if (!questions || questions.length === 0) {
+      throw new BadRequestException('At least one question is required');
+    }
     for (const q of questions) {
       if (q.type === QuestionType.TRUEORFALSE) {
         if (!q.options || q.options.length !== 2) {
@@ -34,15 +37,15 @@ export class QuestionService {
             question: q.questionText,
             marks: q.marks,
             type: q.type,
+            difficulty: q.difficulty,
+            bloomLevel: q.bloomLevel,
             answer:
-              q.type === QuestionType.MCQ ||
-              q.type === QuestionType.TRUEORFALSE
+              q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
                 ? null
                 : q.answer,
             duration: q.duration,
             options:
-              q.type === QuestionType.MCQ ||
-              q.type === QuestionType.TRUEORFALSE
+              q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
                 ? {
                     create: q.options?.map((opt) => ({
                       option: opt.option,
@@ -102,8 +105,16 @@ export class QuestionService {
   async update(id: number, updateQuestionDto: UpdateQuestionDto) {
     const existing = await this.findOne(id);
 
-    const { questionText, type, marks, options, answer, duration } =
-      updateQuestionDto;
+    const {
+      questionText,
+      type,
+      marks,
+      options,
+      answer,
+      duration,
+      difficulty,
+      bloomLevel,
+    } = updateQuestionDto;
 
     const updatedQuestion = await this.prisma.question.update({
       where: { id },
@@ -113,6 +124,9 @@ export class QuestionService {
         marks,
         answer,
         duration,
+        difficulty,
+        bloomLevel,
+
         options: options
           ? {
               deleteMany: {},

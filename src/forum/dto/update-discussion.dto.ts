@@ -18,6 +18,18 @@ export class UpdateDiscussionDto {
   content?: string;
 
   @IsOptional()
+  @IsNumber()
+  lessonId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  subjectId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  chapterId?: number;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AttachmentDto)
@@ -26,5 +38,5 @@ export class UpdateDiscussionDto {
 
 export class AttachmentDto {
   @IsString()
-  fileBase64: string; 
+  fileBase64!: string;
 }
