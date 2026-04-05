@@ -11,20 +11,27 @@ import {
   ValidateNested,
   IsNotEmpty,
 } from 'class-validator';
-import { QuestionType } from 'src/generated/prisma/enums';
+import {
+  QuestionType,
+  Difficulty,
+  BloomLevel,
+} from 'src/generated/prisma/enums';
 import { Type } from 'class-transformer';
 
 export class UpdateQuestionDto {
   @IsString()
-  questionText: string;
+  questionText!: string;
 
   @IsEnum(QuestionType)
-  type: QuestionType;
+  type!: QuestionType;
+  @IsOptional()
+  @IsEnum(BloomLevel)
+  bloomLevel?: BloomLevel;
 
   @IsInt()
   @Min(1)
   @Max(100)
-  marks: number;
+  marks!: number;
 
   @IsOptional()
   @IsArray()
@@ -43,11 +50,14 @@ export class UpdateQuestionDto {
   @IsInt()
   @Min(0)
   duration?: number;
+
+  @IsEnum(Difficulty)
+  difficulty!: Difficulty;
 }
 
 export class CreateQuestionOptionDto {
   @IsString()
-  option: string;
+  option!: string;
 
   @IsOptional()
   @IsBoolean()

@@ -31,6 +31,14 @@ enum Difficulty {
   medium
   hard
 }
+enum BloomLevel {
+  remember
+  understand
+  apply
+  analyze
+  evaluate
+  create
+}
 
 enum SubmissionType {
   pdf
@@ -190,6 +198,7 @@ model Subject {
 
   modules        Module[]
   subjectQuizzes SubjectQuiz[]
+  forum          CourForum[]   @relation("ForumToSubject")
 
   @@map("subjects")
 }
@@ -219,6 +228,7 @@ model Chapter {
   modules        ModuleChapter[]
   lessons        LessonToChapter[] @relation("LessonToChapters")
   chapterQuizzes ChapterQuiz[]
+  forum          CourForum[]       @relation("ForumToChapter")
 
   @@map("chapters")
 }
@@ -289,6 +299,7 @@ model Lesson {
   chapters     LessonToChapter[] @relation("LessonToChapters")
   quizzes      LessonQuiz[]
   xpEarned     UserXPEarned[]
+  forum        CourForum[]       @relation("ForumToLesson")
 
   @@map("lessons")
 }
@@ -394,6 +405,7 @@ model Question {
   duration   Decimal      @default(0) @db.Decimal(10, 2)
   type       QuestionType @default(MCQ)
   difficulty Difficulty   @default(medium)
+  bloomLevel BloomLevel   @default(remember)
   answer     String?      @db.Text
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
@@ -454,6 +466,9 @@ model CourForum {
   title       String?
   content     String            @db.Text
   parentId    Int?
+  lessonId    Int?
+  chapterId   Int?
+  subjectId   Int?
   status      Boolean           @default(true)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
@@ -463,6 +478,9 @@ model CourForum {
   course      Course            @relation("courseForum", fields: [courseId], references: [id], onDelete: Cascade)
   user        User              @relation("userForum", fields: [userId], references: [id], onDelete: Cascade)
   reaction    ForumReaction[]   @relation("ForumReactions")
+  lesson      Lesson?           @relation("ForumToLesson", fields: [lessonId], references: [id], onDelete: Cascade)
+  chapter     Chapter?          @relation("ForumToChapter", fields: [chapterId], references: [id], onDelete: Cascade)
+  subject     Subject?          @relation("ForumToSubject", fields: [subjectId], references: [id], onDelete: Cascade)
   attachments ForumAttachment[] @relation("ForumAttachments")
 
   @@map("course_forum")
