@@ -9,12 +9,14 @@ dotenv.config();
 import { CreateDiscussionDto } from './dto/create-discussion.dto';
 import { ForumReactUnreactDto } from './dto/forum-react-unreact.dto';
 import { RoleService } from 'src/role/role.service';
+import { UploadService } from 'src/upload/upload.service';
 
 @Injectable()
 export class ForumService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly roleService: RoleService,
+    private readonly uploadService: UploadService,
   ) {}
 
   async getDashboardData(user: User, paginationDto: PaginationDto) {
@@ -229,61 +231,51 @@ export class ForumService {
   ) {
     let fileUrls: string[] = [];
 
-    if (
-      createDiscussionDto.attachments &&
-      createDiscussionDto.attachments.length > 0
-    ) {
-      for (const attachment of createDiscussionDto.attachments) {
-        const fileValue = attachment.fileBase64;
+    if (createDiscussionDto.attachments?.length) {
+      const uploads = await Promise.all(
+        createDiscussionDto.attachments.map(async (attachment) => {
+          if (attachment.fileBase64.startsWith('data:')) {
+            const { buffer, extension } = Base64FileUtil.parseBase64(
+              attachment.fileBase64,
+            );
 
-        // Base64 file → save to disk
-        if (fileValue.startsWith('data:')) {
-          const savedFile = await Base64FileUtil.saveBase64File(
-            fileValue,
-            'uploads/discussion-attachments',
-          );
+            const uploaded = await this.uploadService.uploadBufferViaFtp(
+              buffer,
+              `discussion.${extension}`,
+              'discussion-attachments',
+            );
 
-          const relativePath = path.posix.join(
-            'uploads/discussion-attachments',
-            savedFile.fileName,
-          );
+            return uploaded.url;
+          } else {
+            return attachment.fileBase64;
+          }
+        }),
+      );
 
-          fileUrls.push(`${process.env.APP_URL}/${relativePath}`);
-        }
-
-        //  Already a URL / file path → keep as-is
-        else {
-          fileUrls.push(fileValue);
-        }
-      }
+      fileUrls = uploads.filter(Boolean);
     }
 
-    // Store null instead of empty array (optional)
-    const finalFileUrls = fileUrls.length > 0 ? fileUrls : null;
     const userData = await this.prisma.user.findUnique({
       where: { id: user.id },
       select: { classGrade: true },
     });
-    if (!userData) {
-      throw new NotFoundException('User not found');
-    }
+
+    if (!userData) throw new NotFoundException('User not found');
 
     const isAdmin = await this.roleService.isAdmin(user.id);
 
     if (!isAdmin && !userData.classGrade) {
       throw new NotFoundException('User class grade not found');
     }
-    if (!isAdmin && !userData?.classGrade) {
-      throw new NotFoundException('User class grade not found');
-    }
+
     const course = await this.prisma.course.findFirst({
       where: isAdmin
         ? { slug: courseSlug }
         : { slug: courseSlug, grade: userData.classGrade! },
     });
-    if (!course) {
-      throw new NotFoundException('Invalid course');
-    }
+
+    if (!course) throw new NotFoundException('Invalid course');
+
     const newDiscussion = await this.prisma.courForum.create({
       data: {
         title: createDiscussionDto.title,
@@ -293,17 +285,16 @@ export class ForumService {
         parentId: createDiscussionDto.forumId || null,
       },
     });
-    //  Save attachments if any
-    if (finalFileUrls) {
-      for (const fileUrl of finalFileUrls) {
-        await this.prisma.forumAttachment.create({
-          data: {
-            forumId: newDiscussion.id,
-            fileUrl: fileUrl,
-          },
-        });
-      }
+
+    if (fileUrls.length) {
+      await this.prisma.forumAttachment.createMany({
+        data: fileUrls.map((url) => ({
+          forumId: newDiscussion.id,
+          fileUrl: url,
+        })),
+      });
     }
+
     return newDiscussion;
   }
   async getDiscussionReplies(
@@ -497,46 +488,43 @@ export class ForumService {
         id: discussionId,
         userId: user.id,
       },
-      select: {
-        id: true,
-        attachments: {
-          select: {
-            id: true,
-            fileUrl: true,
-          },
-        },
+      include: {
+        attachments: true,
       },
     });
 
     if (!discussion) {
-      throw new NotFoundException('Discussion not found ');
+      throw new NotFoundException('Discussion not found');
     }
+
     let updatedFileUrls: string[] = [];
-    if (updateData.attachments && updateData.attachments.length > 0) {
-      for (const attachment of updateData.attachments) {
-        const value = attachment.fileBase64;
 
-        // New base64 file
-        if (value.startsWith('data:')) {
-          const savedFile = await Base64FileUtil.saveBase64File(
-            value,
-            'uploads/discussion-attachments',
-          );
+    if (updateData.attachments?.length) {
+      const uploads = await Promise.all(
+        updateData.attachments.map(async (attachment) => {
+          const value = attachment.fileBase64;
 
-          const relativePath = path.posix.join(
-            'uploads/discussion-attachments',
-            savedFile.fileName,
-          );
+          if (value.startsWith('data:')) {
+            const { buffer, extension } = Base64FileUtil.parseBase64(value);
 
-          updatedFileUrls.push(`${process.env.APP_URL}/${relativePath}`);
-        }
-        // Existing URL → keep
-        else {
-          updatedFileUrls.push(value);
-        }
-      }
+            const uploaded = await this.uploadService.uploadBufferViaFtp(
+              buffer,
+              `discussion.${extension}`,
+              'discussion-attachments',
+            );
+
+            return uploaded.url;
+          } else {
+            return value;
+          }
+        }),
+      );
+
+      updatedFileUrls = uploads.filter(Boolean);
     }
+
     const isAdmin = await this.roleService.isAdmin(user.id);
+
     const whereCondition = isAdmin
       ? { id: discussionId }
       : { id: discussionId, userId: user.id };
@@ -548,21 +536,23 @@ export class ForumService {
         content: updateData.content,
       },
     });
-
-    //  Delete existing attachments
-    await this.prisma.forumAttachment.deleteMany({
-      where: { forumId: discussionId },
-    });
-
-    //  Add updated attachments
-    for (const fileUrl of updatedFileUrls) {
-      await this.prisma.forumAttachment.create({
-        data: {
-          forumId: discussionId,
-          fileUrl: fileUrl,
-        },
+    if (updateData.attachments) {
+      // delete old
+      await this.prisma.forumAttachment.deleteMany({
+        where: { forumId: discussionId },
       });
+
+      // add new
+      if (updatedFileUrls.length) {
+        await this.prisma.forumAttachment.createMany({
+          data: updatedFileUrls.map((url) => ({
+            forumId: discussionId,
+            fileUrl: url,
+          })),
+        });
+      }
     }
+
     return updatedDiscussion;
   }
   async reactUnreactDiscussion(reactionDto: ForumReactUnreactDto, user: User) {

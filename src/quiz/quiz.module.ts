@@ -5,8 +5,10 @@ import { AuthModule } from 'src/auth/auth.module';
 import { UserModule } from 'src/user/user.module';
 import { LessonModule } from 'src/lesson/lesson.module';
 import { LessonService } from 'src/lesson/lesson.service';
+import { UploadModule } from 'src/upload/upload.module';
+import { UploadService } from 'src/upload/upload.service';
 @Module({
-  imports: [AuthModule, UserModule, LessonModule],
+  imports: [AuthModule, UserModule, LessonModule, UploadModule],
   controllers: [QuizController],
   exports: [QuizService],
   providers: [QuizService, LessonService],
