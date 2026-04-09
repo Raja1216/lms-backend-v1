@@ -1,6 +1,17 @@
-import { Controller, Get, Param, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  Res,
+  Next,
+  UseGuards,
+  Request as NestJsRequest,
+} from '@nestjs/common';
 import { ReportService } from './report.service';
 import { GetReportDto } from './dto/get-report.dto';
+import { NextFunction } from 'express';
+import { User } from 'src/generated/prisma/browser';
 
 @Controller('report')
 export class ReportController {
@@ -9,8 +20,10 @@ export class ReportController {
   @Get(':courseSlug')
   async getReport(
     @Param('courseSlug') courseSlug: string,
-    @Query() query: GetReportDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @NestJsRequest() req: { user: User },
   ) {
-    return this.reportService.getReport(courseSlug);
+    return this.reportService.getReport(courseSlug, req.user.id);
   }
 }
