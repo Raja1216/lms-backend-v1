@@ -1,6 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
-
+type AttemptType = {
+  isCorrect: boolean;
+  timeTaken: number;
+  question: {
+    difficulty: 'easy' | 'medium' | 'hard';
+    bloomLevel:
+      | 'remember'
+      | 'understand'
+      | 'apply'
+      | 'analyze'
+      | 'evaluate'
+      | 'create';
+  };
+};
 @Injectable()
 export class ReportService {
   constructor(private prisma: PrismaService) {}
@@ -20,13 +33,37 @@ export class ReportService {
       throw new NotFoundException('Course not found');
     }
     // ✅ GET ALL QUIZ IDS
+    // const quizIds = await this.getAllCourseQuizIds(course.id);
+    // const attemptIds = await this.getAllAttemptedQuizes(quizIds, userId);
+    // return {
+    //   courseId: course.id,
+    //   totalQuizzes: quizIds.length,
+    //   quizIds,
+    //   attemptIds,
+    // };
+
     const quizIds = await this.getAllCourseQuizIds(course.id);
-    const attemptIds = await this.getAllAttemptedQuizes(quizIds, userId);
+
+    const [attempts, totalQuestions] = await Promise.all([
+      this.getUserQuestionAttempts(quizIds, userId),
+      this.getTotalQuestions(quizIds),
+    ]);
+
     return {
-      courseId: course.id,
-      totalQuizzes: quizIds.length,
-      quizIds,
-      attemptIds,
+      summary: this.buildSummary(attempts, totalQuestions),
+      difficulty: this.buildDifficulty(attempts),
+      blooms: this.buildBlooms(attempts),
+      behavior: this.buildBehavior(attempts),
+      customChart: this.buildCustomChart(attempts),
+
+      // placeholders (next step)
+      chapters: [],
+      speedVsAccuracy: [],
+      improvement: {
+        weakAreas: [],
+        behaviorIssues: [],
+        suggestions: [],
+      },
     };
   }
 
@@ -114,5 +151,162 @@ export class ReportService {
       select: { id: true },
     });
     return attemptedQuiz.map((a) => a.id);
+  }
+
+  async getUserQuestionAttempts(
+    quizIds: number[],
+    userId: number,
+  ): Promise<AttemptType[]> {
+    return this.prisma.questionAttempt.findMany({
+      where: {
+        quizAttempt: {
+          userId,
+          quizId: { in: quizIds },
+        },
+      },
+      select: {
+        isCorrect: true,
+        timeTaken: true,
+        question: {
+          select: {
+            difficulty: true,
+            bloomLevel: true,
+          },
+        },
+      },
+    });
+  }
+
+  async getTotalQuestions(quizIds: number[]) {
+    const questions = await this.prisma.question.findMany({
+      where: { quizId: { in: quizIds } },
+      select: { id: true },
+    });
+
+    return questions.length;
+  }
+
+  buildSummary(attempts: AttemptType[], totalQuestions: number) {
+    const attempted = attempts.length;
+    const correct = attempts.filter((a) => a.isCorrect).length;
+    const incorrect = attempted - correct;
+    const totalTime = attempts.reduce((sum, a) => sum + (a.timeTaken || 0), 0);
+
+    return {
+      totalQuestions,
+      attempted,
+      notAttempted: totalQuestions - attempted,
+      correct,
+      incorrect,
+      accuracy: attempted ? Math.round((correct / attempted) * 100) : 0,
+      attemptRate: totalQuestions
+        ? Math.round((attempted / totalQuestions) * 100)
+        : 0,
+      totalTime,
+      avgTimePerQuestion: attempted ? Math.round(totalTime / attempted) : 0,
+    };
+  }
+
+  buildDifficulty(attempts: AttemptType[]) {
+    const levels: AttemptType['question']['difficulty'][] = [
+      'easy',
+      'medium',
+      'hard',
+    ];
+
+    const result: Record<
+      string,
+      { total: number; correct: number; accuracy: number }
+    > = {};
+
+    levels.forEach((level) => {
+      const filtered = attempts.filter((a) => a.question?.difficulty === level);
+
+      const correct = filtered.filter((a) => a.isCorrect).length;
+
+      result[level] = {
+        total: filtered.length,
+        correct,
+        accuracy: filtered.length
+          ? Math.round((correct / filtered.length) * 100)
+          : 0,
+      };
+    });
+
+    return result;
+  }
+
+  buildBlooms(attempts: AttemptType[]) {
+    const levels: AttemptType['question']['bloomLevel'][] = [
+      'remember',
+      'understand',
+      'apply',
+      'analyze',
+      'evaluate',
+      'create',
+    ];
+
+    return levels.map((level) => {
+      const filtered = attempts.filter((a) => a.question?.bloomLevel === level);
+
+      const correct = filtered.filter((a) => a.isCorrect).length;
+
+      return {
+        level,
+        accuracy: filtered.length
+          ? Math.round((correct / filtered.length) * 100)
+          : 0,
+      };
+    });
+  }
+
+  buildBehavior(attempts: AttemptType[]) {
+    let fastCorrect = 0;
+    let guessing = 0;
+    let careful = 0;
+    let struggling = 0;
+
+    attempts.forEach((a) => {
+      const time = a.timeTaken || 0;
+
+      if (time < 10 && a.isCorrect) fastCorrect++;
+      else if (time < 5 && !a.isCorrect) guessing++;
+      else if (time > 20 && a.isCorrect) careful++;
+      else if (time > 20 && !a.isCorrect) struggling++;
+    });
+
+    return {
+      fastCorrect,
+      guessing,
+      careful,
+      struggling,
+    };
+  }
+
+  buildCustomChart(attempts: AttemptType[]) {
+    const correct = attempts.filter((a) => a.isCorrect);
+    const incorrect = attempts.filter((a) => !a.isCorrect);
+
+    const getAvg = (arr: AttemptType[]) =>
+      arr.length
+        ? Math.round(
+            arr.reduce((s, a) => s + (a.timeTaken || 0), 0) / arr.length,
+          )
+        : 0;
+
+    return {
+      correct: {
+        avgTime: getAvg(correct),
+        count: correct.length,
+      },
+      incorrect: {
+        avgTime: getAvg(incorrect),
+        count: incorrect.length,
+      },
+      notAttempted: {
+        avgTime: 0,
+        count: 0,
+      },
+    };
   }
 }
