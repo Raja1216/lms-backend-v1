@@ -21,10 +21,12 @@ export class ReportService {
     }
     // ✅ GET ALL QUIZ IDS
     const quizIds = await this.getAllCourseQuizIds(course.id);
+    const attemptIds = await this.getAllAttemptedQuizes(quizIds, userId);
     return {
       courseId: course.id,
       totalQuizzes: quizIds.length,
       quizIds,
+      attemptIds,
     };
   }
 
@@ -104,5 +106,13 @@ export class ReportService {
     }
 
     return Array.from(quizIds);
+  }
+
+  async getAllAttemptedQuizes(quizIds: number[], userId: number) {
+    const attemptedQuiz = await this.prisma.quizAttempt.findMany({
+      where: { quizId: { in: quizIds }, userId },
+      select: { id: true },
+    });
+    return attemptedQuiz.map((a) => a.id);
   }
 }
