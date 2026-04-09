@@ -34,6 +34,7 @@ async function bootstrap() {
     .setTitle('My App API')
     .setDescription('API docs')
     .setVersion('1.0')
+    .addServer('https://lms-backend.edudigm.in')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT' },
       'access-token',
@@ -45,7 +46,7 @@ async function bootstrap() {
   // ensure Swagger knows the correct server URL (helps the UI form full request URLs)
   const port = Number(process.env.PORT ?? 3000);
   const app_url = process.env.APP_URL ?? `http://localhost:${port}`;
-  document.servers = [{ url: app_url }];
+  // document.servers = [{ url: app_url }];
 app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
   SwaggerModule.setup('api', app, document);
 
