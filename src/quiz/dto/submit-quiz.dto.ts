@@ -3,13 +3,13 @@ import { Type } from 'class-transformer';
 
 export class QuestionAnswerDto {
   @IsNumber()
-  questionId: number;
+  questionId!: number;
 
   @IsString()
-  answer: string | string[];
+  answer!: string | string[];
 
   @IsString()
-  type: string;
+  type!: string;
 
   @IsOptional()
   @IsNumber()
@@ -20,7 +20,7 @@ export class SubmitQuizDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => QuestionAnswerDto)
-  answers: QuestionAnswerDto[];
+  answers!: QuestionAnswerDto[];
 
   @IsOptional()
   @IsInt()

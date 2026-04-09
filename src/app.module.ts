@@ -21,6 +21,7 @@ import { UploadModule } from './upload/upload.module';
 import { ModuleModule } from './module/module.module';
 import { ProjectModule } from './project/project.module';
 import { ProjectSubmissionModule } from './project/project-submission/project-submission.module';
+import { StudentDashboardModule } from './student-dashboard/student-dashboard.module';
 
 
 @Module({
@@ -45,6 +46,7 @@ import { ProjectSubmissionModule } from './project/project-submission/project-su
     ModuleModule,
     ProjectModule,
     ProjectSubmissionModule,
+    StudentDashboardModule,
   ],
 })
 export class AppModule {}
