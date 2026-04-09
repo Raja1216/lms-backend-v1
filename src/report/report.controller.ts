@@ -16,7 +16,7 @@ import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { PermissionGuard } from 'src/guard/permission.guard';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 @ApiTags('Report')
- @ApiBearerAuth('access-token')
+@ApiBearerAuth('access-token')
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('report')
 export class ReportController {
