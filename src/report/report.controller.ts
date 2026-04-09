@@ -14,7 +14,9 @@ import { NextFunction } from 'express';
 import { User } from 'src/generated/prisma/browser';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { PermissionGuard } from 'src/guard/permission.guard';
-
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+@ApiTags('Report')
+@ApiBearerAuth()
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('report')
 export class ReportController {
