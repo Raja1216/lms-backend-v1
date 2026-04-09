@@ -387,6 +387,8 @@ model QuestionAttempt {
   timeTaken     Int?     // time taken in seconds
   isCorrect     Boolean
 
+
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
