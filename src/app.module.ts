@@ -21,6 +21,7 @@ import { UploadModule } from './upload/upload.module';
 import { ModuleModule } from './module/module.module';
 import { ProjectModule } from './project/project.module';
 import { ProjectSubmissionModule } from './project/project-submission/project-submission.module';
+import { StudentDashboardModule } from './student-dashboard/student-dashboard.module';
 import { ReportModule } from './report/report.module';
 
 
@@ -47,6 +48,7 @@ import { ReportModule } from './report/report.module';
     ProjectModule,
     ProjectSubmissionModule,
     ReportModule,
+    StudentDashboardModule,
   ],
 })
 export class AppModule {}

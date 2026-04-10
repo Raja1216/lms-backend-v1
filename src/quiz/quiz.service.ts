@@ -622,6 +622,7 @@ export class QuizService {
         obtainedMarks: correct ? Number(q.marks) : 0,
         totalMarks: Number(q.marks),
         isCorrect: correct,
+        timeTaken:a.timeSpent? Number(a.timeSpent) : 0,
       };
     });
     const totalMarks = quiz.questions.reduce(

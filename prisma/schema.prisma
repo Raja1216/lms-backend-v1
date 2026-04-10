@@ -31,6 +31,7 @@ enum Difficulty {
   medium
   hard
 }
+
 enum BloomLevel {
   remember
   understand
@@ -383,10 +384,10 @@ model QuestionAttempt {
 
   obtainedMarks Decimal @db.Decimal(10, 2) // e.g. 1.0, 4.0
   totalMarks    Decimal @db.Decimal(10, 2) // e.g. 1.0, 5.0
+  timeTaken     Int?     // time taken in seconds
+  isCorrect     Boolean
 
-  isCorrect Boolean
 
-  timeTaken Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

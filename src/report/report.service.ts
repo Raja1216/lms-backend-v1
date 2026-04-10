@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 type AttemptType = {
   isCorrect: boolean;
-  timeTaken: number;
+  timeTaken: number | null;
   question: {
     difficulty: 'easy' | 'medium' | 'hard';
     bloomLevel:
