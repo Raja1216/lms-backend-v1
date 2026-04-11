@@ -87,7 +87,7 @@ export class CourseService {
     return { ...course, teachers };
   }
 
-  async findAll(paginationDto: PaginationDto) {
+  async findAll(userId: number, paginationDto: PaginationDto) {
     const {
       page = 1,
       limit = 10,
@@ -95,13 +95,47 @@ export class CourseService {
       keyword = null,
     } = paginationDto;
     const skip = (page - 1) * limit;
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+      select: {
+        classGrade: true,
+        roles: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!user || !user?.classGrade) {
+      throw new BadRequestException(
+        'Please update your profile with class grade to see courses',
+      );
+    }
+    let filterGrade: string | null = null;
+
+    //check any of roles name include "Super Admin"
+    const isAdmin = user?.roles.some(
+      (role) => role.name.toLowerCase() === 'super admin',
+    );
+    if (isAdmin) {
+      //  use provided grade (or no filter)
+      filterGrade = grade ?? null;
+    } else {
+      //  always use their classGrade
+      filterGrade = user.classGrade;
+    }
 
     const whereClause: any = {
       status: true,
     };
-    if (grade) {
-      whereClause.grade = grade;
+
+    if (filterGrade !== null) {
+      whereClause.grade = filterGrade;
     }
+
     if (keyword) {
       whereClause.OR = [
         { title: { contains: keyword } },
