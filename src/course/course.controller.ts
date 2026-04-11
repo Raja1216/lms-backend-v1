@@ -14,6 +14,7 @@ import {
   BadRequestException,
   UseGuards,
   Query,
+  Request as NestjsRequest,
 } from '@nestjs/common';
 import { CourseService } from './course.service';
 import { CreateCourseDto } from './dto/create-course.dto';
@@ -70,7 +71,7 @@ export class CourseController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -85,9 +86,13 @@ export class CourseController {
     @Query() paginationDto: PaginationDto,
     @Res() res: Response,
     @Next() next: NextFunction,
+    @NestjsRequest() req: { user: User },
   ) {
     try {
-      const { data, total } = await this.courseService.findAll(paginationDto);
+      const { data, total } = await this.courseService.findAll(
+        req.user.id,
+        paginationDto,
+      );
       const pagedResponse = createPagedResponse(
         data,
         paginationDto.page ?? 1,
@@ -101,7 +106,7 @@ export class CourseController {
         pagedResponse,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -127,7 +132,7 @@ export class CourseController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -175,7 +180,7 @@ export class CourseController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -202,7 +207,7 @@ export class CourseController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
@@ -223,7 +228,7 @@ export class CourseController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -232,7 +237,7 @@ export class CourseController {
       );
     }
   }
-   
+
   @Get(':slug')
   async findCourseBySlug(
     @Param('slug') slug: string,
@@ -249,7 +254,7 @@ export class CourseController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -278,7 +283,7 @@ export class CourseController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -304,17 +309,27 @@ export class CourseController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string, @Res() res: Response, @Next() next: NextFunction) {
+  async remove(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
     try {
       await this.courseService.remove(+id);
-      return successResponse(res, 200, 'Course removed successfully', null, null);
-    } catch (error) {
+      return successResponse(
+        res,
+        200,
+        'Course removed successfully',
+        null,
+        null,
+      );
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',

@@ -66,34 +66,62 @@ export class StudentDashboardService {
       );
     });
     const difficultyStats = {
-      easy: { attempted: 0, correct: 0 },
-      medium: { attempted: 0, correct: 0 },
-      hard: { attempted: 0, correct: 0 },
+      easy: { attempted: 0, correct: 0, notattempted: 0 },
+      medium: { attempted: 0, correct: 0, notattempted: 0 },
+      hard: { attempted: 0, correct: 0, notattempted: 0 },
     };
     courseAttempts.forEach((attempt) => {
-      attempt.answers.forEach((ans) => {
-        const diff = ans.question.difficulty as 'easy' | 'medium' | 'hard';
-        difficultyStats[diff].attempted++;
-        if (ans.isCorrect) difficultyStats[diff].correct++;
+      const answeredQuestionIds = new Set(
+        attempt.answers.map((a) => a.questionId),
+      );
+
+      attempt.quiz.questions.forEach((q) => {
+        const diff = q.difficulty as 'easy' | 'medium' | 'hard';
+
+        if (answeredQuestionIds.has(q.id)) {
+          difficultyStats[diff].attempted++;
+
+          const ans = attempt.answers.find((a) => a.questionId === q.id);
+          if (ans?.isCorrect) {
+            difficultyStats[diff].correct++;
+          }
+        } else {
+          difficultyStats[diff].notattempted++;
+        }
       });
     });
 
-    const bloomStats: Record<string, { attempted: number; correct: number }> = {
-      remember: { attempted: 0, correct: 0 },
-      understand: { attempted: 0, correct: 0 },
-      apply: { attempted: 0, correct: 0 },
-      analyze: { attempted: 0, correct: 0 },
-      evaluate: { attempted: 0, correct: 0 },
-      create: { attempted: 0, correct: 0 },
+    const bloomStats: Record<
+      string,
+      { attempted: number; correct: number; notattempted: number }
+    > = {
+      remember: { attempted: 0, correct: 0, notattempted: 0 },
+      understand: { attempted: 0, correct: 0, notattempted: 0 },
+      apply: { attempted: 0, correct: 0, notattempted: 0 },
+      analyze: { attempted: 0, correct: 0, notattempted: 0 },
+      evaluate: { attempted: 0, correct: 0, notattempted: 0 },
+      create: { attempted: 0, correct: 0, notattempted: 0 },
     };
     courseAttempts.forEach((attempt) => {
-      attempt.answers.forEach((ans) => {
-        const level = ans.question.bloomLevel;
-        bloomStats[level].attempted++;
-        if (ans.isCorrect) bloomStats[level].correct++;
+      const answeredQuestionIds = new Set(
+        attempt.answers.map((a) => a.questionId),
+      );
+
+      attempt.quiz.questions.forEach((q) => {
+        const level = q.bloomLevel;
+
+        if (answeredQuestionIds.has(q.id)) {
+          bloomStats[level].attempted++;
+
+          const ans = attempt.answers.find((a) => a.questionId === q.id);
+          if (ans?.isCorrect) {
+            bloomStats[level].correct++;
+          }
+        } else {
+          bloomStats[level].notattempted++;
+        }
       });
     });
-
     const courseSubjects = await this.prisma.courseSubject.findMany({
       where: { courseId },
       include: {
@@ -107,6 +135,7 @@ export class StudentDashboardService {
                       include: {
                         quiz: {
                           include: {
+                            questions: true,
                             quizAttempts: {
                               where: { userId: studentId },
                               include: {
@@ -134,23 +163,34 @@ export class StudentDashboardService {
           questionsAttempted = 0,
           correctAnswers = 0;
         const diffBreakdown = {
-          easy: { attempted: 0, correct: 0 },
-          medium: { attempted: 0, correct: 0 },
-          hard: { attempted: 0, correct: 0 },
+          easy: { attempted: 0, correct: 0, notattempted: 0 },
+          medium: { attempted: 0, correct: 0, notattempted: 0 },
+          hard: { attempted: 0, correct: 0, notattempted: 0 },
         };
 
         for (const cq of ch.chapterQuizzes) {
           for (const attempt of cq.quiz.quizAttempts) {
             timeSpent += attempt.timeTaken;
-            questionsAttempted += attempt.answers.length;
-            correctAnswers += attempt.answers.filter((a) => a.isCorrect).length;
-            attempt.answers.forEach((ans) => {
-              const diff = ans.question.difficulty as
-                | 'easy'
-                | 'medium'
-                | 'hard';
-              diffBreakdown[diff].attempted++;
-              if (ans.isCorrect) diffBreakdown[diff].correct++;
+
+            const answerMap = new Map(
+              attempt.answers.map((a) => [a.questionId, a]),
+            );
+
+            cq.quiz.questions.forEach((q) => {
+              const diff = q.difficulty as 'easy' | 'medium' | 'hard';
+              const ans = answerMap.get(q.id);
+
+              if (ans) {
+                questionsAttempted++;
+                diffBreakdown[diff].attempted++;
+
+                if (ans.isCorrect) {
+                  correctAnswers++;
+                  diffBreakdown[diff].correct++;
+                }
+              } else {
+                diffBreakdown[diff].notattempted++;
+              }
             });
           }
         }
