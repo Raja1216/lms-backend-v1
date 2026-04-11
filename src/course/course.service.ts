@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
@@ -108,11 +112,8 @@ export class CourseService {
         },
       },
     });
-
-    if (!user || !user?.classGrade) {
-      throw new BadRequestException(
-        'Please update your profile with class grade to see courses',
-      );
+    if (!user) {
+      throw new UnauthorizedException('User not found');
     }
     let filterGrade: string | null = null;
 
@@ -120,6 +121,13 @@ export class CourseService {
     const isAdmin = user?.roles.some(
       (role) => role.name.toLowerCase() === 'super admin',
     );
+    if (!isAdmin) {
+      if (!user?.classGrade) {
+        throw new BadRequestException(
+          'Please update your profile with class grade to see courses',
+        );
+      }
+    }
     if (isAdmin) {
       //  use provided grade (or no filter)
       filterGrade = grade ?? null;
