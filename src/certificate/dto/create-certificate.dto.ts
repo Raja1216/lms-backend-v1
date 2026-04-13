@@ -1,5 +1,6 @@
 export class CreateCertificateDto {
   userId: number;
+  submissionId?: number;
   type: 'project_completion' | 'course_completion' | 'achievement';
   title: string;
   studentName: string;
