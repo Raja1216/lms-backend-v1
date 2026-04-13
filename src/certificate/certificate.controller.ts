@@ -1,19 +1,15 @@
-import {
-  Controller,
-  Get,
-  Param,
-  Req,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Param, Req, Post, UseGuards } from '@nestjs/common';
 import { CertificateService } from './certificate.service';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 @Controller('certificate')
 export class CertificateController {
   constructor(private readonly service: CertificateService) {}
 
   // ✅ GET /certificate/my
+  @ApiTags('Certificate')
+  @ApiBearerAuth('access-token')
   @UseGuards(JwtAuthGuard)
   @Get('my')
   async getMy(@Req() req) {
