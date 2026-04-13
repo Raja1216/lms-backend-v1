@@ -310,7 +310,7 @@ export class ProjectGradingService {
         projectTitle: submission.project.title,
         courseName: submission.project.course.title,
         grade: submission.grade?.letterGrade || '',
-        teacherRemarks: submission.grade?.feedback,
+        teacherRemarks: submission.grade?.feedback ?? undefined,
         completionDate: new Date(),
         brandLogo: 'stempowered',
       });
