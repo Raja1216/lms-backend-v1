@@ -17,9 +17,13 @@ import {
   SubmissionStatus,
   LetterGrade,
 } from '../../generated/prisma/enums';
+import { CertificateService } from 'src/certificate/certificate.service';
 @Injectable()
 export class ProjectGradingService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly certificateService: CertificateService,
+  ) {}
   private async getSubmissionOrThrow(submissionId: number) {
     const sub = await this.prisma.projectSubmission.findUnique({
       where: { id: submissionId },
@@ -72,7 +76,8 @@ export class ProjectGradingService {
     //   percentage,
     //   bands.length ? bands : undefined,
     // );
-    const letterGrade = dto.letterGrade      ? dto.letterGrade
+    const letterGrade = dto.letterGrade
+      ? dto.letterGrade
       : calcLetterGrade(percentage, bands.length ? bands : undefined);
 
     return this.prisma.$transaction(async (tx) => {
@@ -209,16 +214,43 @@ export class ProjectGradingService {
     });
   }
 
+  // async publishGrade(submissionId: number, userId: number) {
+  //   const grade = await this.prisma.projectGrade.findUnique({
+  //     where: { submissionId },
+  //   });
+  //   const userRoles = await this.prisma.user.findUnique({
+  //     where: { id: userId },
+  //     select: { roles: true },
+  //   });
+  //   if (!grade)
+  //     throw new NotFoundException('Grade not found for this submission');
+  //   if (
+  //     grade.teacherId !== userId &&
+  //     !userRoles?.roles?.some((role) => role.name === 'Super Admin')
+  //   ) {
+  //     throw new ForbiddenException(
+  //       'Only the grading teacher can publish this grade',
+  //     );
+  //   }
+  //   return this.prisma.projectGrade.update({
+  //     where: { submissionId },
+  //     data: { isPublished: true },
+  //   });
+  // }
+
   async publishGrade(submissionId: number, userId: number) {
     const grade = await this.prisma.projectGrade.findUnique({
       where: { submissionId },
     });
+
     const userRoles = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { roles: true },
     });
+
     if (!grade)
       throw new NotFoundException('Grade not found for this submission');
+
     if (
       grade.teacherId !== userId &&
       !userRoles?.roles?.some((role) => role.name === 'Super Admin')
@@ -227,10 +259,64 @@ export class ProjectGradingService {
         'Only the grading teacher can publish this grade',
       );
     }
-    return this.prisma.projectGrade.update({
+
+    // ✅ FIRST: Get submission (MOVE UP)
+    const submission = await this.prisma.projectSubmission.findUnique({
+      where: { id: submissionId },
+      include: {
+        student: true,
+        project: {
+          include: {
+            course: true,
+          },
+        },
+        grade: true,
+      },
+    });
+
+    if (!submission) {
+      throw new NotFoundException('Submission not found');
+    }
+
+    // ✅ Update grade
+    const updatedGrade = await this.prisma.projectGrade.update({
       where: { submissionId },
       data: { isPublished: true },
     });
+
+    // ✅ Check duplicate certificate (CLEAN VERSION)
+    // const alreadyExists = await this.prisma.certificate.findFirst({
+    //   where: {
+    //     userId: submission.studentId,
+    //     projectTitle: submission.project.title,
+    //     type: 'project_completion',
+    //   },
+    // });
+    const alreadyExists = await this.prisma.certificate.findUnique({
+      where: {
+        submissionId: submission.id,
+      },
+    });
+
+    // ✅ Generate certificate
+    if (!alreadyExists && updatedGrade.isPublished) {
+      await this.certificateService.create({
+        userId: submission.studentId,
+        submissionId: submission.id,
+        type: 'project_completion',
+        title: 'Certificate of Completion',
+        studentName: submission.student.name || '',
+        className: submission.student.classGrade || '',
+        projectTitle: submission.project.title,
+        courseName: submission.project.course.title,
+        grade: submission.grade?.letterGrade || '',
+        teacherRemarks: submission.grade?.feedback ?? undefined,
+        completionDate: new Date(),
+        brandLogo: 'stempowered',
+      });
+    }
+
+    return updatedGrade;
   }
   async getGrade(submissionId: number) {
     const grade = await this.prisma.projectGrade.findUnique({

@@ -74,6 +74,17 @@ enum LetterGrade {
   F
 }
 
+enum CertificateType {
+  project_completion
+  course_completion
+  achievement
+}
+
+enum CertificateBrand {
+  edudigm
+  stempowered
+}
+
 model User {
   id                  Int                  @id @default(autoincrement())
   uuid                String               @unique @default(uuid())
@@ -90,6 +101,7 @@ model User {
   status              Boolean              @default(true)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  certificates        Certificate[]
   roles               Role[]               @relation("userroles")
   teacherCourses      CourseTeacher[]      @relation("TeacherCourses")
   quizAttempts        QuizAttempt[]
@@ -787,4 +799,27 @@ model GradeScaleBand {
   scale GradeScale @relation("ScaleBands", fields: [scaleId], references: [id], onDelete: Cascade)
 
   @@map("grade_scale_bands")
+}
+
+model Certificate {
+  id                Int              @id @default(autoincrement())
+  certificateNumber String           @unique
+  userId            Int
+  submissionId      Int?             @unique
+  type              CertificateType
+  title             String
+  studentName       String
+  className         String
+  projectTitle      String?
+  courseName        String
+  grade             String?
+  teacherRemarks    String?          @db.Text
+  completionDate    DateTime
+  brandLogo         CertificateBrand
+
+  createdAt         DateTime         @default(now())
+
+  user              User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("certificates")
 }
