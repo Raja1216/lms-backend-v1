@@ -121,14 +121,17 @@ export class CourseService {
     const isAdmin = user?.roles.some(
       (role) => role.name.toLowerCase() === 'super admin',
     );
-    if (!isAdmin) {
+    const isTeacher = user?.roles.some(
+      (role) => role.name.toLowerCase() === 'teacher',
+    );
+    if (!isAdmin || !isTeacher) {
       if (!user?.classGrade) {
         throw new BadRequestException(
           'Please update your profile with class grade to see courses',
         );
       }
     }
-    if (isAdmin) {
+    if (isAdmin || isTeacher) {
       //  use provided grade (or no filter)
       filterGrade = grade ?? null;
     } else {
