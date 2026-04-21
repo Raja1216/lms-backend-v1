@@ -23,6 +23,7 @@ import { ProjectModule } from './project/project.module';
 import { ProjectSubmissionModule } from './project/project-submission/project-submission.module';
 import { StudentDashboardModule } from './student-dashboard/student-dashboard.module';
 import { ReportModule } from './report/report.module';
+import { InstitutionModule } from './institution/institution.module';
 
 
 @Module({
@@ -49,6 +50,7 @@ import { ReportModule } from './report/report.module';
     ProjectSubmissionModule,
     ReportModule,
     StudentDashboardModule,
+    InstitutionModule,
   ],
 })
 export class AppModule {}

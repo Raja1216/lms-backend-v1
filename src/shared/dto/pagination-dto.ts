@@ -21,4 +21,8 @@ export class PaginationDto {
   @IsOptional()
   @IsString({ message: 'Grade must be a string' })
   grade?: string; 
+
+  @IsOptional()
+  @IsString({message:'role must be a string'})
+  role?: string | null;
 }
