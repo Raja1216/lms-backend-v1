@@ -848,6 +848,11 @@ model Institution {
   slug      String   @unique
   logo      String?
   address   String?  @db.Text
+  street    String?
+  city      String?
+  state     String?
+  country   String?
+  pincode   String?
   website   String?
   ownerId   Int
   status    Boolean  @default(true)

@@ -49,6 +49,11 @@ export class InstitutionService {
         logo: dto.logo,
         address: dto.address,
         website: dto.website,
+        street: dto.street,
+        city: dto.city,
+        state: dto.state,
+        country: dto.country,
+        pincode: dto.pincode,
       },
     });
     const institutionUser = await this.prisma.institutionMember.create({
@@ -458,7 +463,7 @@ export class InstitutionService {
     return !!user;
   }
 
-  private async checkSuperAdmin(
+  async checkSuperAdmin(
     userId: number,
   ): Promise<{ isSuperAdmin: boolean; institutionId?: number }> {
     const user = await this.prisma.user.findUnique({
