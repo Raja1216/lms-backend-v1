@@ -429,6 +429,7 @@ model Question {
   question   String       @db.Text
   status     Boolean      @default(true)
   marks      Int
+  imageUrl   String?
   duration   Decimal      @default(0) @db.Decimal(10, 2)
   type       QuestionType @default(MCQ)
   difficulty Difficulty   @default(medium)
@@ -448,6 +449,7 @@ model QuestionOption {
   id         Int      @id @default(autoincrement())
   questionId Int
   option     String   @db.Text
+  imageUrl   String?
   status     Boolean  @default(true)
   isCorrect  Boolean  @default(false)
   createdAt  DateTime @default(now())
