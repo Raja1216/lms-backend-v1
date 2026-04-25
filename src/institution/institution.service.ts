@@ -99,6 +99,17 @@ export class InstitutionService {
     ]);
     return { data, total, page, limit };
   }
+  async getInstitutionOptions(keyword: string) {
+    const whereClause: any = { status: true };
+    if (keyword) {
+      whereClause.name = { contains: keyword };
+    }
+    return await this.prisma.institution.findMany({
+      where: whereClause,
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
+  }
   async getInstitutionDetails(id: number, userId: number) {
     const { isSuperAdmin, institutionId } = await this.checkSuperAdmin(userId);
     if (!isSuperAdmin && institutionId !== id) {

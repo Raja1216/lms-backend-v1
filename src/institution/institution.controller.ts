@@ -34,6 +34,8 @@ import { UpdateMemberDto } from './dto/update-member.dto';
 @Controller('institutions')
 export class InstitutionController {
   constructor(private readonly institutionService: InstitutionService) {}
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('institutions-create')
   @Post('/create')
   async createInstitution(
     @Body() createInstitutionDto: CreateInstitutionDto,
@@ -94,6 +96,34 @@ export class InstitutionController {
         200,
         'Institutions retrieved successfully',
         result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+  @Get('options/list')
+  async getInstitutionOptions(
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query('keyword') keyword: string,
+  ) {
+    try {
+      const institutions = await this.institutionService.getInstitutionOptions(
+        keyword,
+      );
+      return successResponse(
+        res,
+        200,
+        'Institution options retrieved successfully',
+        institutions,
         null,
       );
     } catch (error: any) {

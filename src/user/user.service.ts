@@ -22,6 +22,7 @@ export class UserService {
     password: string,
     level?: string,
     name?: string,
+    institutionId?: number,
     roles?: number[],
   ) {
     const existing = await this.prisma.user.findUnique({
@@ -63,6 +64,14 @@ export class UserService {
         createdAt: true,
       },
     });
+    if(institutionId){
+      await this.prisma.institutionMember.create({
+        data: {
+          userId: user.id,
+          institutionId: institutionId,
+        },
+      });
+    }
 
     return user;
   }
