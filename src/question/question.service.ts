@@ -37,6 +37,7 @@ export class QuestionService {
             question: q.questionText,
             marks: q.marks,
             type: q.type,
+            imageUrl: q.image ? q.image : null,
             difficulty: q.difficulty,
             bloomLevel: q.bloomLevel,
             answer:
@@ -50,6 +51,7 @@ export class QuestionService {
                     create: q.options?.map((opt) => ({
                       option: opt.option,
                       isCorrect: opt.isCorrect ?? false,
+                      imageUrl: opt.image ? opt.image : null,
                     })),
                   }
                 : undefined,
@@ -114,6 +116,7 @@ export class QuestionService {
       duration,
       difficulty,
       bloomLevel,
+      image,
     } = updateQuestionDto;
 
     const updatedQuestion = await this.prisma.question.update({
@@ -126,13 +129,14 @@ export class QuestionService {
         duration,
         difficulty,
         bloomLevel,
-
+        imageUrl: image ? image : null,
         options: options
           ? {
               deleteMany: {},
               create: options.map((opt) => ({
                 option: opt.option,
                 isCorrect: opt.isCorrect ?? false,
+                imageUrl: opt.image,
               })),
             }
           : undefined,

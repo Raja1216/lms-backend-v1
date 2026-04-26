@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsInt } from 'class-validator';
 
 export class CreateQuizDto {
   @IsString()
-  title: string;
+  title!: string;
 
   @IsOptional()
   @IsInt()

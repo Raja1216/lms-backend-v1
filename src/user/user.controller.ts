@@ -51,6 +51,7 @@ export class UserController {
         body.password,
         body.name,
         body.level,
+        body.institutionId,
         body.roles,
       );
       return successResponse(res, 201, 'User created successfully', user, null);

@@ -10,6 +10,7 @@ import {
   ArrayNotEmpty,
   ValidateNested,
   IsNotEmpty,
+  IsUrl,
 } from 'class-validator';
 import {
   QuestionType,
@@ -21,6 +22,9 @@ import { Type } from 'class-transformer';
 export class UpdateQuestionDto {
   @IsString()
   questionText!: string;
+  @IsUrl()
+  @IsOptional()
+  image?: string;
 
   @IsEnum(QuestionType)
   type!: QuestionType;
@@ -58,7 +62,9 @@ export class UpdateQuestionDto {
 export class CreateQuestionOptionDto {
   @IsString()
   option!: string;
-
+  @IsUrl()
+  @IsOptional()
+  image?: string;
   @IsOptional()
   @IsBoolean()
   isCorrect?: boolean;

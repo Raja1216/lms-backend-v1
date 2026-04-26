@@ -363,12 +363,14 @@ export class QuizService {
             marks: true,
             duration: true,
             type: true,
+            imageUrl: true,
             difficulty: true,
             options: {
               where: { status: true },
               select: {
                 id: true,
                 option: true,
+                imageUrl: true,
               },
             },
           },

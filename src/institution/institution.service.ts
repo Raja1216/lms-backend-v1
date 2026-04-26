@@ -49,6 +49,11 @@ export class InstitutionService {
         logo: dto.logo,
         address: dto.address,
         website: dto.website,
+        street: dto.street,
+        city: dto.city,
+        state: dto.state,
+        country: dto.country,
+        pincode: dto.pincode,
       },
     });
     const institutionUser = await this.prisma.institutionMember.create({
@@ -93,6 +98,17 @@ export class InstitutionService {
       this.prisma.institution.count({ where: whereClause }),
     ]);
     return { data, total, page, limit };
+  }
+  async getInstitutionOptions(keyword: string) {
+    const whereClause: any = { status: true };
+    if (keyword) {
+      whereClause.name = { contains: keyword };
+    }
+    return await this.prisma.institution.findMany({
+      where: whereClause,
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    });
   }
   async getInstitutionDetails(id: number, userId: number) {
     const { isSuperAdmin, institutionId } = await this.checkSuperAdmin(userId);
@@ -458,7 +474,7 @@ export class InstitutionService {
     return !!user;
   }
 
-  private async checkSuperAdmin(
+  async checkSuperAdmin(
     userId: number,
   ): Promise<{ isSuperAdmin: boolean; institutionId?: number }> {
     const user = await this.prisma.user.findUnique({
