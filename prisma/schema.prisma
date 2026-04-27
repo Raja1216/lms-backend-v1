@@ -31,6 +31,7 @@ enum Difficulty {
   medium
   hard
 }
+
 enum BloomLevel {
   remember
   understand
@@ -73,6 +74,28 @@ enum LetterGrade {
   F
 }
 
+enum CertificateType {
+  project_completion
+  course_completion
+  achievement
+}
+
+enum CertificateBrand {
+  edudigm
+  stempowered
+}
+
+enum InstitutionMemberRole {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum EnrollmentSource {
+  INDIVIDUAL
+  INSTITUTION
+}
+
 model User {
   id                  Int                  @id @default(autoincrement())
   uuid                String               @unique @default(uuid())
@@ -89,6 +112,7 @@ model User {
   status              Boolean              @default(true)
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  certificates        Certificate[]
   roles               Role[]               @relation("userroles")
   teacherCourses      CourseTeacher[]      @relation("TeacherCourses")
   quizAttempts        QuizAttempt[]
@@ -102,6 +126,8 @@ model User {
   teacherProjects     Project[]            @relation("TeacherProjects")
   studentSubmissions  ProjectSubmission[]  @relation("StudentSubmissions")
   gradesGiven         ProjectGrade[]       @relation("TeacherGrades")
+  ownedInstitutions   Institution[]        @relation("InstitutionOwner")
+  institutionMembers  InstitutionMember[]  @relation("InstitutionMemberships")
 
   @@map("users")
 }
@@ -169,6 +195,7 @@ model Course {
   courseQuizzes       CourseQuiz[]
   projects            Project[]            @relation("CourseProjects")
   gradeScale          GradeScale?          @relation("CourseGradeScale")
+  institutionCourses  InstitutionCourse[]  @relation("InstitutionCourses")
 
   @@map("courses")
 }
@@ -383,10 +410,8 @@ model QuestionAttempt {
 
   obtainedMarks Decimal @db.Decimal(10, 2) // e.g. 1.0, 4.0
   totalMarks    Decimal @db.Decimal(10, 2) // e.g. 1.0, 5.0
-
-  isCorrect Boolean
-
-  timeTaken Int @default(0)
+  timeTaken     Int? // time taken in seconds
+  isCorrect     Boolean
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -404,6 +429,7 @@ model Question {
   question   String       @db.Text
   status     Boolean      @default(true)
   marks      Int
+  imageUrl   String?
   duration   Decimal      @default(0) @db.Decimal(10, 2)
   type       QuestionType @default(MCQ)
   difficulty Difficulty   @default(medium)
@@ -423,6 +449,7 @@ model QuestionOption {
   id         Int      @id @default(autoincrement())
   questionId Int
   option     String   @db.Text
+  imageUrl   String?
   status     Boolean  @default(true)
   isCorrect  Boolean  @default(false)
   createdAt  DateTime @default(now())
@@ -535,17 +562,22 @@ model Payment {
 }
 
 model UserEnrolledCourse {
-  id         Int      @id @default(autoincrement())
-  userId     Int
-  courseId   Int
-  paymentId  Int      @unique
-  enrolledAt DateTime @default(now())
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation("UserEnrolledCourses", fields: [userId], references: [id], onDelete: Cascade)
-  course     Course   @relation("CourseEnrolledUsers", fields: [courseId], references: [id], onDelete: Cascade)
-  payment    Payment  @relation("UserEnrolledCoursePayment", fields: [paymentId], references: [id], onDelete: Cascade)
+  id            Int              @id @default(autoincrement())
+  userId        Int
+  courseId      Int
+  paymentId     Int?             @unique // nullable — institution enrollments skip payment
+  sourceType    EnrollmentSource @default(INDIVIDUAL)
+  institutionId Int? // set when sourceType = INSTITUTION
+  enrolledAt    DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
 
+  user        User         @relation("UserEnrolledCourses", fields: [userId], references: [id], onDelete: Cascade)
+  course      Course       @relation("CourseEnrolledUsers", fields: [courseId], references: [id], onDelete: Cascade)
+  payment     Payment?     @relation("UserEnrolledCoursePayment", fields: [paymentId], references: [id], onDelete: Cascade)
+  institution Institution? @relation("InstitutionEnrollments", fields: [institutionId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, courseId, sourceType]) // same student can enrol via both sources
   @@map("user_enrolled_courses")
 }
 
@@ -787,6 +819,88 @@ model GradeScaleBand {
 
   @@map("grade_scale_bands")
 }
+
+model Certificate {
+  id                Int              @id @default(autoincrement())
+  certificateNumber String           @unique
+  userId            Int
+  submissionId      Int?             @unique
+  type              CertificateType
+  title             String
+  studentName       String
+  className         String
+  projectTitle      String?
+  courseName        String
+  grade             String?
+  teacherRemarks    String?          @db.Text
+  completionDate    DateTime
+  brandLogo         CertificateBrand
+
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("certificates")
+}
+
+model Institution {
+  id        Int      @id @default(autoincrement())
+  uuid      String   @unique @default(uuid())
+  name      String
+  slug      String   @unique
+  logo      String?
+  address   String?  @db.Text
+  street    String?
+  city      String?
+  state     String?
+  country   String?
+  pincode   String?
+  website   String?
+  ownerId   Int
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner              User                 @relation("InstitutionOwner", fields: [ownerId], references: [id])
+  members            InstitutionMember[]  @relation("InstitutionMembers")
+  institutionCourses InstitutionCourse[]  @relation("InstitutionCourses")
+  enrollments        UserEnrolledCourse[] @relation("InstitutionEnrollments")
+
+  @@map("institutions")
+}
+
+model InstitutionMember {
+  id            Int                   @id @default(autoincrement())
+  institutionId Int
+  userId        Int
+  status        Boolean               @default(true)
+  joinedAt      DateTime              @default(now())
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  institution Institution @relation("InstitutionMembers", fields: [institutionId], references: [id], onDelete: Cascade)
+  user        User        @relation("InstitutionMemberships", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, userId])
+  @@map("institution_members")
+}
+
+model InstitutionCourse {
+  id            Int      @id @default(autoincrement())
+  institutionId Int
+  courseId      Int
+  purchasedAt   DateTime @default(now())
+  seats         Int? // null = unlimited
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  institution Institution @relation("InstitutionCourses", fields: [institutionId], references: [id], onDelete: Cascade)
+  course      Course      @relation("InstitutionCourses", fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([institutionId, courseId])
+  @@map("institution_courses")
+}
+
 
 model live_classes {
   id            String   @id @default(uuid())

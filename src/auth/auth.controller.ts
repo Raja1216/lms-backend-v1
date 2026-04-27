@@ -1,5 +1,16 @@
 // src/auth/auth.controller.ts
-import { Controller, Post, Body, Req, Res, Next, UseGuards,HttpStatus,Get,Request as NestJsRequest } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Req,
+  Res,
+  Next,
+  UseGuards,
+  HttpStatus,
+  Get,
+  Request as NestJsRequest,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
@@ -8,7 +19,7 @@ import { successResponse } from 'src/utils/success-response';
 import { Request, Response, NextFunction } from 'express';
 import { ErrorHandler } from 'src/utils/error-handler';
 import { SendOtpDto } from './dto/send-otp.dto';
-import { ResetPasswordDto} from './dto/reset-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { OtpService } from 'src/otp/otp.service';
 import { JwtAuthGuard } from './jwt.guard';
 import { User } from 'src/generated/prisma/browser';
@@ -50,7 +61,7 @@ export class AuthController {
         { user, access_token: user.access_token },
         null,
       );
-    } catch (err) {
+    } catch (err: any) {
       return next(
         new ErrorHandler(
           err instanceof Error ? err.message : 'Internal Server Error',
@@ -74,8 +85,14 @@ export class AuthController {
     @Next() next: NextFunction,
   ) {
     try {
-      const { name, email, password, level } = dto;
-      const user = await this.auth.register(email, password,level, name );
+      const { name, email, password, level, institutionId } = dto;
+      const user = await this.auth.register(
+        email,
+        password,
+        level,
+        name,
+        institutionId,
+      );
       const cookieOptions = {
         expires: new Date(
           Date.now() +
@@ -132,8 +149,14 @@ export class AuthController {
   ) {
     try {
       const { email, newPassword, otp } = dto;
-      const data=await this.auth.resetPassword(email, newPassword, otp);
-      return successResponse(res, 200, 'Password reset successfully', data, null);
+      const data = await this.auth.resetPassword(email, newPassword, otp);
+      return successResponse(
+        res,
+        200,
+        'Password reset successfully',
+        data,
+        null,
+      );
     } catch (err) {
       return next(
         new ErrorHandler(
@@ -145,7 +168,10 @@ export class AuthController {
   }
   @UseGuards(JwtAuthGuard)
   @Get('my-access')
-  async getMyAccess(@NestJsRequest() req: { user: User }, @Res() res: Response) {
+  async getMyAccess(
+    @NestJsRequest() req: { user: User },
+    @Res() res: Response,
+  ) {
     const access = await this.auth.getMyAccess(req.user);
     return successResponse(
       res,

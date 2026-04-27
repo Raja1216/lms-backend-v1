@@ -21,9 +21,12 @@ import { UploadModule } from './upload/upload.module';
 import { ModuleModule } from './module/module.module';
 import { ProjectModule } from './project/project.module';
 import { ProjectSubmissionModule } from './project/project-submission/project-submission.module';
+import { StudentDashboardModule } from './student-dashboard/student-dashboard.module';
 import { ReportModule } from './report/report.module';
 import { ZoomModule } from './zoom/zoom.module';
 import { LiveClassModule } from './live-class/live-class.module';
+import { InstitutionModule } from './institution/institution.module';
+
 
 @Module({
   imports: [
@@ -50,6 +53,8 @@ import { LiveClassModule } from './live-class/live-class.module';
     ReportModule,
     ZoomModule,
     LiveClassModule,
+    StudentDashboardModule,
+    InstitutionModule,
   ],
 })
 export class AppModule {}

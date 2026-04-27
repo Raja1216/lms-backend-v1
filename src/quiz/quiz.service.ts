@@ -363,12 +363,14 @@ export class QuizService {
             marks: true,
             duration: true,
             type: true,
+            imageUrl: true,
             difficulty: true,
             options: {
               where: { status: true },
               select: {
                 id: true,
                 option: true,
+                imageUrl: true,
               },
             },
           },
@@ -622,6 +624,7 @@ export class QuizService {
         obtainedMarks: correct ? Number(q.marks) : 0,
         totalMarks: Number(q.marks),
         isCorrect: correct,
+        timeTaken:a.timeSpent? Number(a.timeSpent) : 0,
       };
     });
     const totalMarks = quiz.questions.reduce(

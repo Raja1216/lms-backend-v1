@@ -1,4 +1,4 @@
-import {IsInt, IsOptional, IsString, Min} from 'class-validator';
+import {IsInt, IsNumber, IsOptional, IsString, Min} from 'class-validator';
 import {Type} from 'class-transformer';
 
 export class PaginationDto {
@@ -21,4 +21,12 @@ export class PaginationDto {
   @IsOptional()
   @IsString({ message: 'Grade must be a string' })
   grade?: string; 
+
+  @IsOptional()
+  @IsString({message:'role must be a string'})
+  role?: string | null;
+
+  @IsOptional()
+  @IsNumber({}, {message:'courseId must be a number'})
+  courseId?: number;
 }

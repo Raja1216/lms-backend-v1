@@ -1,4 +1,5 @@
 import { Type } from 'class-transformer';
+
 import {
   IsBoolean,
   IsEnum,
@@ -12,6 +13,7 @@ import {
   ArrayNotEmpty,
   ValidateNested,
   IsNotEmpty,
+  IsUrl,
 } from 'class-validator';
 import {
   QuestionType,
@@ -36,6 +38,10 @@ export class CreateQuestionItemDto {
 
   @IsEnum(QuestionType)
   type!: QuestionType;
+
+  @IsUrl()
+  @IsOptional()
+  image?: string;
 
   @IsInt()
   @Min(1)
@@ -70,6 +76,10 @@ export class CreateQuestionItemDto {
 export class CreateQuestionOptionDto {
   @IsString()
   option!: string;
+
+  @IsUrl()
+  @IsOptional()
+  image?: string;
 
   @IsOptional()
   @IsBoolean()
