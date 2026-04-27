@@ -1,27 +1,39 @@
-import { IsString, IsOptional, IsDateString, IsInt } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsInt, IsOptional, IsString, IsDateString } from 'class-validator';
 
 export class CreateLiveClassDto {
+  @ApiProperty()
   @IsString()
   title: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
   description?: string;
 
-  @IsString()
-  courseId: string;
+  @ApiProperty()
+  @IsInt()
+  courseId: number;
 
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  subjectId?: string;
+  @IsInt()
+  subjectId?: number;
 
+  @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  chapterId?: string;
+  @IsInt()
+  chapterId?: number;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsInt()
+  moduleId?: number;
+
+  @ApiProperty()
   @IsDateString()
   scheduledAt: string;
 
+  @ApiProperty()
   @IsInt()
   duration: number;
 }

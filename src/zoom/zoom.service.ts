@@ -29,7 +29,7 @@ export class ZoomService {
     const token = await this.getAccessToken();
 
     const response = await axios.post(
-      `${this.baseUrl}/users/${data.hostEmail}/meetings`,
+      `${this.baseUrl}/users/me/meetings`,
       {
         topic: data.title,
         type: 2,
@@ -46,7 +46,7 @@ export class ZoomService {
           Authorization: `Bearer ${token}`,
         },
       },
-    );
+  );
 
     return response.data;
   }
