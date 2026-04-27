@@ -22,12 +22,13 @@ import { ModuleModule } from './module/module.module';
 import { ProjectModule } from './project/project.module';
 import { ProjectSubmissionModule } from './project/project-submission/project-submission.module';
 import { ReportModule } from './report/report.module';
-
+import { ZoomModule } from './zoom/zoom.module';
+import { LiveClassModule } from './live-class/live-class.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule,  // make global provider available early (optional)
+    PrismaModule, // make global provider available early (optional)
     UserModule,
     AuthModule,
     OtpModule,
@@ -47,6 +48,8 @@ import { ReportModule } from './report/report.module';
     ProjectModule,
     ProjectSubmissionModule,
     ReportModule,
+    ZoomModule,
+    LiveClassModule,
   ],
 })
 export class AppModule {}

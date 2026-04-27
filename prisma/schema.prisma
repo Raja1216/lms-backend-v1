@@ -787,3 +787,41 @@ model GradeScaleBand {
 
   @@map("grade_scale_bands")
 }
+
+model live_classes {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+  courseId      String
+  subjectId     String?
+  chapterId     String?
+  scheduledAt   DateTime
+  duration      Int
+  status        String
+
+  hostId        String
+
+  zoomMeetingId String?
+  joinUrl       String?
+  startUrl      String?
+  password      String?
+
+  createdAt     DateTime @default(now())
+}
+
+model live_class_attendance {
+  id        String   @id @default(uuid())
+  classId   String
+  userId    String
+  joinedAt  DateTime
+  leftAt    DateTime?
+}
+
+model live_class_recordings {
+  id          String   @id @default(uuid())
+  classId     String
+  url         String
+  downloadUrl String?
+  duration    Int?
+  recordedAt  DateTime?
+}
