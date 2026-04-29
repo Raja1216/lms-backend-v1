@@ -8,7 +8,8 @@ import { UpdateSubjectDto } from './dto/update-subject.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
-
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { table } from 'console';
 @Injectable()
 export class SubjectService {
   constructor(private prisma: PrismaService) {}
@@ -50,28 +51,40 @@ export class SubjectService {
     });
   }
 
-  async findAll() {
-    return this.prisma.subject.findMany({
-      where: {
-        status: true,
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-      include: {
-        courses: {
-          include: {
-            course: {
-              select: {
-                id: true,
-                title: true,
-                slug: true,
+  async findAll(paginationDto: PaginationDto) {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.subject.findMany({
+        where: {
+          status: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: limit,
+        skip,
+        include: {
+          courses: {
+            include: {
+              course: {
+                select: {
+                  id: true,
+                  title: true,
+                  slug: true,
+                },
               },
             },
           },
         },
-      },
-    });
+      }),
+      this.prisma.subject.count({
+        where: {
+          status: true,
+        },
+      }),
+    ]);
+    return { data, total, page, limit };
   }
 
   async findOne(id: number) {

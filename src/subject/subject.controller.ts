@@ -13,6 +13,7 @@ import {
   NotFoundException,
   BadRequestException,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { SubjectService } from './subject.service';
 import { CreateSubjectDto } from './dto/create-subject.dto';
@@ -24,6 +25,8 @@ import { ErrorHandler } from 'src/utils/error-handler';
 import { PermissionGuard } from 'src/guard/permission.guard';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { Permissions } from 'src/guard/premission.decorator';
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { createPagedResponse } from 'src/shared/create-paged-response';
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('subject')
 export class SubjectController {
@@ -47,13 +50,13 @@ export class SubjectController {
         throw new ConflictException('Subject with this name already exists');
       }
       if (courseIds && courseIds.length > 0) {
-      for (const courseId of courseIds) {
-        const course = await this.courseService.findOne(courseId);
-        if (!course) {
-          throw new NotFoundException('Course not found');
+        for (const courseId of courseIds) {
+          const course = await this.courseService.findOne(courseId);
+          if (!course) {
+            throw new NotFoundException('Course not found');
+          }
         }
       }
-    }
       const result = await this.subjectService.create(createSubjectDto);
       return successResponse(
         res,
@@ -62,7 +65,7 @@ export class SubjectController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -88,7 +91,7 @@ export class SubjectController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -99,8 +102,29 @@ export class SubjectController {
   }
 
   @Get()
-  findAll() {
-    return this.subjectService.findAll();
+  async findAll(
+    @Query() paginationDto: PaginationDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const { data, page, limit, total } =
+        await this.subjectService.findAll(paginationDto);
+      return successResponse(
+        res,
+        200,
+        'Subject fetched successfully',
+        createPagedResponse(data, page, limit, total),
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
   }
 
   @Permissions('subject-read')
@@ -119,7 +143,7 @@ export class SubjectController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -143,7 +167,7 @@ export class SubjectController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -187,7 +211,7 @@ export class SubjectController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -212,7 +236,7 @@ export class SubjectController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',

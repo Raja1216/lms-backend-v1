@@ -52,22 +52,22 @@ export class QuizService {
       },
     });
 
-    if (courseId) {
+    if (courseId && !subjectId && !moduleId && !chapterId && !lessonId) {
       await this.prisma.courseQuiz.create({
         data: { courseId, quizId: quiz.id },
       });
     }
-    if (subjectId) {
+    if (subjectId && !moduleId && !chapterId && !lessonId) {
       await this.prisma.subjectQuiz.create({
         data: { subjectId, quizId: quiz.id },
       });
     }
-    if (moduleId) {
+    if (moduleId && !chapterId && !lessonId) {
       await this.prisma.moduleQuiz.create({
         data: { moduleId, quizId: quiz.id },
       });
     }
-    if (chapterId) {
+    if (chapterId && !lessonId) {
       await this.prisma.chapterQuiz.create({
         data: { chapterId, quizId: quiz.id },
       });
@@ -586,16 +586,16 @@ export class QuizService {
   }
 
   async submitQuiz(userId: number, quizId: number, submitData: SubmitQuizDto) {
-    const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
-      where: {
-        quizId,
-        userId,
-      },
-    });
+    // const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
+    //   where: {
+    //     quizId,
+    //     userId,
+    //   },
+    // });
 
-    if (alreadyAttempted) {
-      throw new BadRequestException('Quiz already attempted');
-    }
+    // if (alreadyAttempted) {
+    //   throw new BadRequestException('Quiz already attempted');
+    // }
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
       include: {
@@ -624,7 +624,7 @@ export class QuizService {
         obtainedMarks: correct ? Number(q.marks) : 0,
         totalMarks: Number(q.marks),
         isCorrect: correct,
-        timeTaken:a.timeSpent? Number(a.timeSpent) : 0,
+        timeTaken: a.timeSpent ? Number(a.timeSpent) : 0,
       };
     });
     const totalMarks = quiz.questions.reduce(

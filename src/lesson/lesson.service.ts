@@ -13,9 +13,13 @@ import { User } from 'src/generated/prisma/browser';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 import { UploadService } from 'src/upload/upload.service';
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
 @Injectable()
 export class LessonService {
-  constructor(private prisma: PrismaService, private uploadService: UploadService) {}
+  constructor(
+    private prisma: PrismaService,
+    private uploadService: UploadService,
+  ) {}
 
   async create(createLessonDto: CreateLessonDto) {
     const {
@@ -31,22 +35,22 @@ export class LessonService {
       sortOrder,
     } = createLessonDto;
     let documentUrl: string | null = null;
-   if (documentContent) {
-  if (documentContent.startsWith('data:')) {
-    const { buffer, extension } =
-      Base64FileUtil.parseBase64(documentContent);
+    if (documentContent) {
+      if (documentContent.startsWith('data:')) {
+        const { buffer, extension } =
+          Base64FileUtil.parseBase64(documentContent);
 
-    const uploaded = await this.uploadService.uploadBufferViaFtp(
-      buffer,
-      `document.${extension}`,
-      'lesson-documents',
-    );
+        const uploaded = await this.uploadService.uploadBufferViaFtp(
+          buffer,
+          `document.${extension}`,
+          'lesson-documents',
+        );
 
-    documentUrl = uploaded.url;
-  } else {
-    documentUrl = documentContent;
-  }
-}
+        documentUrl = uploaded.url;
+      } else {
+        documentUrl = documentContent;
+      }
+    }
     const lesson = await this.prisma.lesson.create({
       data: {
         title,
@@ -76,18 +80,28 @@ export class LessonService {
     return { ...lesson, chapters: lessonToChapter };
   }
 
-  async findAll() {
-    return this.prisma.lesson.findMany({
-      where: { status: true },
-      orderBy: { sortOrder: 'asc' },
-      include: {
-        chapters: {
-          include: {
-            chapter: true,
+  async findAll(paginationDto: PaginationDto) {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+    const [data, total] = await Promise.all([
+      this.prisma.lesson.findMany({
+        where: { status: true },
+        orderBy: { sortOrder: 'asc' },
+        include: {
+          chapters: {
+            include: {
+              chapter: true,
+            },
           },
         },
-      },
-    });
+        take: limit,
+        skip,
+      }),
+      this.prisma.lesson.count({
+        where: { status: true },
+      }),
+    ]);
+    return { data, total, page, limit };
   }
 
   findOne(id: number) {
@@ -104,7 +118,7 @@ export class LessonService {
   }
 
   async findByChapter(chapterId: number, userId: number) {
-    console.log("userId in service:", userId);
+    console.log('userId in service:', userId);
     const result = await this.prisma.lessonToChapter.findMany({
       where: {
         chapterId,
@@ -115,7 +129,6 @@ export class LessonService {
       include: {
         lesson: {
           include: {
-           
             chapters: {
               select: {
                 chapter: {
@@ -193,7 +206,7 @@ export class LessonService {
       )[0]; // take first safely
 
       return {
-        lesson:item.lesson,
+        lesson: item.lesson,
         isUserEnrolled: courseId ? enrolledCourseSet.has(courseId) : false,
         isCompleted: completedLessonSet.has(item.lesson.id),
       };

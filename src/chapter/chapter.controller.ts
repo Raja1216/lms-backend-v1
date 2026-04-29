@@ -36,8 +36,14 @@ export class ChapterController {
   ) {
     try {
       const result = await this.chapterService.create(dto);
-      return successResponse(res, 201, 'Chapter created successfully', result, null);
-    } catch (error) {
+      return successResponse(
+        res,
+        201,
+        'Chapter created successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
@@ -49,9 +55,16 @@ export class ChapterController {
     @Query() PaginationDto: PaginationDto,
   ) {
     try {
-      const {chapters, total, page, limit} = await this.chapterService.findAll(PaginationDto);
-      return successResponse(res, 200, 'Chapters fetched successfully', createPagedResponse(chapters, page, limit, total), null);
-    } catch (error) {
+      const { chapters, total, page, limit } =
+        await this.chapterService.findAll(PaginationDto);
+      return successResponse(
+        res,
+        200,
+        'Chapters fetched successfully',
+        createPagedResponse(chapters, page, limit, total),
+        null,
+      );
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
@@ -64,8 +77,14 @@ export class ChapterController {
   ) {
     try {
       const result = await this.chapterService.findBySubject(+subjectId);
-      return successResponse(res, 200, 'Chapters fetched successfully', result, null);
-    } catch (error) {
+      return successResponse(
+        res,
+        200,
+        'Chapters fetched successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
@@ -78,8 +97,14 @@ export class ChapterController {
   ) {
     try {
       const result = await this.chapterService.findByModule(+moduleId);
-      return successResponse(res, 200, 'Chapters fetched successfully', result, null);
-    } catch (error) {
+      return successResponse(
+        res,
+        200,
+        'Chapters fetched successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
@@ -92,8 +117,14 @@ export class ChapterController {
   ) {
     try {
       const result = await this.chapterService.findBySlug(slug);
-      return successResponse(res, 200, 'Chapter fetched successfully', result, null);
-    } catch (error) {
+      return successResponse(
+        res,
+        200,
+        'Chapter fetched successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
@@ -107,8 +138,14 @@ export class ChapterController {
   ) {
     try {
       const result = await this.chapterService.update(+id, dto);
-      return successResponse(res, 200, 'Chapter updated successfully', result, null);
-    } catch (error) {
+      return successResponse(
+        res,
+        200,
+        'Chapter updated successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
@@ -121,8 +158,14 @@ export class ChapterController {
   ) {
     try {
       const result = await this.chapterService.remove(+id);
-      return successResponse(res, 200, 'Chapter deleted successfully', result, null);
-    } catch (error) {
+      return successResponse(
+        res,
+        200,
+        'Chapter deleted successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
       return next(new ErrorHandler(error.message, error.status || 500));
     }
   }
