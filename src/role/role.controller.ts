@@ -60,11 +60,11 @@ export class RoleController {
     @Next() next: NextFunction,
   ) {
     try {
-      const { roles, total } = await this.roleService.findAll(paginationDto);
+      const { roles, total,page,limit } = await this.roleService.findAll(paginationDto);
       const pagedRoles = createPagedResponse(
         roles,
-        paginationDto.limit ?? 10,
-        paginationDto.page ?? 1,
+       page,
+       limit,
         total,
       );
       return successResponse(

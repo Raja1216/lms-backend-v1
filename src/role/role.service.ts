@@ -63,6 +63,8 @@ export class RoleService {
     return {
       roles,
       total,
+      page,
+      limit
     };
   }
 
