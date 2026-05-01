@@ -116,7 +116,7 @@ export class CourseService {
       throw new UnauthorizedException('User not found');
     }
     let filterGrade: string | null = null;
-
+    console.log('User Roles:', user.roles.map((r) => r.name));
     //check any of roles name include "Super Admin"
     const isAdmin = user?.roles.some(
       (role) => role.name.toLowerCase() === 'super admin',
@@ -124,7 +124,7 @@ export class CourseService {
     const isTeacher = user?.roles.some(
       (role) => role.name.toLowerCase() === 'teacher',
     );
-    if (!isAdmin || !isTeacher) {
+    if (!isAdmin && !isTeacher)  {
       if (!user?.classGrade) {
         throw new BadRequestException(
           'Please update your profile with class grade to see courses',

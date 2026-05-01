@@ -22,6 +22,7 @@ import { JwtAuthGuard } from 'src/auth/jwt.guard';
 import { PermissionGuard } from 'src/guard/permission.guard';
 import { Permissions } from 'src/guard/premission.decorator';
 import { QuizService } from 'src/quiz/quiz.service';
+import { createPagedResponse } from 'src/shared/create-paged-response';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('questions') 
@@ -71,15 +72,16 @@ export class QuestionController {
     @Next() next: NextFunction,
   ) {
     try {
-      const result = await this.questionService.findAll(query);
+      const {questions,page,limit,total} = await this.questionService.findAll(query);
+      const pagedResponse=createPagedResponse(questions,page,limit,total);
       return successResponse(
         res,
         200,
         'Questions fetched successfully',
-        result,
+        pagedResponse,
         null,
       );
-    } catch (error) {
+    } catch (error:any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
