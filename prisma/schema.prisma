@@ -128,6 +128,8 @@ model User {
   gradesGiven         ProjectGrade[]       @relation("TeacherGrades")
   ownedInstitutions   Institution[]        @relation("InstitutionOwner")
   institutionMembers  InstitutionMember[]  @relation("InstitutionMemberships")
+  hosted_live_classes live_classes[] @relation("LiveClassHost")
+  live_class_attendance live_class_attendance[]
 
   @@map("users")
 }
@@ -196,6 +198,7 @@ model Course {
   projects            Project[]            @relation("CourseProjects")
   gradeScale          GradeScale?          @relation("CourseGradeScale")
   institutionCourses  InstitutionCourse[]  @relation("InstitutionCourses")
+  live_classes live_classes[]
 
   @@map("courses")
 }
@@ -226,6 +229,7 @@ model Subject {
   modules        Module[]
   subjectQuizzes SubjectQuiz[]
   forum          CourForum[]   @relation("ForumToSubject")
+  live_classes live_classes[]
 
   @@map("subjects")
 }
@@ -256,6 +260,7 @@ model Chapter {
   lessons        LessonToChapter[] @relation("LessonToChapters")
   chapterQuizzes ChapterQuiz[]
   forum          CourForum[]       @relation("ForumToChapter")
+  live_classes live_classes[]
 
   @@map("chapters")
 }
@@ -288,6 +293,7 @@ model Module {
   // ✅ OPPOSITE FIELD EXISTS IN Chapter
   chapters      ModuleChapter[]
   moduleQuizzes ModuleQuiz[]
+  live_classes live_classes[]
 
   @@map("modules")
 }
@@ -899,4 +905,62 @@ model InstitutionCourse {
 
   @@unique([institutionId, courseId])
   @@map("institution_courses")
+}
+
+
+model live_classes {
+  id            String   @id @default(uuid())
+  title         String
+  description   String?
+
+  courseId      Int
+  subjectId     Int?
+  chapterId     Int?
+  moduleId      Int?
+
+  scheduledAt   DateTime
+  duration      Int
+  status        String   // scheduled | live | ended | cancelled
+
+  hostId        Int
+
+  zoomMeetingId String?
+  joinUrl       String?
+  startUrl      String?
+  password      String?
+
+  createdAt     DateTime @default(now())
+
+  // relations
+  host   User   @relation("LiveClassHost", fields: [hostId], references: [id])
+  course Course @relation(fields: [courseId], references: [id])
+  subject     Subject? @relation(fields: [subjectId], references: [id])
+  chapter     Chapter? @relation(fields: [chapterId], references: [id])
+  module      Module?  @relation(fields: [moduleId], references: [id])
+
+  attendance  live_class_attendance[]
+  recordings  live_class_recordings[]
+}
+
+model live_class_attendance {
+  id        String   @id @default(uuid())
+  classId   String
+  userId    Int
+  joinedAt  DateTime
+  leftAt    DateTime?
+
+  class     live_classes @relation(fields: [classId], references: [id])
+  user      User         @relation(fields: [userId], references: [id])
+}
+
+model live_class_recordings {
+  id          String   @id @default(uuid())
+  classId     String
+  url         String
+  downloadUrl String?
+  duration    Int?
+  recordedAt  DateTime?
+  type        String?
+
+  class       live_classes @relation(fields: [classId], references: [id])
 }

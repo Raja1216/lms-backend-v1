@@ -23,13 +23,15 @@ import { ProjectModule } from './project/project.module';
 import { ProjectSubmissionModule } from './project/project-submission/project-submission.module';
 import { StudentDashboardModule } from './student-dashboard/student-dashboard.module';
 import { ReportModule } from './report/report.module';
+import { ZoomModule } from './zoom/zoom.module';
+import { LiveClassModule } from './live-class/live-class.module';
 import { InstitutionModule } from './institution/institution.module';
 
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    PrismaModule,  // make global provider available early (optional)
+    PrismaModule, // make global provider available early (optional)
     UserModule,
     AuthModule,
     OtpModule,
@@ -49,6 +51,8 @@ import { InstitutionModule } from './institution/institution.module';
     ProjectModule,
     ProjectSubmissionModule,
     ReportModule,
+    ZoomModule,
+    LiveClassModule,
     StudentDashboardModule,
     InstitutionModule,
   ],
