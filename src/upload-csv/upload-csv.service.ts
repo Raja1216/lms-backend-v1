@@ -7,7 +7,12 @@ import {
   CsvRowError,
   CsvTemplate,
 } from './dto/csv-upload.dto';
-import { LessonType, QuestionType } from 'src/generated/prisma/enums';
+import {
+  BloomLevel,
+  Difficulty,
+  LessonType,
+  QuestionType,
+} from 'src/generated/prisma/enums';
 import { generateSlug } from 'src/shared/generate-slug';
 
 @Injectable()
@@ -77,7 +82,7 @@ export class UploadCsvService {
 
           resolve(preview);
         },
-        error: (error) => {
+        error: (error: any) => {
           reject(
             new BadRequestException(`CSV parsing error: ${error.message}`),
           );
@@ -282,6 +287,8 @@ export class UploadCsvService {
           'option4',
           'correctOption',
           'status',
+          'difficulty',
+          'bloomLevel',
         ],
         sampleData: [
           {
@@ -297,6 +304,8 @@ export class UploadCsvService {
             option4: '6',
             correctOption: '2',
             status: 'true',
+            difficulty: 'easy',
+            bloomLevel: 'remember',
           },
           {
             quizSlug: 'algebra-quiz-1',
@@ -311,6 +320,8 @@ export class UploadCsvService {
             option4: '',
             correctOption: '1',
             status: 'true',
+            difficulty: 'easy',
+            bloomLevel: 'remember',
           },
           {
             quizSlug: 'algebra-quiz-1',
@@ -325,6 +336,8 @@ export class UploadCsvService {
             option4: '',
             correctOption: '',
             status: 'true',
+            difficulty: 'easy',
+            bloomLevel: 'remember',
           },
         ],
         description: 'Question import template with options',
@@ -1034,7 +1047,7 @@ export class UploadCsvService {
         if (!quiz) {
           throw new Error(`Quiz with slug '${row.quizSlug}' not found`);
         }
-
+        
         const questionData = {
           quizId: quiz.id,
           question: row.question,
@@ -1043,6 +1056,8 @@ export class UploadCsvService {
           type: row.type as QuestionType,
           answer: row.answer || null,
           status: this.parseBoolean(row.status),
+          bloomLevel: row.bloomLevel as BloomLevel,
+          difficulty: row.difficulty as Difficulty,
         };
 
         const question = await this.prisma.question.create({

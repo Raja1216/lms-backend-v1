@@ -71,21 +71,31 @@ export class QuestionService {
   async findAll(query: any) {
     const { quizId, page = 1, limit = 20 } = query;
 
-    return this.prisma.question.findMany({
-      where: {
-        quizId: quizId ? +quizId : undefined,
-        status: true,
-      },
-      include: {
-        options: true,
-        quiz: true,
-      },
-      skip: (page - 1) * limit,
-      take: +limit,
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+    const [questions, total] = await Promise.all([
+      this.prisma.question.findMany({
+        where: {
+          quizId: quizId ? +quizId : undefined,
+          status: true,
+        },
+        include: {
+          options: true,
+          quiz: true,
+        },
+        skip: (page - 1) * limit,
+        take: +limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.question.count({
+        where: {
+          quizId: quizId ? +quizId : undefined,
+          status: true,
+        },
+      }),
+    ]);
+
+    return { questions, total,page,limit };
   }
 
   async findOne(id: number) {

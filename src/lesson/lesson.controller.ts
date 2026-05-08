@@ -13,6 +13,7 @@ import {
   NotFoundException,
   UseGuards,
   Request as NestjsRequest,
+  Query,
 } from '@nestjs/common';
 import { LessonService } from './lesson.service';
 import { CreateLessonDto } from './dto/create-lesson.dto';
@@ -26,7 +27,8 @@ import { Permissions } from 'src/guard/premission.decorator';
 import { ChapterService } from 'src/chapter/chapter.service';
 import { User } from 'src/generated/prisma/browser';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
-
+import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { createPagedResponse } from 'src/shared/create-paged-response';
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('lesson')
 export class LessonController {
@@ -66,7 +68,7 @@ export class LessonController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -77,8 +79,29 @@ export class LessonController {
   }
 
   @Get()
-  findAll() {
-    return this.lessonService.findAll();
+  async findAll(
+    @Res() res: Response,
+    @Next() next: NextFunction,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    try {
+      const { data, total, page, limit } =
+        await this.lessonService.findAll(paginationDto);
+      return successResponse(
+        res,
+        200,
+        'Lessons fetched successfully',
+        createPagedResponse(data, page, limit, total),
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
   }
 
   @Permissions('lesson-read')
@@ -100,7 +123,7 @@ export class LessonController {
         lesson,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -116,13 +139,16 @@ export class LessonController {
     @Param('chapterId') chapterId: string,
     @Res() res: Response,
     @Next() next: NextFunction,
-    @NestjsRequest() req: {user:User},
+    @NestjsRequest() req: { user: User },
   ) {
     try {
       // validate chapter exists
       await this.chapterService.findOne(+chapterId);
 
-      const result = await this.lessonService.findByChapter(+chapterId,req.user.id);
+      const result = await this.lessonService.findByChapter(
+        +chapterId,
+        req.user.id,
+      );
 
       return successResponse(
         res,
@@ -131,7 +157,7 @@ export class LessonController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error: any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -176,7 +202,7 @@ export class LessonController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error:any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -204,7 +230,7 @@ export class LessonController {
         lesson,
         null,
       );
-    } catch (error) {
+    } catch (error:any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -230,7 +256,7 @@ export class LessonController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error:any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
@@ -264,7 +290,7 @@ export class LessonController {
         result,
         null,
       );
-    } catch (error) {
+    } catch (error:any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
