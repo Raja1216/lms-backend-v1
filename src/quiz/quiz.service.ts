@@ -90,6 +90,7 @@ export class QuizService {
       lessonId,
       page = 1,
       limit = 20,
+      search,
     } = query;
 
     const attachIds = [
@@ -105,6 +106,11 @@ export class QuizService {
     }
 
     const where: any = { status: true };
+    if (search) {
+      where.title = {
+        contains: search,
+      };
+    }
 
     if (courseId) where.courseQuizzes = { some: { courseId: +courseId } };
     if (subjectId) where.subjectQuizzes = { some: { subjectId: +subjectId } };
@@ -270,7 +276,10 @@ export class QuizService {
     const completedSet = new Set(
       (completedQuizzes as { quizId: number }[]).map((c) => c.quizId),
     );
-    return quizzes.map((quiz) => {
+    const total = await this.prisma.quiz.count({
+      where,
+    });
+    const data = quizzes.map((quiz) => {
       const quizCourseIds = quizCourseMap.get(quiz.id) ?? new Set<number>();
       const isUserEnrolled = [...quizCourseIds].some((id) =>
         enrolledSet.has(id),
@@ -295,6 +304,14 @@ export class QuizService {
         isCompleted: completedSet.has(quiz.id),
       };
     });
+
+    return {
+      data,
+      total,
+      page: +page,
+      limit: +limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: number) {
@@ -610,27 +627,55 @@ export class QuizService {
 
     const answers = submitData.answers.map((a) => {
       const q = quiz.questions.find((x) => x.id === a.questionId);
-      if (!q) throw new NotFoundException('Invalid question');
 
-      const correct = this.gradeAnswer(q, a.answer).isCorrect;
+      if (!q) {
+        throw new NotFoundException('Invalid question');
+      }
+
+      const result = this.gradeAnswer(q, a.answer);
+      const correct = result.isCorrect;
 
       if (correct) {
         obtainedMarks += Number(q.marks);
         correctAnswers++;
       }
 
+      // correct answer for response only
+      let correctAnswer: any = null;
+
+      if (q.type === 'MCQ' || q.type === 'TRUEORFALSE') {
+        correctAnswer = q.options.find((o: any) => o.isCorrect)?.option ?? null;
+      }
+
+      if (q.type === 'FILLINTHEBLANK') {
+        correctAnswer = q.answer ?? null;
+      }
+
       return {
+        // DB fields only
         questionId: q.id,
         obtainedMarks: correct ? Number(q.marks) : 0,
         totalMarks: Number(q.marks),
         isCorrect: correct,
         timeTaken: a.timeSpent ? Number(a.timeSpent) : 0,
+
+        // extra response data only
+        question: q.question,
+        submittedAnswer: a.answer,
+        correctAnswer,
       };
     });
     const totalMarks = quiz.questions.reduce(
       (sum, q) => sum + Number(q.marks),
       0,
     );
+    const dbAnswers = answers.map((a) => ({
+      questionId: a.questionId,
+      obtainedMarks: a.obtainedMarks,
+      totalMarks: a.totalMarks,
+      isCorrect: a.isCorrect,
+      timeTaken: a.timeTaken,
+    }));
     const attempt = await this.prisma.quizAttempt.create({
       data: {
         quizId,
@@ -640,7 +685,7 @@ export class QuizService {
         correctAnswers,
         totalQuestions: quiz.questions.length,
         timeTaken: submitData.timeTaken ?? 0,
-        answers: { create: answers },
+        answers: { create: dbAnswers },
       },
       include: { answers: true },
     });
@@ -678,6 +723,7 @@ export class QuizService {
       passMarks: quiz.passMarks,
       percentage: percentage,
       passed: obtainedMarks >= quiz.passMarks,
+      answers,
     };
   }
 
