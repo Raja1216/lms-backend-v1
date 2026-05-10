@@ -270,8 +270,37 @@ export class QuizService {
         : [],
     ]);
 
+    const institutionMembers = await this.prisma.institutionMember.findMany({
+      where: {
+        userId,
+        status: true,
+      },
+      select: {
+        institutionId: true,
+      },
+    });
+
+    const institutionCourseAssignments = institutionMembers.length
+      ? await this.prisma.institutionCourse.findMany({
+          where: {
+            institutionId: {
+              in: institutionMembers.map((member) => member.institutionId),
+            },
+            courseId: { in: allCourseIds.length ? allCourseIds : [0] },
+          },
+          select: {
+            courseId: true,
+          },
+        })
+      : [];
+
     const enrolledSet = new Set(
-      (enrollments as { courseId: number }[]).map((e) => e.courseId),
+      [
+        ...(enrollments as { courseId: number }[]).map((e) => e.courseId),
+        ...(institutionCourseAssignments as { courseId: number }[]).map(
+          (course) => course.courseId,
+        ),
+      ],
     );
     const completedSet = new Set(
       (completedQuizzes as { quizId: number }[]).map((c) => c.quizId),

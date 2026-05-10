@@ -49,6 +49,8 @@ export class UserController {
       const user = await this.svc.createUser(
         body.email,
         body.password,
+        body.mobileNumber,
+        body.mobilePrefix,
         body.name,
         body.level,
         body.institutionId,
@@ -178,7 +180,7 @@ export class UserController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get current logged in user' })
-  async profile(@Request() req) {
+  async profile(@Request() req: any) {
     // req.user is set by JwtStrategy.validate()
     return req.user;
   }
@@ -188,7 +190,7 @@ export class UserController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get full profile with XP and level' })
   async fullProfile(
-    @Request() req,
+    @Request() req: any,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
@@ -216,7 +218,7 @@ export class UserController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get user badges' })
   async getBadges(
-    @Request() req,
+    @Request() req: any,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
@@ -244,7 +246,7 @@ export class UserController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get user certificates' })
   async getCertificates(
-    @Request() req,
+    @Request() req: any,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
@@ -304,7 +306,7 @@ export class UserController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get user performance report' })
   async getPerformanceReport(
-    @Request() req,
+    @Request() req: any,
     @Res() res: Response,
     @Next() next: NextFunction,
     @Query('courseId') courseId?: string,
@@ -336,7 +338,7 @@ export class UserController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get user XP history' })
   async getXPHistory(
-    @Request() req,
+    @Request() req: any,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {

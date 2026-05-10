@@ -85,10 +85,12 @@ export class AuthController {
     @Next() next: NextFunction,
   ) {
     try {
-      const { name, email, password, level, institutionId } = dto;
+      const { name, email, password, level, institutionId,mobilePrefix,mobileNumber } = dto;
       const user = await this.auth.register(
         email,
         password,
+        mobilePrefix,
+        mobileNumber,
         level,
         name,
         institutionId,
