@@ -371,11 +371,29 @@ export class LessonService {
                     courses: {
                       some: {
                         course: {
-                          userEnrolledCourses: {
-                            some: {
-                              userId: user.id,
+                          OR: [
+                            {
+                              userEnrolledCourses: {
+                                some: {
+                                  userId: user.id,
+                                },
+                              },
                             },
-                          },
+                            {
+                              institutionCourses: {
+                                some: {
+                                  institution: {
+                                    members: {
+                                      some: {
+                                        userId: user.id,
+                                        status: true,
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          ],
                         },
                       },
                     },
