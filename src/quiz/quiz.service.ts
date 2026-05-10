@@ -9,7 +9,7 @@ import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
-
+import { QuizSubmissionFrequency } from 'src/generated/prisma/enums';
 @Injectable()
 export class QuizService {
   constructor(private prisma: PrismaService) {}
@@ -48,6 +48,7 @@ export class QuizService {
         timeLimit: timeLimit ?? 0,
         passMarks: passMarks ?? 0,
         totalMarks: totalMarks ?? 0,
+        subMissionFrequency: createQuizDto.submissionFrequency,
         status: true,
       },
     });
@@ -294,14 +295,12 @@ export class QuizService {
         })
       : [];
 
-    const enrolledSet = new Set(
-      [
-        ...(enrollments as { courseId: number }[]).map((e) => e.courseId),
-        ...(institutionCourseAssignments as { courseId: number }[]).map(
-          (course) => course.courseId,
-        ),
-      ],
-    );
+    const enrolledSet = new Set([
+      ...(enrollments as { courseId: number }[]).map((e) => e.courseId),
+      ...(institutionCourseAssignments as { courseId: number }[]).map(
+        (course) => course.courseId,
+      ),
+    ]);
     const completedSet = new Set(
       (completedQuizzes as { quizId: number }[]).map((c) => c.quizId),
     );
@@ -329,6 +328,7 @@ export class QuizService {
         moduleId: quiz.moduleQuizzes?.[0]?.moduleId ?? null,
         chapterId: quiz.chapterQuizzes?.[0]?.chapterId ?? null,
         lessonId: quiz.lessons?.[0]?.lessonId ?? null,
+        subMissionFrequency: quiz.subMissionFrequency,
         isUserEnrolled,
         isCompleted: completedSet.has(quiz.id),
       };
@@ -539,6 +539,15 @@ export class QuizService {
         }
       }
     }
+    //append already attempted flag in quiz
+    const attempt = await this.prisma.quizAttempt.findFirst({
+      where: {
+        userId,
+        quizId: quiz.id,
+      },
+    });
+
+    (quiz as any).alreadyAttempted = !!attempt;
 
     return quiz;
   }
@@ -570,6 +579,8 @@ export class QuizService {
         timeLimit: dto.timeLimit ?? quiz.timeLimit,
         passMarks: dto.passMarks ?? quiz.passMarks,
         totalMarks: dto.totalMarks ?? quiz.totalMarks,
+        subMissionFrequency:
+          dto.submissionFrequency ?? quiz.subMissionFrequency,
       },
     });
 
@@ -632,16 +643,13 @@ export class QuizService {
   }
 
   async submitQuiz(userId: number, quizId: number, submitData: SubmitQuizDto) {
-    // const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
-    //   where: {
-    //     quizId,
-    //     userId,
-    //   },
-    // });
+    const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
+      where: {
+        quizId,
+        userId,
+      },
+    });
 
-    // if (alreadyAttempted) {
-    //   throw new BadRequestException('Quiz already attempted');
-    // }
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
       include: {
@@ -650,6 +658,12 @@ export class QuizService {
     });
 
     if (!quiz) throw new NotFoundException('Quiz not found');
+    if (
+      alreadyAttempted &&
+      quiz.subMissionFrequency === QuizSubmissionFrequency.once
+    ) {
+      throw new BadRequestException('Quiz already attempted');
+    }
 
     let obtainedMarks = 0;
     let correctAnswers = 0;

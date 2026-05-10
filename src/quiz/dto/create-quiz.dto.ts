@@ -1,5 +1,5 @@
-import { IsString, IsOptional, IsInt } from 'class-validator';
-
+import { IsString, IsOptional, IsInt, IsEnum, IsNotEmpty } from 'class-validator';
+import { QuizSubmissionFrequency } from 'src/generated/prisma/enums';
 export class CreateQuizDto {
   @IsString()
   title!: string;
@@ -35,5 +35,9 @@ export class CreateQuizDto {
   @IsOptional()
   @IsInt()
   lessonId?: number;
+
+  @IsEnum(QuizSubmissionFrequency)
+  @IsNotEmpty()
+  submissionFrequency!: QuizSubmissionFrequency;
 }
 

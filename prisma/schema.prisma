@@ -32,6 +32,11 @@ enum Difficulty {
   hard
 }
 
+enum QuizSubmissionFrequency {
+  once
+  frequently
+}
+
 enum BloomLevel {
   remember
   understand
@@ -350,15 +355,16 @@ model LessonToChapter {
 }
 
 model Quiz {
-  id         Int      @id @default(autoincrement())
-  title      String
-  slug       String   @unique
-  totalMarks Int      @default(0)
-  passMarks  Int      @default(0)
-  timeLimit  Decimal  @db.Decimal(10, 2)
-  status     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                  Int                     @id @default(autoincrement())
+  title               String
+  slug                String                  @unique
+  totalMarks          Int                     @default(0)
+  passMarks           Int                     @default(0)
+  timeLimit           Decimal                 @db.Decimal(10, 2)
+  status              Boolean                 @default(true)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  subMissionFrequency QuizSubmissionFrequency @default(frequently)
 
   questions Question[]
 
