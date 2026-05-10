@@ -26,7 +26,7 @@ import { ReportModule } from './report/report.module';
 import { ZoomModule } from './zoom/zoom.module';
 import { LiveClassModule } from './live-class/live-class.module';
 import { InstitutionModule } from './institution/institution.module';
-
+import { CourseManagementModule } from './institution/course-management/course-management.module';
 
 @Module({
   imports: [
@@ -55,6 +55,7 @@ import { InstitutionModule } from './institution/institution.module';
     LiveClassModule,
     StudentDashboardModule,
     InstitutionModule,
+    CourseManagementModule
   ],
 })
 export class AppModule {}

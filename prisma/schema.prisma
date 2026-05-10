@@ -32,6 +32,11 @@ enum Difficulty {
   hard
 }
 
+enum QuizSubmissionFrequency {
+  once
+  frequently
+}
+
 enum BloomLevel {
   remember
   understand
@@ -97,38 +102,38 @@ enum EnrollmentSource {
 }
 
 model User {
-  id                  Int                  @id @default(autoincrement())
-  uuid                String               @unique @default(uuid())
-  email               String               @unique
-  name                String?
-  username            String?              @unique
-  dateOfBirth         DateTime?
-  avatar              String?
-  classGrade          String?
-  mobile_prefix       String               @default("+91")
-  mobile              String?
-  about               String?              @db.Text
-  password            String
-  status              Boolean              @default(true)
-  createdAt           DateTime             @default(now())
-  updatedAt           DateTime             @updatedAt
-  certificates        Certificate[]
-  roles               Role[]               @relation("userroles")
-  teacherCourses      CourseTeacher[]      @relation("TeacherCourses")
-  quizAttempts        QuizAttempt[]
-  skills              UserSkill[]          @relation("UserSkill")
-  projects            UserProject[]        @relation("userProjects")
-  forums              CourForum[]          @relation("userForum")
-  forumReactions      ForumReaction[]      @relation("UserForumReactions")
-  payments            Payment[]            @relation("UserPayments")
-  userEnrolledCourses UserEnrolledCourse[] @relation("UserEnrolledCourses")
-  xpEarned            UserXPEarned[]
-  teacherProjects     Project[]            @relation("TeacherProjects")
-  studentSubmissions  ProjectSubmission[]  @relation("StudentSubmissions")
-  gradesGiven         ProjectGrade[]       @relation("TeacherGrades")
-  ownedInstitutions   Institution[]        @relation("InstitutionOwner")
-  institutionMembers  InstitutionMember[]  @relation("InstitutionMemberships")
-  hosted_live_classes live_classes[] @relation("LiveClassHost")
+  id                    Int                     @id @default(autoincrement())
+  uuid                  String                  @unique @default(uuid())
+  email                 String                  @unique
+  name                  String?
+  username              String?                 @unique
+  dateOfBirth           DateTime?
+  avatar                String?
+  classGrade            String?
+  mobile_prefix         String                  @default("+91")
+  mobile                String?                 @unique
+  about                 String?                 @db.Text
+  password              String
+  status                Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  certificates          Certificate[]
+  roles                 Role[]                  @relation("userroles")
+  teacherCourses        CourseTeacher[]         @relation("TeacherCourses")
+  quizAttempts          QuizAttempt[]
+  skills                UserSkill[]             @relation("UserSkill")
+  projects              UserProject[]           @relation("userProjects")
+  forums                CourForum[]             @relation("userForum")
+  forumReactions        ForumReaction[]         @relation("UserForumReactions")
+  payments              Payment[]               @relation("UserPayments")
+  userEnrolledCourses   UserEnrolledCourse[]    @relation("UserEnrolledCourses")
+  xpEarned              UserXPEarned[]
+  teacherProjects       Project[]               @relation("TeacherProjects")
+  studentSubmissions    ProjectSubmission[]     @relation("StudentSubmissions")
+  gradesGiven           ProjectGrade[]          @relation("TeacherGrades")
+  ownedInstitutions     Institution[]           @relation("InstitutionOwner")
+  institutionMembers    InstitutionMember[]     @relation("InstitutionMemberships")
+  hosted_live_classes   live_classes[]          @relation("LiveClassHost")
   live_class_attendance live_class_attendance[]
 
   @@map("users")
@@ -198,7 +203,7 @@ model Course {
   projects            Project[]            @relation("CourseProjects")
   gradeScale          GradeScale?          @relation("CourseGradeScale")
   institutionCourses  InstitutionCourse[]  @relation("InstitutionCourses")
-  live_classes live_classes[]
+  live_classes        live_classes[]
 
   @@map("courses")
 }
@@ -228,8 +233,8 @@ model Subject {
 
   modules        Module[]
   subjectQuizzes SubjectQuiz[]
-  forum          CourForum[]   @relation("ForumToSubject")
-  live_classes live_classes[]
+  forum          CourForum[]    @relation("ForumToSubject")
+  live_classes   live_classes[]
 
   @@map("subjects")
 }
@@ -260,7 +265,7 @@ model Chapter {
   lessons        LessonToChapter[] @relation("LessonToChapters")
   chapterQuizzes ChapterQuiz[]
   forum          CourForum[]       @relation("ForumToChapter")
-  live_classes live_classes[]
+  live_classes   live_classes[]
 
   @@map("chapters")
 }
@@ -293,7 +298,7 @@ model Module {
   // ✅ OPPOSITE FIELD EXISTS IN Chapter
   chapters      ModuleChapter[]
   moduleQuizzes ModuleQuiz[]
-  live_classes live_classes[]
+  live_classes  live_classes[]
 
   @@map("modules")
 }
@@ -350,15 +355,16 @@ model LessonToChapter {
 }
 
 model Quiz {
-  id         Int      @id @default(autoincrement())
-  title      String
-  slug       String   @unique
-  totalMarks Int      @default(0)
-  passMarks  Int      @default(0)
-  timeLimit  Decimal  @db.Decimal(10, 2)
-  status     Boolean  @default(true)
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id                  Int                     @id @default(autoincrement())
+  title               String
+  slug                String                  @unique
+  totalMarks          Int                     @default(0)
+  passMarks           Int                     @default(0)
+  timeLimit           Decimal                 @db.Decimal(10, 2)
+  status              Boolean                 @default(true)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  subMissionFrequency QuizSubmissionFrequency @default(frequently)
 
   questions Question[]
 
@@ -876,13 +882,13 @@ model Institution {
 }
 
 model InstitutionMember {
-  id            Int                   @id @default(autoincrement())
+  id            Int      @id @default(autoincrement())
   institutionId Int
   userId        Int
-  status        Boolean               @default(true)
-  joinedAt      DateTime              @default(now())
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+  status        Boolean  @default(true)
+  joinedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   institution Institution @relation("InstitutionMembers", fields: [institutionId], references: [id], onDelete: Cascade)
   user        User        @relation("InstitutionMemberships", fields: [userId], references: [id], onDelete: Cascade)
@@ -907,54 +913,53 @@ model InstitutionCourse {
   @@map("institution_courses")
 }
 
-
 model live_classes {
-  id            String   @id @default(uuid())
-  title         String
-  description   String?
+  id          String  @id @default(uuid())
+  title       String
+  description String?
 
-  courseId      Int
-  subjectId     Int?
-  chapterId     Int?
-  moduleId      Int?
+  courseId  Int
+  subjectId Int?
+  chapterId Int?
+  moduleId  Int?
 
-  scheduledAt   DateTime
-  duration      Int
-  status        String   // scheduled | live | ended | cancelled
+  scheduledAt DateTime
+  duration    Int
+  status      String // scheduled | live | ended | cancelled
 
-  hostId        Int
+  hostId Int
 
   zoomMeetingId String?
   joinUrl       String?
   startUrl      String?
   password      String?
 
-  createdAt     DateTime @default(now())
+  createdAt DateTime @default(now())
 
   // relations
-  host   User   @relation("LiveClassHost", fields: [hostId], references: [id])
-  course Course @relation(fields: [courseId], references: [id])
-  subject     Subject? @relation(fields: [subjectId], references: [id])
-  chapter     Chapter? @relation(fields: [chapterId], references: [id])
-  module      Module?  @relation(fields: [moduleId], references: [id])
+  host    User     @relation("LiveClassHost", fields: [hostId], references: [id])
+  course  Course   @relation(fields: [courseId], references: [id])
+  subject Subject? @relation(fields: [subjectId], references: [id])
+  chapter Chapter? @relation(fields: [chapterId], references: [id])
+  module  Module?  @relation(fields: [moduleId], references: [id])
 
-  attendance  live_class_attendance[]
-  recordings  live_class_recordings[]
+  attendance live_class_attendance[]
+  recordings live_class_recordings[]
 }
 
 model live_class_attendance {
-  id        String   @id @default(uuid())
-  classId   String
-  userId    Int
-  joinedAt  DateTime
-  leftAt    DateTime?
+  id       String    @id @default(uuid())
+  classId  String
+  userId   Int
+  joinedAt DateTime
+  leftAt   DateTime?
 
-  class     live_classes @relation(fields: [classId], references: [id])
-  user      User         @relation(fields: [userId], references: [id])
+  class live_classes @relation(fields: [classId], references: [id])
+  user  User         @relation(fields: [userId], references: [id])
 }
 
 model live_class_recordings {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   classId     String
   url         String
   downloadUrl String?
@@ -962,5 +967,5 @@ model live_class_recordings {
   recordedAt  DateTime?
   type        String?
 
-  class       live_classes @relation(fields: [classId], references: [id])
+  class live_classes @relation(fields: [classId], references: [id])
 }

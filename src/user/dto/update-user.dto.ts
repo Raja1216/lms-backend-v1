@@ -1,6 +1,12 @@
-// src/user/dto/update-user.dto.ts
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiPropertyOptional, ApiProperty } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MinLength,
+  IsNotEmpty,
+  Matches,
+} from 'class-validator';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'updated@example.com' })
@@ -21,6 +27,31 @@ export class UpdateUserDto {
   @IsString()
   @MinLength(6)
   password?: string;
+
+  @IsString()
+  @ApiProperty({
+    example: '919876543210',
+    required: true,
+    description: 'Mobile number without country code symbol',
+  })
+  @IsNotEmpty()
+  @Matches(/^\d{6,14}$/, {
+    message:
+      'Mobile number must contain only digits and be 6 to 14 digits long',
+  })
+  mobileNumber!: string;
+
+  @IsString()
+  @ApiProperty({
+    example: '+91',
+    required: true,
+    description: 'International dialing prefix',
+  })
+  @IsNotEmpty()
+  @Matches(/^\+\d{1,4}$/, {
+    message: 'Mobile prefix must be a valid international dialing code',
+  })
+  mobilePrefix!: string;
 
   @ApiPropertyOptional({ example: 'updatedClass' })
   @IsOptional()

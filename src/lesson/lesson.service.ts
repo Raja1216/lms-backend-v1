@@ -185,7 +185,34 @@ export class LessonService {
         userId,
         courseId: { in: courseIds.length ? courseIds : [0] },
       },
+      select: {
+        courseId: true,
+      },
     });
+
+    const institutionMembers = await this.prisma.institutionMember.findMany({
+      where: {
+        userId,
+        status: true,
+      },
+      select: {
+        institutionId: true,
+      },
+    });
+
+    const institutionCourseAssignments = institutionMembers.length
+      ? await this.prisma.institutionCourse.findMany({
+          where: {
+            institutionId: {
+              in: institutionMembers.map((member) => member.institutionId),
+            },
+            courseId: { in: courseIds.length ? courseIds : [0] },
+          },
+          select: {
+            courseId: true,
+          },
+        })
+      : [];
 
     // Fetch completed lessons in one query
     const completedLessons = await this.prisma.userXPEarned.findMany({
@@ -195,7 +222,10 @@ export class LessonService {
       },
     });
 
-    const enrolledCourseSet = new Set(enrollments.map((e) => e.courseId));
+    const enrolledCourseSet = new Set([
+      ...enrollments.map((e) => e.courseId),
+      ...institutionCourseAssignments.map((course) => course.courseId),
+    ]);
     const completedLessonSet = new Set(completedLessons.map((c) => c.lessonId));
 
     const lessonsWithStatus = result.map((item) => {
@@ -341,11 +371,29 @@ export class LessonService {
                     courses: {
                       some: {
                         course: {
-                          userEnrolledCourses: {
-                            some: {
-                              userId: user.id,
+                          OR: [
+                            {
+                              userEnrolledCourses: {
+                                some: {
+                                  userId: user.id,
+                                },
+                              },
                             },
-                          },
+                            {
+                              institutionCourses: {
+                                some: {
+                                  institution: {
+                                    members: {
+                                      some: {
+                                        userId: user.id,
+                                        status: true,
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          ],
                         },
                       },
                     },

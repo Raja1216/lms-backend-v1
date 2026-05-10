@@ -4,13 +4,14 @@ import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { OtpService } from 'src/otp/otp.service';
 import { User } from 'src/generated/prisma/browser';
-
+import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class AuthService {
   constructor(
     private readonly users: UserService,
     private readonly jwt: JwtService,
-    private readonly optService:OtpService
+    private readonly optService: OtpService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -22,12 +23,18 @@ export class AuthService {
   }
 
   async login(payload: {
-    email: string;
+    mobilePrefix: string;
+    mobileNumber: string;
     password: string;
   }): Promise<{ access_token: string; user: any }> {
-    const user = await this.users.findByEmail(payload.email);
+    const user = await this.prisma.user.findFirst({
+      where: {
+        mobile_prefix: payload.mobilePrefix,
+        mobile: payload.mobileNumber,
+      },
+    });
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new UnauthorizedException('Invalid credentials');
     }
     const isPasswordValid = await bcrypt.compare(
       payload.password,
@@ -47,8 +54,24 @@ export class AuthService {
     };
   }
 
-  async register(email: string, password: string, level: string, name?: string, institutionId?: number) {
-    const user = await this.users.createUser(email, password, level, name, institutionId);
+  async register(
+    email: string,
+    password: string,
+    mobilePrefix: string,
+    mobileNumber: string,
+    level: string,
+    name?: string,
+    institutionId?: number,
+  ) {
+    const user = await this.users.createUser(
+      email,
+      password,
+      mobileNumber,
+      mobilePrefix,
+      level,
+      name,
+      institutionId,
+    );
     const jwtPayload = {
       sub: user.id,
       email: user.email,
@@ -57,14 +80,14 @@ export class AuthService {
   }
 
   async resetPassword(email: string, newPassword: string, otp: string) {
-    const isOtpValid=await this.optService.validateOtp(email,otp)
-    if(isOtpValid){
+    const isOtpValid = await this.optService.validateOtp(email, otp);
+    if (isOtpValid) {
       const updatedUser = await this.users.resetPassword(email, newPassword);
       return updatedUser;
     }
     throw new UnauthorizedException('Invalid OTP');
   }
-   async getMyAccess(user: User): Promise<{ slugs: string[]; ids: number[] }> {
+  async getMyAccess(user: User): Promise<{ slugs: string[]; ids: number[] }> {
     return await this.users.getUserAccess(user);
   }
 }

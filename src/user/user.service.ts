@@ -20,6 +20,8 @@ export class UserService {
   async createUser(
     email: string,
     password: string,
+    mobileNumber: string,
+    mobilePrefix: string,
     level?: string,
     name?: string,
     institutionId?: number,
@@ -32,6 +34,12 @@ export class UserService {
     if (existing) {
       throw new BadRequestException('Email already in use');
     }
+    const existingUserWithMobile = await this.prisma.user.findUnique({
+      where: { mobile: mobileNumber },
+    });
+    if (existingUserWithMobile) {
+      throw new BadRequestException('Mobile Number Already taken');
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -41,6 +49,8 @@ export class UserService {
         name,
         password: hashedPassword,
         classGrade: level,
+        mobile_prefix: mobilePrefix,
+        mobile: mobileNumber,
 
         // connect roles if provided
         roles: roles?.length
@@ -64,7 +74,7 @@ export class UserService {
         createdAt: true,
       },
     });
-    if(institutionId){
+    if (institutionId) {
       await this.prisma.institutionMember.create({
         data: {
           userId: user.id,
@@ -108,7 +118,7 @@ export class UserService {
         }
       : {};
 
-    const [users, total] = await this.prisma.$transaction([
+    const [users, total] = await this.prisma.$transaction([ 
       this.prisma.user.findMany({
         where: whereClause,
         skip,
@@ -125,6 +135,8 @@ export class UserService {
           classGrade: true,
           status: true,
           createdAt: true,
+          mobile: true,
+          mobile_prefix:true,
           roles: {
             select: {
               id: true,
@@ -189,6 +201,8 @@ export class UserService {
       classGrade?: string;
       roles?: number[];
       status?: boolean;
+      mobileNumber: string;
+      mobilePrefix: string;
     },
   ) {
     const user = await this.prisma.user.findUnique({
@@ -202,12 +216,25 @@ export class UserService {
     // check email uniqueness
     if (data.email && data.email !== user.email) {
       const emailExists = await this.prisma.user.findUnique({
-        where: { email: data.email },
+        where: { email: data.email ,
+          ...id !== undefined && { NOT: { id } },
+        },
+        
       });
 
       if (emailExists) {
         throw new BadRequestException('Email already in use');
       }
+    }
+    const mobileExists = await this.prisma.user.findUnique({
+      where: { mobile: data.mobileNumber ,
+        ...id !== undefined && { NOT: { id } },
+      },
+      
+    });
+
+    if (mobileExists) {
+      throw new BadRequestException('Mobile Number already in use');
     }
 
     let hashedPassword: string | undefined;
@@ -223,7 +250,8 @@ export class UserService {
         classGrade: data.classGrade,
         status: data.status,
         password: hashedPassword,
-
+        mobile:data.mobileNumber,
+        mobile_prefix:data.mobilePrefix,
         // replace roles completely if provided
         roles: data.roles
           ? {

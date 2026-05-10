@@ -34,6 +34,10 @@ async function main() {
       name: 'Delete Permissions',
       description: 'Ability to delete permissions',
     },
+    {
+      name:"Admin Dashboard",
+      description:"Ability to access admin dashboard"
+    }
   ];
 
   const permissions: any[] = [];
@@ -97,11 +101,15 @@ async function main() {
       roles: {
         set: [{ id: superAdminRole.id }],
       },
+      mobile_prefix: '+91',
+      mobile: '9999999999',
     },
     create: {
       email: 'super_admin@app.com',
       password: bcrypt.hashSync('superpassword', 10),
       username: 'superadmin',
+      mobile_prefix: '+91',
+      mobile: '9999999999',
       roles: {
         connect: [{ id: superAdminRole.id }],
       },
@@ -114,10 +122,15 @@ async function main() {
       roles: {
         set: [{ id: adminRole.id }],
       },
+      mobile_prefix: '+91',
+      mobile: '98765438830',
     },
     create: {
       email: 'admin@app.com',
       password: bcrypt.hashSync('password', 10),
+      mobile_prefix: '+91',
+      mobile: '98765438830',
+      username: 'admin',
       roles: {
         connect: [{ id: adminRole.id }],
       },

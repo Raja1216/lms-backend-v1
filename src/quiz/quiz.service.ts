@@ -9,7 +9,7 @@ import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
-
+import { QuizSubmissionFrequency } from 'src/generated/prisma/enums';
 @Injectable()
 export class QuizService {
   constructor(private prisma: PrismaService) {}
@@ -35,11 +35,11 @@ export class QuizService {
       lessonId,
     ].filter((v) => v !== undefined);
 
-    if (attachIds.length !== 1) {
-      throw new BadRequestException(
-        'Quiz must be attached to exactly ONE level',
-      );
-    }
+    // if (attachIds.length !== 1) {
+    //   throw new BadRequestException(
+    //     'Quiz must be attached to exactly ONE level',
+    //   );
+    // }
 
     const quiz = await this.prisma.quiz.create({
       data: {
@@ -48,6 +48,7 @@ export class QuizService {
         timeLimit: timeLimit ?? 0,
         passMarks: passMarks ?? 0,
         totalMarks: totalMarks ?? 0,
+        subMissionFrequency: createQuizDto.submissionFrequency,
         status: true,
       },
     });
@@ -90,6 +91,7 @@ export class QuizService {
       lessonId,
       page = 1,
       limit = 20,
+      search,
     } = query;
 
     const attachIds = [
@@ -105,6 +107,11 @@ export class QuizService {
     }
 
     const where: any = { status: true };
+    if (search) {
+      where.title = {
+        contains: search,
+      };
+    }
 
     if (courseId) where.courseQuizzes = { some: { courseId: +courseId } };
     if (subjectId) where.subjectQuizzes = { some: { subjectId: +subjectId } };
@@ -264,13 +271,43 @@ export class QuizService {
         : [],
     ]);
 
-    const enrolledSet = new Set(
-      (enrollments as { courseId: number }[]).map((e) => e.courseId),
-    );
+    const institutionMembers = await this.prisma.institutionMember.findMany({
+      where: {
+        userId,
+        status: true,
+      },
+      select: {
+        institutionId: true,
+      },
+    });
+
+    const institutionCourseAssignments = institutionMembers.length
+      ? await this.prisma.institutionCourse.findMany({
+          where: {
+            institutionId: {
+              in: institutionMembers.map((member) => member.institutionId),
+            },
+            courseId: { in: allCourseIds.length ? allCourseIds : [0] },
+          },
+          select: {
+            courseId: true,
+          },
+        })
+      : [];
+
+    const enrolledSet = new Set([
+      ...(enrollments as { courseId: number }[]).map((e) => e.courseId),
+      ...(institutionCourseAssignments as { courseId: number }[]).map(
+        (course) => course.courseId,
+      ),
+    ]);
     const completedSet = new Set(
       (completedQuizzes as { quizId: number }[]).map((c) => c.quizId),
     );
-    return quizzes.map((quiz) => {
+    const total = await this.prisma.quiz.count({
+      where,
+    });
+    const data = quizzes.map((quiz) => {
       const quizCourseIds = quizCourseMap.get(quiz.id) ?? new Set<number>();
       const isUserEnrolled = [...quizCourseIds].some((id) =>
         enrolledSet.has(id),
@@ -291,10 +328,19 @@ export class QuizService {
         moduleId: quiz.moduleQuizzes?.[0]?.moduleId ?? null,
         chapterId: quiz.chapterQuizzes?.[0]?.chapterId ?? null,
         lessonId: quiz.lessons?.[0]?.lessonId ?? null,
+        subMissionFrequency: quiz.subMissionFrequency,
         isUserEnrolled,
         isCompleted: completedSet.has(quiz.id),
       };
     });
+
+    return {
+      data,
+      total,
+      page: +page,
+      limit: +limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: number) {
@@ -493,6 +539,15 @@ export class QuizService {
         }
       }
     }
+    //append already attempted flag in quiz
+    const attempt = await this.prisma.quizAttempt.findFirst({
+      where: {
+        userId,
+        quizId: quiz.id,
+      },
+    });
+
+    (quiz as any).alreadyAttempted = !!attempt;
 
     return quiz;
   }
@@ -524,6 +579,8 @@ export class QuizService {
         timeLimit: dto.timeLimit ?? quiz.timeLimit,
         passMarks: dto.passMarks ?? quiz.passMarks,
         totalMarks: dto.totalMarks ?? quiz.totalMarks,
+        subMissionFrequency:
+          dto.submissionFrequency ?? quiz.subMissionFrequency,
       },
     });
 
@@ -586,16 +643,13 @@ export class QuizService {
   }
 
   async submitQuiz(userId: number, quizId: number, submitData: SubmitQuizDto) {
-    // const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
-    //   where: {
-    //     quizId,
-    //     userId,
-    //   },
-    // });
+    const alreadyAttempted = await this.prisma.quizAttempt.findFirst({
+      where: {
+        quizId,
+        userId,
+      },
+    });
 
-    // if (alreadyAttempted) {
-    //   throw new BadRequestException('Quiz already attempted');
-    // }
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
       include: {
@@ -604,33 +658,67 @@ export class QuizService {
     });
 
     if (!quiz) throw new NotFoundException('Quiz not found');
+    if (
+      alreadyAttempted &&
+      quiz.subMissionFrequency === QuizSubmissionFrequency.once
+    ) {
+      throw new BadRequestException('Quiz already attempted');
+    }
 
     let obtainedMarks = 0;
     let correctAnswers = 0;
 
     const answers = submitData.answers.map((a) => {
       const q = quiz.questions.find((x) => x.id === a.questionId);
-      if (!q) throw new NotFoundException('Invalid question');
 
-      const correct = this.gradeAnswer(q, a.answer).isCorrect;
+      if (!q) {
+        throw new NotFoundException('Invalid question');
+      }
+
+      const result = this.gradeAnswer(q, a.answer);
+      const correct = result.isCorrect;
 
       if (correct) {
         obtainedMarks += Number(q.marks);
         correctAnswers++;
       }
 
+      // correct answer for response only
+      let correctAnswer: any = null;
+
+      if (q.type === 'MCQ' || q.type === 'TRUEORFALSE') {
+        correctAnswer = q.options.find((o: any) => o.isCorrect)?.option ?? null;
+      }
+
+      if (q.type === 'FILLINTHEBLANK') {
+        correctAnswer = q.answer ?? null;
+      }
+
       return {
+        // DB fields only
         questionId: q.id,
         obtainedMarks: correct ? Number(q.marks) : 0,
         totalMarks: Number(q.marks),
         isCorrect: correct,
         timeTaken: a.timeSpent ? Number(a.timeSpent) : 0,
+
+        // extra response data only
+        question: q.question,
+        submittedAnswer: a.answer,
+        correctAnswer,
       };
     });
     const totalMarks = quiz.questions.reduce(
       (sum, q) => sum + Number(q.marks),
       0,
     );
+    const dbAnswers = answers.map((a) => ({
+      questionId: a.questionId,
+      obtainedMarks: a.obtainedMarks,
+      totalMarks: a.totalMarks,
+      isCorrect: a.isCorrect,
+      timeTaken: a.timeTaken,
+    }));
     const attempt = await this.prisma.quizAttempt.create({
       data: {
         quizId,
@@ -640,7 +728,7 @@ export class QuizService {
         correctAnswers,
         totalQuestions: quiz.questions.length,
         timeTaken: submitData.timeTaken ?? 0,
-        answers: { create: answers },
+        answers: { create: dbAnswers },
       },
       include: { answers: true },
     });
@@ -678,6 +766,7 @@ export class QuizService {
       passMarks: quiz.passMarks,
       percentage: percentage,
       passed: obtainedMarks >= quiz.passMarks,
+      answers,
     };
   }
 

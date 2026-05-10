@@ -160,13 +160,24 @@ export class LiveClassService {
       where: { id },
     });
 
-    if (!cls) throw new NotFoundException();
-    if (cls.hostId !== user.id)
+    if (!cls) {
+      throw new NotFoundException();
+    }
+
+    if (cls.hostId !== user.id) {
       throw new ForbiddenException();
+    }
+
+    // ✅ update DB
+    const updatedClass = await this.prisma.live_classes.update({
+      where: { id },
+      data: {
+        status: 'live',
+      },
+    });
 
     return {
-      id,
-      status: 'live',
+      ...updatedClass,
       startUrl: cls.startUrl,
     };
   }
