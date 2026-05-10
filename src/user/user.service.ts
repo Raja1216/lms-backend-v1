@@ -135,6 +135,8 @@ export class UserService {
           classGrade: true,
           status: true,
           createdAt: true,
+          mobile: true,
+          mobile_prefix:true,
           roles: {
             select: {
               id: true,
