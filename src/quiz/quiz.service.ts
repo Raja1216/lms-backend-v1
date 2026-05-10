@@ -35,11 +35,11 @@ export class QuizService {
       lessonId,
     ].filter((v) => v !== undefined);
 
-    if (attachIds.length !== 1) {
-      throw new BadRequestException(
-        'Quiz must be attached to exactly ONE level',
-      );
-    }
+    // if (attachIds.length !== 1) {
+    //   throw new BadRequestException(
+    //     'Quiz must be attached to exactly ONE level',
+    //   );
+    // }
 
     const quiz = await this.prisma.quiz.create({
       data: {

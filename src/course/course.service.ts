@@ -180,25 +180,6 @@ export class CourseService {
     return { data, total };
   }
 
-  // async findOne(id: number) {
-  //   const course = await this.prisma.course.findFirst({
-  //     where: { id, status: true },
-  //     include: {
-  //       teachers: {
-  //         include: {
-  //           teacher: { select: { id: true, name: true, email: true } },
-  //         },
-  //       },
-  //     },
-  //   });
-
-  //   if (!course) {
-  //     throw new BadRequestException('Course not found');
-  //   }
-
-  //   return course;
-  // }
-
   async findOne(id: number) {
     const course = await this.prisma.course.findFirst({
       where: {
@@ -342,6 +323,182 @@ export class CourseService {
     };
   }
 
+  async findCourseBySlug(slug: string, user: User) {
+    const course = await this.prisma.course.findFirst({
+      where: {
+        slug,
+        status: true,
+      },
+
+      include: {
+        teachers: {
+          include: {
+            teacher: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+
+        subjects: {
+          include: {
+            subject: {
+              include: {
+                modules: {
+                  include: {
+                    chapters: {
+                      include: {
+                        chapter: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
+
+    const enrolled = await this.prisma.userEnrolledCourse.findFirst({
+      where: {
+        userId: user.id,
+        courseId: course.id,
+      },
+      select: {
+        courseId: true,
+      },
+    });
+
+    const institutionMembers = await this.prisma.institutionMember.findMany({
+      where: {
+        userId: user.id,
+        status: true,
+      },
+      select: {
+        institutionId: true,
+      },
+    });
+
+    const institutionCourseAssignments = institutionMembers.length
+      ? await this.prisma.institutionCourse.findMany({
+          where: {
+            institutionId: {
+              in: institutionMembers.map((member) => member.institutionId),
+            },
+            courseId: course.id,
+          },
+          select: {
+            courseId: true,
+          },
+        })
+      : [];
+
+    const isEnrolled =
+      !!enrolled || institutionCourseAssignments.length > 0;
+
+    const liveClasses = await this.prisma.live_classes.findMany({
+      where: {
+        courseId: course.id,
+      },
+
+      include: {
+        host: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+
+        recordings: true,
+
+        subject: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+
+        chapter: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+
+        module: {
+          select: {
+            id: true,
+            title: true,
+          },
+        },
+      },
+
+      orderBy: {
+        scheduledAt: 'asc',
+      },
+    });
+
+    const courseLevelClasses = liveClasses.filter(
+      (cls) => !cls.subjectId && !cls.moduleId && !cls.chapterId,
+    );
+
+    const subjects = course.subjects.map((courseSubject) => {
+      const subject = courseSubject.subject;
+
+      const subjectClasses = liveClasses.filter(
+        (cls) =>
+          cls.subjectId === subject.id && !cls.moduleId && !cls.chapterId,
+      );
+
+      const modules = subject.modules.map((module) => {
+        const moduleClasses = liveClasses.filter(
+          (cls) => cls.moduleId === module.id && !cls.chapterId,
+        );
+
+        const chapters = module.chapters.map((moduleChapter) => {
+          const chapter = moduleChapter.chapter;
+
+          const chapterClasses = liveClasses.filter(
+            (cls) => cls.chapterId === chapter.id,
+          );
+
+          return {
+            ...chapter,
+            liveClasses: chapterClasses,
+          };
+        });
+
+        return {
+          ...module,
+          liveClasses: moduleClasses,
+          chapters,
+        };
+      });
+
+      return {
+        ...subject,
+        liveClasses: subjectClasses,
+        modules,
+      };
+    });
+
+    return {
+      ...course,
+      isEnrolled,
+      liveClasses: courseLevelClasses,
+      subjects,
+    };
+  }
+
   async update(id: number, updateCourseDto: UpdateCourseDto) {
     const existing = await this.findOne(id);
 
@@ -415,13 +572,42 @@ export class CourseService {
     });
   }
 
+
   // async findCourseBySlug(slug: string, user: User) {
   //   const course = await this.prisma.course.findFirst({
-  //     where: { slug, status: true },
+  //     where: {
+  //       slug,
+  //       status: true,
+  //     },
+
   //     include: {
   //       teachers: {
   //         include: {
-  //           teacher: { select: { id: true, name: true, email: true } },
+  //           teacher: {
+  //             select: {
+  //               id: true,
+  //               name: true,
+  //               email: true,
+  //             },
+  //           },
+  //         },
+  //       },
+
+  //       subjects: {
+  //         include: {
+  //           subject: {
+  //             include: {
+  //               modules: {
+  //                 include: {
+  //                   chapters: {
+  //                     include: {
+  //                       chapter: true,
+  //                     },
+  //                   },
+  //                 },
+  //               },
+  //             },
+  //           },
   //         },
   //       },
   //     },
@@ -431,167 +617,145 @@ export class CourseService {
   //     throw new BadRequestException('Course not found');
   //   }
 
+  //   // Direct enrollment check
   //   const enrolled = await this.prisma.userEnrolledCourse.findFirst({
-  //     where: { userId: user.id, courseId: course.id },
+  //     where: {
+  //       userId: user.id,
+  //       courseId: course.id,
+  //     },
+  //     select: {
+  //       courseId: true,
+  //     },
+  //   });
+
+  //   // Institution-based enrollment check
+  //   const institutionMembers = await this.prisma.institutionMember.findMany({
+  //     where: {
+  //       userId: user.id,
+  //       status: true,
+  //     },
+  //     select: {
+  //       institutionId: true,
+  //     },
+  //   });
+
+  //   const institutionCourseAssignments = institutionMembers.length
+  //     ? await this.prisma.institutionCourse.findMany({
+  //         where: {
+  //           institutionId: {
+  //             in: institutionMembers.map((member) => member.institutionId),
+  //           },
+  //           courseId: course.id,
+  //         },
+  //         select: {
+  //           courseId: true,
+  //         },
+  //       })
+  //     : [];
+
+  //   const isEnrolled =
+  //     !!enrolled || institutionCourseAssignments.length > 0;
+
+
+  //   // all live classes
+  //   const liveClasses = await this.prisma.live_classes.findMany({
+  //     where: {
+  //       courseId: course.id,
+  //     },
+
+  //     include: {
+  //       host: {
+  //         select: {
+  //           id: true,
+  //           name: true,
+  //           email: true,
+  //         },
+  //       },
+
+  //       recordings: true,
+
+  //       subject: {
+  //         select: {
+  //           id: true,
+  //           name: true,
+  //         },
+  //       },
+
+  //       chapter: {
+  //         select: {
+  //           id: true,
+  //           title: true,
+  //         },
+  //       },
+
+  //       module: {
+  //         select: {
+  //           id: true,
+  //           title: true,
+  //         },
+  //       },
+  //     },
+
+  //     orderBy: {
+  //       scheduledAt: 'asc',
+  //     },
+  //   });
+
+  //   // course level
+  //   const courseLevelClasses = liveClasses.filter(
+  //     (cls) => !cls.subjectId && !cls.moduleId && !cls.chapterId,
+  //   );
+
+  //   const subjects = course.subjects.map((courseSubject) => {
+  //     const subject = courseSubject.subject;
+
+  //     // subject level
+  //     const subjectClasses = liveClasses.filter(
+  //       (cls) =>
+  //         cls.subjectId === subject.id && !cls.moduleId && !cls.chapterId,
+  //     );
+
+  //     const modules = subject.modules.map((module) => {
+  //       // module level
+  //       const moduleClasses = liveClasses.filter(
+  //         (cls) => cls.moduleId === module.id && !cls.chapterId,
+  //       );
+
+  //       const chapters = module.chapters.map((moduleChapter) => {
+  //         const chapter = moduleChapter.chapter;
+
+  //         // chapter level
+  //         const chapterClasses = liveClasses.filter(
+  //           (cls) => cls.chapterId === chapter.id,
+  //         );
+
+  //         return {
+  //           ...chapter,
+  //           liveClasses: chapterClasses,
+  //         };
+  //       });
+
+  //       return {
+  //         ...module,
+  //         liveClasses: moduleClasses,
+  //         chapters,
+  //       };
+  //     });
+
+  //     return {
+  //       ...subject,
+  //       liveClasses: subjectClasses,
+  //       modules,
+  //     };
   //   });
 
   //   return {
   //     ...course,
-  //     isEnrolled: !!enrolled,
+  //     isEnrolled,
+  //     liveClasses: courseLevelClasses,
+  //     subjects,
   //   };
   // }
-
-  async findCourseBySlug(slug: string, user: User) {
-    const course = await this.prisma.course.findFirst({
-      where: {
-        slug,
-        status: true,
-      },
-
-      include: {
-        teachers: {
-          include: {
-            teacher: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        },
-
-        subjects: {
-          include: {
-            subject: {
-              include: {
-                modules: {
-                  include: {
-                    chapters: {
-                      include: {
-                        chapter: true,
-                      },
-                    },
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!course) {
-      throw new BadRequestException('Course not found');
-    }
-
-    // enrolled check
-    const enrolled = await this.prisma.userEnrolledCourse.findFirst({
-      where: {
-        userId: user.id,
-        courseId: course.id,
-      },
-    });
-
-    // all live classes
-    const liveClasses = await this.prisma.live_classes.findMany({
-      where: {
-        courseId: course.id,
-      },
-
-      include: {
-        host: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-
-        recordings: true,
-
-        subject: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-
-        chapter: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-
-        module: {
-          select: {
-            id: true,
-            title: true,
-          },
-        },
-      },
-
-      orderBy: {
-        scheduledAt: 'asc',
-      },
-    });
-
-    // course level
-    const courseLevelClasses = liveClasses.filter(
-      (cls) => !cls.subjectId && !cls.moduleId && !cls.chapterId,
-    );
-
-    const subjects = course.subjects.map((courseSubject) => {
-      const subject = courseSubject.subject;
-
-      // subject level
-      const subjectClasses = liveClasses.filter(
-        (cls) =>
-          cls.subjectId === subject.id && !cls.moduleId && !cls.chapterId,
-      );
-
-      const modules = subject.modules.map((module) => {
-        // module level
-        const moduleClasses = liveClasses.filter(
-          (cls) => cls.moduleId === module.id && !cls.chapterId,
-        );
-
-        const chapters = module.chapters.map((moduleChapter) => {
-          const chapter = moduleChapter.chapter;
-
-          // chapter level
-          const chapterClasses = liveClasses.filter(
-            (cls) => cls.chapterId === chapter.id,
-          );
-
-          return {
-            ...chapter,
-            liveClasses: chapterClasses,
-          };
-        });
-
-        return {
-          ...module,
-          liveClasses: moduleClasses,
-          chapters,
-        };
-      });
-
-      return {
-        ...subject,
-        liveClasses: subjectClasses,
-        modules,
-      };
-    });
-
-    return {
-      ...course,
-      isEnrolled: !!enrolled,
-      liveClasses: courseLevelClasses,
-      subjects,
-    };
-  }
 
   async remove(id: number) {
     await this.findOne(id);
