@@ -22,8 +22,8 @@ export class UserService {
     password: string,
     mobileNumber: string,
     mobilePrefix: string,
-    level?: string,
     name?: string,
+    level?: string,
     institutionId?: number,
     roles?: number[],
   ) {
