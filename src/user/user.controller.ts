@@ -11,6 +11,8 @@ import {
   Res,
   Next,
   Query,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -30,6 +32,7 @@ import { Response, NextFunction } from 'express';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { createPagedResponse } from 'src/shared/create-paged-response';
 import { User } from 'src/generated/prisma/browser';
+import { FileInterceptor } from '@nestjs/platform-express';
 @ApiTags('users')
 @Controller('users')
 export class UserController {
@@ -146,6 +149,83 @@ export class UserController {
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
           500,
+        ),
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('create-users')
+  @ApiBearerAuth('access-token')
+  @Get('import/sample')
+  async downloadSample(@Res() res: Response, @Next() next: NextFunction) {
+    try {
+      const buffer = await this.svc.generateSampleXlsx();
+      res.set({
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition':
+          'attachment; filename="users_import_sample.xlsx"',
+      });
+      res.send(buffer);
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error?.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('create-users')
+  @ApiBearerAuth('access-token')
+  @Get('export')
+  async exportUsers(
+    @Query('keyword') keyword: string,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const buffer = await this.svc.exportUsersXlsx(keyword);
+      res.set({
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="users_export_${Date.now()}.xlsx"`,
+      });
+      res.send(buffer);
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error?.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+  @UseGuards(JwtAuthGuard, PermissionGuard)
+  @Permissions('create-users')
+  @ApiBearerAuth('access-token')
+  @Post('import')
+  @UseInterceptors(FileInterceptor('file'))
+  async importUsers(
+    @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const buffer = await this.svc.importUsersFromXlsx(file.buffer);
+      res.set({
+        'Content-Type':
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'Content-Disposition': `attachment; filename="users_import_result_${Date.now()}.xlsx"`,
+      });
+      res.send(buffer);
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error?.status ? error.status : 500,
         ),
       );
     }
