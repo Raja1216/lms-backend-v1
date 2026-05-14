@@ -7,12 +7,23 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Course, User } from 'src/generated/prisma/browser';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import * as ExcelJS from 'exceljs';
+
 interface Badge {
   id: string;
   name: string;
   description: string;
   earnedAt: Date;
 }
+const IMPORT_COLUMNS = [
+  { header: 'Name', key: 'name', width: 24 },
+  { header: 'Class', key: 'classGrade', width: 10 },
+  { header: 'Section', key: 'section', width: 10 },
+  { header: 'Roll No', key: 'rollNo', width: 10 },
+  { header: 'Contact No.', key: 'mobile', width: 16 },
+  { header: 'Institute Id', key: 'instituteId', width: 14 },
+] as const;
+
 @Injectable()
 export class UserService {
   constructor(private readonly prisma: PrismaService) {}
@@ -22,8 +33,8 @@ export class UserService {
     password: string,
     mobileNumber: string,
     mobilePrefix: string,
-    level?: string,
     name?: string,
+    level?: string,
     institutionId?: number,
     roles?: number[],
   ) {
@@ -85,6 +96,12 @@ export class UserService {
 
     return user;
   }
+  async findByMobileNumber(mobileNumber: string) {
+    return this.prisma.user.findUnique({
+      where: { mobile: mobileNumber },
+    });
+  }
+
 
   async findAll(paginationDto: PaginationDto) {
     const { page = 1, limit = 10, keyword } = paginationDto;
@@ -118,7 +135,7 @@ export class UserService {
         }
       : {};
 
-    const [users, total] = await this.prisma.$transaction([ 
+    const [users, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
         where: whereClause,
         skip,
@@ -136,7 +153,7 @@ export class UserService {
           status: true,
           createdAt: true,
           mobile: true,
-          mobile_prefix:true,
+          mobile_prefix: true,
           roles: {
             select: {
               id: true,
@@ -216,10 +233,7 @@ export class UserService {
     // check email uniqueness
     if (data.email && data.email !== user.email) {
       const emailExists = await this.prisma.user.findUnique({
-        where: { email: data.email ,
-          ...id !== undefined && { NOT: { id } },
-        },
-        
+        where: { email: data.email, ...(id !== undefined && { NOT: { id } }) },
       });
 
       if (emailExists) {
@@ -227,10 +241,10 @@ export class UserService {
       }
     }
     const mobileExists = await this.prisma.user.findUnique({
-      where: { mobile: data.mobileNumber ,
-        ...id !== undefined && { NOT: { id } },
+      where: {
+        mobile: data.mobileNumber,
+        ...(id !== undefined && { NOT: { id } }),
       },
-      
     });
 
     if (mobileExists) {
@@ -250,8 +264,8 @@ export class UserService {
         classGrade: data.classGrade,
         status: data.status,
         password: hashedPassword,
-        mobile:data.mobileNumber,
-        mobile_prefix:data.mobilePrefix,
+        mobile: data.mobileNumber,
+        mobile_prefix: data.mobilePrefix,
         // replace roles completely if provided
         roles: data.roles
           ? {
@@ -792,5 +806,395 @@ export class UserService {
       }));
 
     return certificates;
+  }
+
+  async generateSampleXlsx(): Promise<Buffer> {
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Users Import');
+    ws.columns = IMPORT_COLUMNS.map((c) => ({ ...c }));
+
+    const headerRow = ws.getRow(1);
+    headerRow.height = 28;
+    headerRow.eachCell((cell: any) => {
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+        name: 'Arial',
+        size: 11,
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E3A5F' },
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = this.thinBorder();
+    });
+
+    // Sample rows
+    const samples = [
+      {
+        name: 'AARAV SHAW',
+        classGrade: 'VI',
+        section: 'A',
+        rollNo: '01',
+        mobile: '6290582060',
+        instituteId: 1,
+      },
+      {
+        name: 'PRIYA MEHTA',
+        classGrade: 'VII',
+        section: 'B',
+        rollNo: '02',
+        mobile: '9876543210',
+        instituteId: 1,
+      },
+      {
+        name: 'RAHUL KUMAR',
+        classGrade: 'VIII',
+        section: 'C',
+        rollNo: '03',
+        mobile: '8123456789',
+        instituteId: 2,
+      },
+    ];
+    samples.forEach((s, i) => {
+      const row = ws.addRow(s);
+      row.height = 22;
+      row.eachCell((cell: any) => {
+        cell.font = { name: 'Arial', size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = this.thinBorder();
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: i % 2 === 0 ? 'FFF0F4FA' : 'FFFFFFFF' },
+        };
+      });
+    });
+
+    const wi = wb.addWorksheet('Instructions');
+    wi.getColumn(1).width = 62;
+    const lines: [string, boolean][] = [
+      ['User Import – Instructions', true],
+      ['', false],
+      ['Required Columns:', true],
+      ['  Name         Full name (e.g. AARAV SHAW)', false],
+      ['  Class        Grade/Class (e.g. VI, VII, VIII)', false],
+      ['  Section      Section letter (e.g. A, B, C)', false],
+      ['  Roll No      Roll number (e.g. 01, 02)', false],
+      ['  Contact No.  10-digit mobile without prefix', false],
+      ['  Institute Id Numeric institution ID', false],
+      ['', false],
+      ['Notes:', true],
+      ['  • Password is auto-generated: FirstName@123', false],
+      ['  • Download the result file after import to get passwords', false],
+      ['  • Do NOT modify column headers', false],
+      ['  • Delete sample rows before uploading', false],
+    ];
+    lines.forEach(([text, bold], i) => {
+      const cell = wi.getCell(i + 1, 1);
+      cell.value = text;
+      cell.font = { bold, name: 'Arial', size: 11 };
+      if (i === 0) {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF1E3A5F' },
+        };
+        cell.font = {
+          bold: true,
+          color: { argb: 'FFFFFFFF' },
+          name: 'Arial',
+          size: 12,
+        };
+      }
+      wi.getRow(i + 1).height = 20;
+    });
+
+    return (await wb.xlsx.writeBuffer()) as unknown as Buffer;
+  }
+
+  async exportUsersXlsx(keyword?: string): Promise<Buffer> {
+    const where = keyword
+      ? {
+          OR: [
+            { name: { contains: keyword, mode: 'insensitive' as const } },
+            { email: { contains: keyword, mode: 'insensitive' as const } },
+          ],
+        }
+      : {};
+
+    const users = await this.prisma.user.findMany({
+      where,
+      include: {
+        roles: true,
+        institutionMembers: { include: { institution: true } },
+      },
+      orderBy: { id: 'asc' },
+    });
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('Users');
+
+    ws.columns = [
+      { header: 'ID', key: 'id', width: 8 },
+      { header: 'Name', key: 'name', width: 22 },
+      { header: 'Email', key: 'email', width: 28 },
+      { header: 'Mobile', key: 'mobile', width: 16 },
+      { header: 'Class', key: 'classGrade', width: 10 },
+      { header: 'Section', key: 'section', width: 10 },
+      { header: 'Roll No', key: 'rollNo', width: 10 },
+      { header: 'Roles', key: 'roles', width: 22 },
+      { header: 'Status', key: 'status', width: 10 },
+      { header: 'Created At', key: 'createdAt', width: 20 },
+    ];
+
+    const headerRow = ws.getRow(1);
+    headerRow.height = 28;
+    headerRow.eachCell((cell) => {
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+        name: 'Arial',
+        size: 11,
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E3A5F' },
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = this.thinBorder();
+    });
+
+    users.forEach((u, i) => {
+      const row = ws.addRow({
+        id: u.id,
+        name: u.name ?? '',
+        email: u.email ?? '',
+        mobile: u.mobile ?? '',
+        classGrade: u.classGrade ?? '',
+        section: u.section ?? '',
+        rollNo: u.rollNo ?? '',
+        roles: u.roles.map((r: any) => r.name).join(', '),
+        status: u.status ? 'Active' : 'Inactive',
+        createdAt: u.createdAt.toISOString().slice(0, 10),
+      });
+      row.height = 20;
+      row.eachCell((cell: any) => {
+        cell.font = { name: 'Arial', size: 10 };
+        cell.alignment = { horizontal: 'left', vertical: 'middle' };
+        cell.border = this.thinBorder();
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: i % 2 === 0 ? 'FFF7F9FC' : 'FFFFFFFF' },
+        };
+      });
+    });
+
+    ws.autoFilter = { from: 'A1', to: `J1` };
+
+    return (await wb.xlsx.writeBuffer()) as unknown as Buffer;
+  }
+
+  async importUsersFromXlsx(
+    fileBuffer: Buffer | ArrayBuffer | Uint8Array,
+  ): Promise<Buffer> {
+    const wb = new ExcelJS.Workbook();
+    // Normalize various buffer/array types to Node Buffer to satisfy exceljs types
+    const normalizedBuffer =
+      fileBuffer instanceof Buffer
+        ? fileBuffer
+        : Buffer.from(fileBuffer as any);
+    await wb.xlsx.load(normalizedBuffer as any);
+
+    const ws = wb.worksheets[0];
+    if (!ws) throw new BadRequestException('No worksheet found in file');
+
+    const headerRow = ws.getRow(1);
+    const colMap: Record<string, number> = {};
+    headerRow.eachCell((cell, colNum) => {
+      const key = String(cell.value ?? '').trim();
+      colMap[key] = colNum;
+    });
+
+    const required = [
+      'Name',
+      'Class',
+      'Section',
+      'Roll No',
+      'Contact No.',
+      'Institute Id',
+    ];
+    for (const col of required) {
+      if (!colMap[col])
+        throw new BadRequestException(`Missing column: "${col}"`);
+    }
+    const results: {
+      name: string;
+      classGrade: string;
+      section: string;
+      rollNo: string;
+      mobile: string;
+      instituteId: number;
+      password: string;
+      status: string;
+    }[] = [];
+
+    for (let r = 2; r <= ws.rowCount; r++) {
+      const row = ws.getRow(r);
+      const name = String(row.getCell(colMap['Name']).value ?? '').trim();
+      if (!name) continue;
+
+      const mobile = String(
+        row.getCell(colMap['Contact No.']).value ?? '',
+      ).trim();
+      const classGrade = String(
+        row.getCell(colMap['Class']).value ?? '',
+      ).trim();
+      const section = String(row.getCell(colMap['Section']).value ?? '').trim();
+      const rollNo = String(row.getCell(colMap['Roll No']).value ?? '').trim();
+      const instituteId = Number(
+        row.getCell(colMap['Institute Id']).value ?? 0,
+      );
+
+      const firstName = name.split(/\s+/)[0];
+      const rawPassword = `${firstName}@123`;
+      const hashedPassword = await bcrypt.hash(rawPassword, 10);
+
+      let status = 'Created';
+      try {
+        // Upsert by mobile (unique key for students)
+        await this.prisma.user.upsert({
+          where: { mobile },
+          update: {
+            name,
+            classGrade,
+            section,
+            rollNo,
+            password: hashedPassword,
+          },
+          create: {
+            name,
+            classGrade,
+            section,
+            rollNo,
+            mobile,
+            mobile_prefix: '+91',
+            password: hashedPassword,
+            institutionMembers: {
+              create: { institutionId: instituteId },
+            },
+          },
+        });
+      } catch (e: any) {
+        status = `Error: ${e?.message?.slice(0, 60) ?? 'unknown'}`;
+      }
+
+      results.push({
+        name,
+        classGrade,
+        section,
+        rollNo,
+        mobile,
+        instituteId,
+        password: rawPassword,
+        status,
+      });
+    }
+    const out = new ExcelJS.Workbook();
+    const ows = out.addWorksheet('Import Result');
+
+    ows.columns = [
+      { header: 'Name', key: 'name', width: 24 },
+      { header: 'Class', key: 'classGrade', width: 10 },
+      { header: 'Section', key: 'section', width: 10 },
+      { header: 'Roll No', key: 'rollNo', width: 10 },
+      { header: 'Contact No.', key: 'mobile', width: 16 },
+      { header: 'Institute Id', key: 'instituteId', width: 14 },
+      { header: 'Password', key: 'password', width: 20 },
+      { header: 'Status', key: 'status', width: 30 },
+    ];
+
+    const hdr = ows.getRow(1);
+    hdr.height = 28;
+    hdr.eachCell((cell) => {
+      cell.font = {
+        bold: true,
+        color: { argb: 'FFFFFFFF' },
+        name: 'Arial',
+        size: 11,
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1E3A5F' },
+      };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = this.thinBorder();
+    });
+
+    results.forEach((rec, i) => {
+      const row = ows.addRow(rec);
+      row.height = 22;
+      const isError = rec.status !== 'Created';
+      row.eachCell((cell, col) => {
+        cell.font = { name: 'Arial', size: 10 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = this.thinBorder();
+        if (col === 7) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFFF3CD' },
+          };
+          cell.font = {
+            name: 'Arial',
+            size: 10,
+            bold: true,
+            color: { argb: 'FF856404' },
+          };
+        } else if (isError) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFFDE8E8' },
+          };
+        } else {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: i % 2 === 0 ? 'FFF0F4FA' : 'FFFFFFFF' },
+          };
+        }
+      });
+      // Status column green/red
+      const statusCell = row.getCell(8);
+      if (!isError) {
+        statusCell.font = {
+          name: 'Arial',
+          size: 10,
+          bold: true,
+          color: { argb: 'FF155724' },
+        };
+        statusCell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FFD4EDDA' },
+        };
+      }
+    });
+
+    return (await out.xlsx.writeBuffer()) as unknown as Buffer;
+  }
+
+  private thinBorder(): Partial<ExcelJS.Borders> {
+    const s: Partial<ExcelJS.Border> = {
+      style: 'thin',
+      color: { argb: 'FFCCCCCC' },
+    };
+    return { left: s, right: s, top: s, bottom: s };
   }
 }

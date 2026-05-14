@@ -104,7 +104,7 @@ enum EnrollmentSource {
 model User {
   id                    Int                     @id @default(autoincrement())
   uuid                  String                  @unique @default(uuid())
-  email                 String                  @unique
+  email                 String?                  @unique
   name                  String?
   username              String?                 @unique
   dateOfBirth           DateTime?
@@ -113,6 +113,8 @@ model User {
   mobile_prefix         String                  @default("+91")
   mobile                String?                 @unique
   about                 String?                 @db.Text
+  rollNo                String?                 
+  section               String?
   password              String
   status                Boolean                 @default(true)
   createdAt             DateTime                @default(now())
