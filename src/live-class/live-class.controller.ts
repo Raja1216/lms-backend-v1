@@ -10,6 +10,8 @@ import {
   Next,
   Patch,
   UseGuards,
+  Delete,
+  Put,
 } from '@nestjs/common';
 
 import { Response, NextFunction } from 'express';
@@ -91,5 +93,35 @@ export class LiveClassController {
   async join(@Param('id') id, @Req() req, @Res() res) {
     const result = await this.service.join(id, req.user);
     return successResponse(res, 200, 'Joined', result, null);
+  }
+
+  @Permissions('live-class-update')
+  @Put(':id')
+  async update(
+    @Param('id') id,
+    @Body() dto,
+    @Req() req,
+    @Res() res,
+    @Next() next,
+  ) {
+    try {
+      const result = await this.service.update(id, dto, req.user);
+
+      return successResponse(res, 200, 'Live class updated', result, null);
+    } catch (e) {
+      return next(new ErrorHandler(e.message, e.status ?? 500));
+    }
+  }
+
+  @Permissions('live-class-delete')
+  @Delete(':id')
+  async remove(@Param('id') id, @Req() req, @Res() res, @Next() next) {
+    try {
+      const result = await this.service.remove(id, req.user);
+
+      return successResponse(res, 200, 'Live class deleted', result, null);
+    } catch (e) {
+      return next(new ErrorHandler(e.message, e.status ?? 500));
+    }
   }
 }
