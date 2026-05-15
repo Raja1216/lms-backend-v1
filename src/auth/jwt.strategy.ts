@@ -40,16 +40,21 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      secretOrKey: configService.get<string>('JWT_SECRET')?? "default_secret",
+      secretOrKey: configService.get<string>('JWT_SECRET') ?? 'default_secret',
     });
   }
 
-  async validate(payload: { email: string }) {
-    if (!payload?.email) {
+  async validate(payload: { email: string; mobileNumber: string }) {
+    if (!payload?.email && !payload?.mobileNumber) {
       throw new UnauthorizedException('Invalid token payload');
     }
-
-    const user = await this.userService.findByEmail(payload.email);
+    let user: any = null;
+    if (payload.email) {
+      user = await this.userService.findByEmail(payload.email);
+    }
+    if (payload.mobileNumber) {
+      user = await this.userService.findByMobileNumber(payload.mobileNumber);
+    }
 
     if (!user) {
       throw new UnauthorizedException('User not found');
@@ -59,4 +64,3 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return user;
   }
 }
-
