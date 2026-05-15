@@ -3,6 +3,8 @@ import {
   Post,
   Body,
   Headers,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 
 import * as crypto from 'crypto';
@@ -15,6 +17,7 @@ export class WebhookController {
   constructor(private prisma: PrismaService) {}
 
   @Public()
+  @HttpCode(HttpStatus.OK)
   @Post('zoom')
   async handle(
     @Body() body,
