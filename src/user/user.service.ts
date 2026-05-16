@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
@@ -101,7 +102,6 @@ export class UserService {
       where: { mobile: mobileNumber },
     });
   }
-
 
   async findAll(paginationDto: PaginationDto) {
     const { page = 1, limit = 10, keyword } = paginationDto;
@@ -1032,6 +1032,8 @@ export class UserService {
       if (!colMap[col])
         throw new BadRequestException(`Missing column: "${col}"`);
     }
+    // Validate mobile numbers first to catch duplicates before any DB operations
+
     const results: {
       name: string;
       classGrade: string;
@@ -1042,7 +1044,26 @@ export class UserService {
       password: string;
       status: string;
     }[] = [];
+    // if duplicate mobile no present then return from here
+    const seenMobiles = new Set<string>();
 
+    for (let r = 2; r <= ws.rowCount; r++) {
+      const row = ws.getRow(r);
+
+      const mobile = String(
+        row.getCell(colMap['Contact No.']).value ?? '',
+      ).trim();
+
+      if (!mobile) continue;
+
+      if (seenMobiles.has(mobile)) {
+        throw new ConflictException(
+          `Duplicate Contact No. found in file: ${mobile}`,
+        );
+      }
+
+      seenMobiles.add(mobile);
+    }
     for (let r = 2; r <= ws.rowCount; r++) {
       const row = ws.getRow(r);
       const name = String(row.getCell(colMap['Name']).value ?? '').trim();
