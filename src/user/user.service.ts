@@ -9,6 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { Course, User } from 'src/generated/prisma/browser';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import * as ExcelJS from 'exceljs';
+import { take } from 'rxjs/internal/operators/take';
 
 interface Badge {
   id: string;
@@ -1217,5 +1218,30 @@ export class UserService {
       color: { argb: 'FFCCCCCC' },
     };
     return { left: s, right: s, top: s, bottom: s };
+  }
+
+  async submissionCertificates(userId: number, paginationDto: PaginationDto) {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+    const [certificates, total] = await Promise.all([
+      this.prisma.userCompletionCertificate.findMany({
+        where: { userId },
+        include: {
+          course: true,
+          quizAttempt: true,
+          quiz: true,
+        },
+
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+
+      this.prisma.userCompletionCertificate.count({
+        where: { userId },
+      }),
+    ]);
+
+    return { certificates, total, page, limit };
   }
 }
