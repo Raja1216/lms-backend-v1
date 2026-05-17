@@ -450,4 +450,34 @@ export class UserController {
       );
     }
   }
+
+  @Get('me/submission-certificate')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  @ApiOperation({ summary: 'Get user submission certificates' })
+  async getSubmissionCertificates(
+    @Query() paginationDto: PaginationDto,
+    @Request() req: any,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const certificates = await this.svc.submissionCertificates(req.user.id, paginationDto);
+
+      return successResponse(
+        res,
+        200,
+        'Certificates retrieved successfully',
+        certificates,
+        null,
+      );
+    } catch (error) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+    }
 }
