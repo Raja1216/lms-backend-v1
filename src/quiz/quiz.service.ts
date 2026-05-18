@@ -10,9 +10,13 @@ import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 import { QuizSubmissionFrequency } from 'src/generated/prisma/enums';
+import { CertificateIssuanceService } from 'src/services/certicate-issuance/certicate-issuance.service';
 @Injectable()
 export class QuizService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly certificateIssuanceService: CertificateIssuanceService,
+  ) {}
 
   async create(createQuizDto: CreateQuizDto) {
     const {
@@ -654,6 +658,11 @@ export class QuizService {
       where: { id: quizId },
       include: {
         questions: { include: { options: true } },
+        lessons: true,
+        courseQuizzes: true,
+        subjectQuizzes: true,
+        moduleQuizzes: true,
+        chapterQuizzes: true,
       },
     });
 
@@ -758,6 +767,24 @@ export class QuizService {
         });
       }
     }
+
+    const courseIds = await this.getCourseIdsForQuiz(quiz);
+    await Promise.all(
+      courseIds.map((courseId) =>
+        this.certificateIssuanceService.checkAndIssueCourseCompletion(
+          userId,
+          courseId,
+        ),
+      ),
+    );
+
+    await this.certificateIssuanceService.issueQuizCertificateIfEligible(
+      userId,
+      quizId,
+      attempt.id,
+      obtainedMarks >= quiz.passMarks,
+    );
+
     const percentage = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
     return {
       attemptId: attempt.id,
@@ -785,6 +812,102 @@ export class QuizService {
     }
 
     return { isCorrect: false };
+  }
+
+  private async getCourseIdsForQuiz(quiz: any): Promise<number[]> {
+    const courseIds = new Set<number>();
+
+    for (const cq of quiz.courseQuizzes ?? []) {
+      courseIds.add(cq.courseId);
+    }
+
+    if (quiz.subjectQuizzes?.length) {
+      const subjects = await this.prisma.courseSubject.findMany({
+        where: {
+          subjectId: {
+            in: quiz.subjectQuizzes.map((s: any) => s.subjectId),
+          },
+        },
+        select: { courseId: true },
+      });
+
+      subjects.forEach((subject) => courseIds.add(subject.courseId));
+    }
+
+    if (quiz.moduleQuizzes?.length) {
+      const modules = await this.prisma.module.findMany({
+        where: {
+          id: { in: quiz.moduleQuizzes.map((m: any) => m.moduleId) },
+        },
+        select: {
+          subject: {
+            select: {
+              courses: { select: { courseId: true } },
+            },
+          },
+        },
+      });
+
+      modules.forEach((module) =>
+        module.subject.courses.forEach((course: any) =>
+          courseIds.add(course.courseId),
+        ),
+      );
+    }
+
+    if (quiz.chapterQuizzes?.length) {
+      const chapters = await this.prisma.subjectChapter.findMany({
+        where: {
+          chapterId: { in: quiz.chapterQuizzes.map((c: any) => c.chapterId) },
+        },
+        select: {
+          subject: {
+            select: {
+              courses: { select: { courseId: true } },
+            },
+          },
+        },
+      });
+
+      chapters.forEach((chapter) =>
+        chapter.subject.courses.forEach((course: any) =>
+          courseIds.add(course.courseId),
+        ),
+      );
+    }
+
+    if (quiz.lessons?.length) {
+      const lessons = await this.prisma.lessonToChapter.findMany({
+        where: {
+          lessonId: { in: quiz.lessons.map((l: any) => l.lessonId) },
+        },
+        select: {
+          chapter: {
+            select: {
+              subjects: {
+                select: {
+                  subject: {
+                    select: {
+                      courses: { select: { courseId: true } },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      });
+
+      lessons.forEach((lesson) =>
+        lesson.chapter.subjects.forEach((subject: any) =>
+          subject.subject.courses.forEach((course: any) =>
+            courseIds.add(course.courseId),
+          ),
+        ),
+      );
+    }
+
+    return [...courseIds];
   }
 
   async createQuizAndAttach(

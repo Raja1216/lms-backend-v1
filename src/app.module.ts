@@ -27,6 +27,8 @@ import { ZoomModule } from './zoom/zoom.module';
 import { LiveClassModule } from './live-class/live-class.module';
 import { InstitutionModule } from './institution/institution.module';
 import { CourseManagementModule } from './institution/course-management/course-management.module';
+import { CertificateGeneratorService } from './services/certicate-generator/certicate-generator.service';
+import { CertificateIssuanceService } from './services/certicate-issuance/certicate-issuance.service';
 
 @Module({
   imports: [
@@ -57,5 +59,6 @@ import { CourseManagementModule } from './institution/course-management/course-m
     InstitutionModule,
     CourseManagementModule
   ],
+  providers: [CertificateGeneratorService, CertificateIssuanceService],
 })
 export class AppModule {}

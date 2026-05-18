@@ -14,11 +14,13 @@ import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 import { UploadService } from 'src/upload/upload.service';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { CertificateIssuanceService } from 'src/services/certicate-issuance/certicate-issuance.service';
 @Injectable()
 export class LessonService {
   constructor(
     private prisma: PrismaService,
     private uploadService: UploadService,
+    private readonly certificateIssuanceService: CertificateIssuanceService,
   ) {}
 
   async create(createLessonDto: CreateLessonDto) {
@@ -474,6 +476,16 @@ export class LessonService {
       });
     }
 
+    const courseIds = await this.getCourseIdsForLesson(lessonId);
+    await Promise.all(
+      courseIds.map((courseId) =>
+        this.certificateIssuanceService.checkAndIssueCourseCompletion(
+          user.id,
+          courseId,
+        ),
+      ),
+    );
+
     //  Return response
     return {
       message:
@@ -481,5 +493,50 @@ export class LessonService {
           ? 'Lesson completed and XP awarded'
           : 'Lesson completed (XP already earned via quiz)',
     };
+  }
+
+  private async getCourseIdsForLesson(lessonId: number): Promise<number[]> {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id: lessonId },
+      select: {
+        chapters: {
+          select: {
+            chapter: {
+              select: {
+                subjects: {
+                  select: {
+                    subject: {
+                      select: {
+                        courses: {
+                          select: {
+                            course: {
+                              select: { id: true },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!lesson) {
+      return [];
+    }
+
+    return [
+      ...new Set(
+        lesson.chapters.flatMap((lc) =>
+          lc.chapter.subjects.flatMap((cs) =>
+            cs.subject.courses.map((c) => c.course.id),
+          ),
+        ),
+      ),
+    ];
   }
 }
