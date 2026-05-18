@@ -69,8 +69,8 @@ export class AuthService {
       password,
       mobileNumber,
       mobilePrefix,
-      level,
       name,
+      level,
       institutionId,
     );
     const jwtPayload = {

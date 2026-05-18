@@ -69,13 +69,19 @@ export class QuestionService {
 
   // ✅ FIXED
   async findAll(query: any) {
-    const { quizId, page = 1, limit = 20 } = query;
+    const { quizId, page = 1, limit = 20, keyword } = query;
 
     const [questions, total] = await Promise.all([
       this.prisma.question.findMany({
         where: {
           quizId: quizId ? +quizId : undefined,
           status: true,
+          OR: keyword
+            ? [
+                { question: { contains: keyword } },
+                { options: { some: { option: { contains: keyword } } } },
+              ]
+            : undefined,
         },
         include: {
           options: true,
@@ -91,6 +97,12 @@ export class QuestionService {
         where: {
           quizId: quizId ? +quizId : undefined,
           status: true,
+               OR: keyword
+            ? [
+                { question: { contains: keyword } },
+                { options: { some: { option: { contains: keyword } } } },
+              ]
+            : undefined,
         },
       }),
     ]);
