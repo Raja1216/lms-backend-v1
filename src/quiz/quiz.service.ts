@@ -345,7 +345,7 @@ export class QuizService {
 
   async findOne(id: number) {
     const quiz = await this.prisma.quiz.findUnique({
-      where: { id },
+      where: { id, status: true },
       include: {
         questions: {
           where: { status: true },
