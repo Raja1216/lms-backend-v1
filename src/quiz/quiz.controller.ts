@@ -119,8 +119,6 @@ export class QuizController {
     }
   }
 
- 
-
   @Permissions('quiz-update')
   @Patch(':id')
   async update(
@@ -195,13 +193,22 @@ export class QuizController {
 
   @Permissions('quiz-delete')
   @Delete(':id')
-  async remove(@Param('id', ParseIntPipe) id: number, @Res() res: Response) {
-    return successResponse(
-      res,
-      200,
-      'Quiz delete not implemented yet',
-      null,
-      null,
-    );
+  async remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const quiz = await this.quizService.remove(id);
+
+      return successResponse(res, 200, 'Quiz deleted successfully', quiz, null);
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ?? 500,
+        ),
+      );
+    }
   }
 }
