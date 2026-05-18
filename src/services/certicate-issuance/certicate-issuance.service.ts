@@ -20,8 +20,8 @@ export class CertificateIssuanceService {
     courseId: number,
   ): Promise<void> {
     try {
-      const existing = await this.prisma.userCompletionCertificate.findUnique({
-        where: { userId_courseId: { userId, courseId } },
+      const existing = await this.prisma.userCompletionCertificate.findFirst({
+        where: { userId: userId, courseId: courseId },
       });
       if (existing) return;
       const allLessons = await this.prisma.lesson.findMany({
@@ -179,6 +179,7 @@ export class CertificateIssuanceService {
     ]);
 
     if (!user || !course) return;
+    const certificateId = `course-${courseId}-user-${userId}`;
 
     const args: CourseCertArgs = {
       studentName: user.name ?? 'Student',
@@ -187,6 +188,7 @@ export class CertificateIssuanceService {
       grade: course.grade ?? '',
       teacherRemarks: '', // Can be enriched later if needed
       completionDate: new Date().toISOString().split('T')[0],
+      certificateId,
     };
 
     const { filePath, fileUrl } =
@@ -233,20 +235,32 @@ export class CertificateIssuanceService {
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, classGrade: true },
+      select: {
+        name: true,
+        classGrade: true,
+        institutionMembers: {
+          select: {
+            institution: {
+              select: { name: true },
+            },
+          },
+        },
+      },
     });
 
     if (!attempt || !user) return;
 
     const courseTitle = attempt.quiz.courseQuizzes?.[0]?.course?.title ?? '';
     const courseGrade = attempt.quiz.courseQuizzes?.[0]?.course?.grade ?? '';
-
+    const certificateId = `quiz-${quizId}-attempt-${quizAttemptId}`;
     const args: QuizCertArgs = {
       studentName: user.name ?? 'Student',
       className: user.classGrade ?? courseGrade,
       examName: attempt.quiz.title,
       courseName: courseTitle,
       marks: `${Number(attempt.obtainedMarks)}/${Number(attempt.totalMarks)}`,
+      completionDate: new Date().toISOString().split('T')[0],
+      certificateId,
       teacherRemarks: '', // Can be enriched later if needed
     };
 
@@ -255,6 +269,7 @@ export class CertificateIssuanceService {
 
     await this.prisma.userCompletionCertificate.create({
       data: {
+        certificateNumber:certificateId,
         userId,
         quizId,
         quizAttemptId,

@@ -5,6 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { ProjectService } from '../project.service';
 import { ManualGradeDto, RubricGradeDto } from './dto/grading.dto';
 import {
   calcPercentage,
@@ -17,12 +18,11 @@ import {
   SubmissionStatus,
   LetterGrade,
 } from '../../generated/prisma/enums';
-import { CertificateService } from 'src/certificate/certificate.service';
 @Injectable()
 export class ProjectGradingService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly certificateService: CertificateService,
+    private readonly projectService: ProjectService,
   ) {}
   private async getSubmissionOrThrow(submissionId: number) {
     const sub = await this.prisma.projectSubmission.findUnique({
@@ -298,22 +298,11 @@ export class ProjectGradingService {
       },
     });
 
-    // ✅ Generate certificate
     if (!alreadyExists && updatedGrade.isPublished) {
-      await this.certificateService.create({
-        userId: submission.studentId,
-        submissionId: submission.id,
-        type: 'project_completion',
-        title: 'Certificate of Completion',
-        studentName: submission.student.name || '',
-        className: submission.student.classGrade || '',
-        projectTitle: submission.project.title,
-        courseName: submission.project.course.title,
-        grade: submission.grade?.letterGrade || '',
-        teacherRemarks: submission.grade?.feedback ?? undefined,
-        completionDate: new Date(),
-        brandLogo: 'stempowered',
-      });
+      await this.projectService.issueProjectCertificateIfEligible(
+        submission.id,
+        updatedGrade.id,
+      );
     }
 
     return updatedGrade;
