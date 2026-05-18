@@ -211,4 +211,76 @@ export class LiveClassService {
       password: cls.password,
     };
   }
+
+  // ✅ UPDATE
+  async update(id: string, dto, user) {
+    const cls = await this.prisma.live_classes.findUnique({
+      where: { id },
+    });
+
+    if (!cls) {
+      throw new NotFoundException('Live class not found');
+    }
+
+    if (cls.hostId !== user.id) {
+      throw new ForbiddenException();
+    }
+
+    await this.validateHierarchy(dto);
+
+    // ✅ update zoom meeting
+    if (cls.zoomMeetingId) {
+      await this.zoom.updateMeeting(cls.zoomMeetingId, {
+        title: dto.title,
+        scheduledAt: dto.scheduledAt,
+        duration: dto.duration,
+      });
+    }
+
+    return this.prisma.live_classes.update({
+      where: { id },
+      data: {
+        title: dto.title,
+        description: dto.description,
+        courseId: dto.courseId,
+        subjectId: dto.subjectId || null,
+        chapterId: dto.chapterId || null,
+        moduleId: dto.moduleId || null,
+        scheduledAt: new Date(dto.scheduledAt),
+        duration: dto.duration,
+      },
+    });
+  }
+
+  // ✅ DELETE
+  async remove(id: string, user) {
+    const cls = await this.prisma.live_classes.findUnique({
+      where: { id },
+    });
+
+    if (!cls) {
+      throw new NotFoundException('Live class not found');
+    }
+
+    if (cls.hostId !== user.id) {
+      throw new ForbiddenException();
+    }
+
+    // ✅ delete zoom meeting
+    if (cls.zoomMeetingId) {
+      await this.zoom.deleteMeeting(cls.zoomMeetingId);
+    }
+
+    await this.prisma.live_class_attendance.deleteMany({
+      where: { classId: id },
+    });
+
+    await this.prisma.live_class_recordings.deleteMany({
+      where: { classId: id },
+    });
+
+    return this.prisma.live_classes.delete({
+      where: { id },
+    });
+  }
 }

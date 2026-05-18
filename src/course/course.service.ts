@@ -116,7 +116,10 @@ export class CourseService {
       throw new UnauthorizedException('User not found');
     }
     let filterGrade: string | null = null;
-    console.log('User Roles:', user.roles.map((r) => r.name));
+    console.log(
+      'User Roles:',
+      user.roles.map((r) => r.name),
+    );
     //check any of roles name include "Super Admin"
     const isAdmin = user?.roles.some(
       (role) => role.name.toLowerCase() === 'super admin',
@@ -124,7 +127,7 @@ export class CourseService {
     const isTeacher = user?.roles.some(
       (role) => role.name.toLowerCase() === 'teacher',
     );
-    if (!isAdmin && !isTeacher)  {
+    if (!isAdmin && !isTeacher) {
       if (!user?.classGrade) {
         throw new BadRequestException(
           'Please update your profile with class grade to see courses',
@@ -201,14 +204,44 @@ export class CourseService {
         },
 
         subjects: {
+          where: {
+            subject: {
+              status: true,
+            },
+          },
+
           include: {
             subject: {
               include: {
                 modules: {
+                  where: {
+                    status: true,
+                  },
+
                   include: {
                     chapters: {
+                      where: {
+                        chapter: {
+                          status: true,
+                        },
+                      },
+
                       include: {
-                        chapter: true,
+                        chapter: {
+                          include: {
+                            lessons: {
+                              where: {
+                                lesson: {
+                                  status: true,
+                                },
+                              },
+
+                              include: {
+                                lesson: true,
+                              },
+                            },
+                          },
+                        },
                       },
                     },
                   },
@@ -273,48 +306,54 @@ export class CourseService {
       (cls) => !cls.subjectId && !cls.moduleId && !cls.chapterId,
     );
 
-    const subjects = course.subjects.map((courseSubject) => {
-      const subject = courseSubject.subject;
+    const subjects = course.subjects
+      .filter((courseSubject) => courseSubject.subject?.status)
+      .map((courseSubject) => {
+        const subject = courseSubject.subject;
 
-      // subject level classes
-      const subjectClasses = liveClasses.filter(
-        (cls) =>
-          cls.subjectId === subject.id && !cls.moduleId && !cls.chapterId,
-      );
-
-      const modules = subject.modules.map((module) => {
-        // module level classes
-        const moduleClasses = liveClasses.filter(
-          (cls) => cls.moduleId === module.id && !cls.chapterId,
+        // subject level classes
+        const subjectClasses = liveClasses.filter(
+          (cls) =>
+            cls.subjectId === subject.id && !cls.moduleId && !cls.chapterId,
         );
 
-        const chapters = module.chapters.map((moduleChapter) => {
-          const chapter = moduleChapter.chapter;
+        const modules = subject.modules
+          .filter((module) => module.status)
+          .map((module) => {
+            // module level classes
+            const moduleClasses = liveClasses.filter(
+              (cls) => cls.moduleId === module.id && !cls.chapterId,
+            );
 
-          // chapter level classes
-          const chapterClasses = liveClasses.filter(
-            (cls) => cls.chapterId === chapter.id,
-          );
+            const chapters = module.chapters
+              .filter((moduleChapter) => moduleChapter.chapter?.status)
+              .map((moduleChapter) => {
+                const chapter = moduleChapter.chapter;
 
-          return {
-            ...chapter,
-            liveClasses: chapterClasses,
-          };
-        });
+                // chapter level classes
+                const chapterClasses = liveClasses.filter(
+                  (cls) => cls.chapterId === chapter.id,
+                );
+
+                return {
+                  ...chapter,
+                  liveClasses: chapterClasses,
+                };
+              });
+
+            return {
+              ...module,
+              liveClasses: moduleClasses,
+              chapters,
+            };
+          });
 
         return {
-          ...module,
-          liveClasses: moduleClasses,
-          chapters,
+          ...subject,
+          liveClasses: subjectClasses,
+          modules,
         };
       });
-
-      return {
-        ...subject,
-        liveClasses: subjectClasses,
-        modules,
-      };
-    });
 
     return {
       ...course,
@@ -344,14 +383,44 @@ export class CourseService {
         },
 
         subjects: {
+          where: {
+            subject: {
+              status: true,
+            },
+          },
+
           include: {
             subject: {
               include: {
                 modules: {
+                  where: {
+                    status: true,
+                  },
+
                   include: {
                     chapters: {
+                      where: {
+                        chapter: {
+                          status: true,
+                        },
+                      },
+
                       include: {
-                        chapter: true,
+                        chapter: {
+                          include: {
+                            lessons: {
+                              where: {
+                                lesson: {
+                                  status: true,
+                                },
+                              },
+
+                              include: {
+                                lesson: true,
+                              },
+                            },
+                          },
+                        },
                       },
                     },
                   },
@@ -401,8 +470,7 @@ export class CourseService {
         })
       : [];
 
-    const isEnrolled =
-      !!enrolled || institutionCourseAssignments.length > 0;
+    const isEnrolled = !!enrolled || institutionCourseAssignments.length > 0;
 
     const liveClasses = await this.prisma.live_classes.findMany({
       where: {
@@ -451,45 +519,51 @@ export class CourseService {
       (cls) => !cls.subjectId && !cls.moduleId && !cls.chapterId,
     );
 
-    const subjects = course.subjects.map((courseSubject) => {
-      const subject = courseSubject.subject;
+    const subjects = course.subjects
+      .filter((courseSubject) => courseSubject.subject?.status)
+      .map((courseSubject) => {
+        const subject = courseSubject.subject;
 
-      const subjectClasses = liveClasses.filter(
-        (cls) =>
-          cls.subjectId === subject.id && !cls.moduleId && !cls.chapterId,
-      );
-
-      const modules = subject.modules.map((module) => {
-        const moduleClasses = liveClasses.filter(
-          (cls) => cls.moduleId === module.id && !cls.chapterId,
+        const subjectClasses = liveClasses.filter(
+          (cls) =>
+            cls.subjectId === subject.id && !cls.moduleId && !cls.chapterId,
         );
 
-        const chapters = module.chapters.map((moduleChapter) => {
-          const chapter = moduleChapter.chapter;
+        const modules = subject.modules
+          .filter((module) => module.status)
+          .map((module) => {
+            const moduleClasses = liveClasses.filter(
+              (cls) => cls.moduleId === module.id && !cls.chapterId,
+            );
 
-          const chapterClasses = liveClasses.filter(
-            (cls) => cls.chapterId === chapter.id,
-          );
+            const chapters = module.chapters
+              .filter((moduleChapter) => moduleChapter.chapter?.status)
+              .map((moduleChapter) => {
+                const chapter = moduleChapter.chapter;
 
-          return {
-            ...chapter,
-            liveClasses: chapterClasses,
-          };
-        });
+                const chapterClasses = liveClasses.filter(
+                  (cls) => cls.chapterId === chapter.id,
+                );
+
+                return {
+                  ...chapter,
+                  liveClasses: chapterClasses,
+                };
+              });
+
+            return {
+              ...module,
+              liveClasses: moduleClasses,
+              chapters,
+            };
+          });
 
         return {
-          ...module,
-          liveClasses: moduleClasses,
-          chapters,
+          ...subject,
+          liveClasses: subjectClasses,
+          modules,
         };
       });
-
-      return {
-        ...subject,
-        liveClasses: subjectClasses,
-        modules,
-      };
-    });
 
     return {
       ...course,

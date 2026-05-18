@@ -46,8 +46,36 @@ export class ZoomService {
           Authorization: `Bearer ${token}`,
         },
       },
-  );
+    );
 
     return response.data;
+  }
+
+  async updateMeeting(meetingId: string, data: any) {
+    const token = await this.getAccessToken();
+
+    await axios.patch(
+      `${this.baseUrl}/meetings/${meetingId}`,
+      {
+        topic: data.title,
+        start_time: data.scheduledAt,
+        duration: data.duration,
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
+  }
+
+  async deleteMeeting(meetingId: string) {
+    const token = await this.getAccessToken();
+
+    await axios.delete(`${this.baseUrl}/meetings/${meetingId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   }
 }
