@@ -727,11 +727,12 @@ model ProjectSubmission {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  project Project             @relation("ProjectSubmissions", fields: [projectId], references: [id], onDelete: Cascade)
-  student User                @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
-  files   SubmissionFile[]    @relation("SubmissionFiles")
-  grade   ProjectGrade?       @relation("SubmissionGrade")
-  history SubmissionHistory[] @relation("SubmissionHistory")
+  project     Project             @relation("ProjectSubmissions", fields: [projectId], references: [id], onDelete: Cascade)
+  student     User                @relation("StudentSubmissions", fields: [studentId], references: [id], onDelete: Cascade)
+  files       SubmissionFile[]    @relation("SubmissionFiles")
+  grade       ProjectGrade?       @relation("SubmissionGrade")
+  history     SubmissionHistory[] @relation("SubmissionHistory")
+  certificate Certificate[]       @relation("projectSubmissions")
 
   /// One submission record per student per project
   @@unique([projectId, studentId])
@@ -839,24 +840,28 @@ model GradeScaleBand {
 }
 
 model Certificate {
-  id                Int              @id @default(autoincrement())
-  certificateNumber String           @unique
-  userId            Int
-  submissionId      Int?             @unique
-  type              CertificateType
-  title             String
-  studentName       String
-  className         String
-  projectTitle      String?
-  courseName        String
-  grade             String?
-  teacherRemarks    String?          @db.Text
-  completionDate    DateTime
-  brandLogo         CertificateBrand
+  id                  Int              @id @default(autoincrement())
+  certificateNumber   String           @unique
+  userId              Int
+  submissionId        Int?             @unique
+  projectSubmissionId Int?
+  type                CertificateType
+  filePath            String?
+  fileUrl             String?
+  title               String
+  studentName         String
+  className           String
+  projectTitle        String?
+  courseName          String
+  grade               String?
+  teacherRemarks      String?          @db.Text
+  completionDate      DateTime
+  brandLogo           CertificateBrand
 
   createdAt DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectSubmission ProjectSubmission? @relation("projectSubmissions", fields: [projectSubmissionId], references: [id], onDelete: Cascade)
 
   @@map("certificates")
 }
@@ -977,13 +982,14 @@ model live_class_recordings {
 }
 
 model UserCompletionCertificate {
-  id            Int    @id @default(autoincrement())
-  userId        Int
-  courseId      Int?
-  quizId        Int?
-  quizAttemptId Int?
-  filePath      String
-  fileUrl       String
+  id                Int     @id @default(autoincrement())
+  certificateNumber String? @unique @default(uuid())
+  userId            Int
+  courseId          Int?
+  quizId            Int?
+  quizAttemptId     Int?
+  filePath          String
+  fileUrl           String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -993,6 +999,6 @@ model UserCompletionCertificate {
   quiz        Quiz?        @relation("UserCompletionCertificates", fields: [quizId], references: [id], onDelete: Cascade)
   quizAttempt QuizAttempt? @relation("UserCompletionCertificates", fields: [quizAttemptId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, courseId])
+  @@unique([userId, courseId, certificateNumber])
   @@map("user_completion_certificates")
 }

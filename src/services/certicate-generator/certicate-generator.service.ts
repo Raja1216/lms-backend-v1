@@ -13,16 +13,22 @@ import { Client } from 'basic-ftp';
 import { Readable } from 'stream';
 import * as dotenv from 'dotenv';
 dotenv.config();
-
+import puppeteer from 'puppeteer';
+import { examCompletionCertificateTemplate } from '../templates/certificate/exam-complitation-certificate.template';
+import { courseCompletionCertificateTemplate } from '../templates/certificate/course-complitation-certificate.template';
+import { projectCompletionCertificateTemplate } from '../templates/certificate/project-complitation-certificate.template';
 const execFileAsync = promisify(execFile);
-
+import { exec } from 'child_process';
+const execAsync = promisify(exec);
 export interface CourseCertArgs {
   studentName: string;
   className: string;
   courseName: string;
   grade: string;
+  schoolName?: string;
   teacherRemarks?: string;
   completionDate: string; // ISO date string
+  certificateId: string;
 }
 
 export interface QuizCertArgs {
@@ -31,12 +37,26 @@ export interface QuizCertArgs {
   examName: string;
   courseName: string;
   marks: string; // e.g. "85/100"
+  completionDate: string; // ISO date string
+  certificateId: string;
   teacherRemarks?: string;
+  schoolName?: string;
 }
 
 export interface CertificateUploadResult {
   filePath: string; // remote FTP path
   fileUrl: string; // public HTTP URL
+}
+export interface ProjectCertificateArgs {
+  studentName: string;
+  schoolName: string;
+  projectName: string;
+  courseName: string;
+  grade: string;
+  teacherRemarks: string;
+  completedDate: string; // e.g. "17 May 2025"
+  certificateId: string; // unique cert number
+  className?: string;
 }
 
 @Injectable()
@@ -83,6 +103,23 @@ export class CertificateGeneratorService {
   private readonly basePublicUrl =
     process.env.FTP_BASE_URL ?? 'https://files.edudigm.in';
 
+  private get browserExecutablePath(): string | undefined {
+    const candidates = [
+      process.env.PUPPETEER_EXECUTABLE_PATH,
+      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+      '/Applications/Chromium.app/Contents/MacOS/Chromium',
+      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
+    ].filter(Boolean) as string[];
+
+    for (const candidate of candidates) {
+      if (fs.existsSync(candidate)) {
+        return candidate;
+      }
+    }
+
+    return undefined;
+  }
+
   private get ftpConfig() {
     const password = process.env.FTP_PASSWORD ?? process.env.FTP_PASS ?? '';
 
@@ -114,8 +151,35 @@ export class CertificateGeneratorService {
     const tmpFilePath = path.join(tmpDir, filename);
 
     try {
-      // 1. Generate PDF via Python script
-      await this.runPythonGenerator(type, args, tmpFilePath);
+      // 1. Render HTML template -> PDF using Puppeteer
+      let htmlContent = '';
+      if (type === 'course') {
+        const a = args as CourseCertArgs;
+        htmlContent = courseCompletionCertificateTemplate(
+          a.courseName,
+          a.studentName,
+          a.completionDate,
+          a.certificateId,
+          a.schoolName,
+          a.className,
+          a.grade,
+        );
+      } else {
+        const a = args as QuizCertArgs;
+        htmlContent = examCompletionCertificateTemplate(
+          a.studentName,
+          a.examName,
+          a.courseName,
+          a.marks,
+          a.completionDate,
+          a.certificateId,
+          a.className,
+          a.schoolName,
+        );
+      }
+
+      const pdfBuffer = await this.renderHtmlToPdfBuffer(htmlContent);
+      fs.writeFileSync(tmpFilePath, pdfBuffer);
 
       // 2. Upload buffer to FTP
       const buffer = fs.readFileSync(tmpFilePath);
@@ -131,6 +195,77 @@ export class CertificateGeneratorService {
       if (fs.existsSync(tmpFilePath)) {
         fs.unlinkSync(tmpFilePath);
       }
+    }
+  }
+  async generateProjectCertificate(
+    args: ProjectCertificateArgs,
+  ): Promise<CertificateUploadResult> {
+    const html = projectCompletionCertificateTemplate(
+      args.studentName,
+      args.schoolName,
+      args.projectName,
+      args.courseName,
+      args.grade,
+      args.teacherRemarks,
+      args.completedDate,
+      args.certificateId,
+      args.className,
+    );
+    return this.htmlToPdfAndUpload(html, 'certificates');
+  }
+  private async htmlToPdfAndUpload(
+    html: string,
+    type: string,
+  ): Promise<CertificateUploadResult> {
+    const tmpDir = os.tmpdir();
+    const baseName = uuid();
+    const htmlPath = path.join(tmpDir, `${baseName}.html`);
+    const pdfPath = path.join(tmpDir, `${baseName}.pdf`);
+
+    try {
+      // 1. Write HTML temp file
+      fs.writeFileSync(htmlPath, html, 'utf8');
+
+      // 2. Convert to PDF via wkhtmltopdf
+      await this.runWkhtmltopdf(htmlPath, pdfPath);
+
+      // 3. Read buffer and upload
+      const buffer = fs.readFileSync(pdfPath);
+      return this.uploadBufferViaFtp(buffer, `${baseName}.pdf`, type);
+    } finally {
+      // Clean up temp files
+      for (const f of [htmlPath, pdfPath]) {
+        if (fs.existsSync(f)) fs.unlinkSync(f);
+      }
+    }
+  }
+  private async runWkhtmltopdf(
+    htmlPath: string,
+    pdfPath: string,
+  ): Promise<void> {
+    // Page sized to match the 1200×850 certificate canvas (px → points at 96dpi)
+    const cmd = [
+      'wkhtmltopdf',
+      '--page-width 1260px',
+      '--page-height 910px',
+      '--zoom 1',
+      '--margin-top 0',
+      '--margin-bottom 0',
+      '--margin-left 0',
+      '--margin-right 0',
+      '--enable-local-file-access',
+      '--quiet',
+      `"${htmlPath}"`,
+      `"${pdfPath}"`,
+    ].join(' ');
+
+    try {
+      await execAsync(cmd);
+    } catch (err: any) {
+      this.logger.error('wkhtmltopdf failed', err?.stderr ?? err?.message);
+      throw new InternalServerErrorException(
+        'Certificate PDF generation failed',
+      );
     }
   }
 
@@ -166,6 +301,27 @@ export class CertificateGeneratorService {
       throw new InternalServerErrorException(
         'Failed to generate certificate PDF',
       );
+    }
+  }
+
+  private async renderHtmlToPdfBuffer(html: string): Promise<Buffer> {
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: this.browserExecutablePath,
+      headless: 'new',
+    });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      const pdf = await page.pdf({
+        printBackground: true,
+        width: '1200px',
+        height: '850px',
+        margin: { top: '0px', right: '0px', bottom: '0px', left: '0px' },
+      });
+      return pdf;
+    } finally {
+      await browser.close();
     }
   }
 
