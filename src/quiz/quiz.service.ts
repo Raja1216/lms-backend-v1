@@ -348,8 +348,8 @@ export class QuizService {
   }
 
   async findOne(id: number) {
-    const quiz = await this.prisma.quiz.findUnique({
-      where: { id },
+    const quiz = await this.prisma.quiz.findFirst({
+      where: { id, status: true },
       include: {
         questions: {
           where: { status: true },
@@ -402,8 +402,8 @@ export class QuizService {
     );
 
     // Get quiz with all mappings (needed for enrollment logic)
-    const quiz = await this.prisma.quiz.findUnique({
-      where: { slug },
+    const quiz = await this.prisma.quiz.findFirst({
+      where: { slug, status: true },
       include: {
         questions: {
           where: { status: true },
@@ -967,5 +967,25 @@ export class QuizService {
     }
 
     return quiz;
+  }
+
+  async remove(id: number) {
+    const quiz = await this.prisma.quiz.findFirst({
+      where: {
+        id,
+        status: true,
+      },
+    });
+
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+
+    return this.prisma.quiz.update({
+      where: { id },
+      data: {
+        status: false,
+      },
+    });
   }
 }
