@@ -95,6 +95,7 @@ export class QuizService {
       lessonId,
       page = 1,
       limit = 20,
+      keyword,
       search,
     } = query;
 
@@ -111,9 +112,10 @@ export class QuizService {
     }
 
     const where: any = { status: true };
-    if (search) {
+    const searchTerm = keyword || search;
+    if (searchTerm) {
       where.title = {
-        contains: search,
+        contains: searchTerm,
       };
     }
 
