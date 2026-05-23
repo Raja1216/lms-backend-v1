@@ -7,6 +7,13 @@ export const projectCompletionCertificateTemplate = (
   teacherRemarks: string,
   completedDate: string,
   certificateId: string,
+  assets: {
+    globe: string;
+    logo: string;
+    line: string;
+    sign: string;
+    signLine: string;
+  },
   className?: string,
 ): string => `
 <!doctype html>

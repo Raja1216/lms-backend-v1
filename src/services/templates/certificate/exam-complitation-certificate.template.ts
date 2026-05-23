@@ -5,6 +5,13 @@ export const examCompletionCertificateTemplate = (
   marks: string,
   completedDate: string,
   certificateId: string,
+  assets: {
+    globe: string;
+    logo: string;
+    line: string;
+    sign: string;
+    signLine: string;
+  },
   className?: string,
   schoolName?: string,
 ) => {
@@ -71,54 +78,24 @@ export const examCompletionCertificateTemplate = (
           overflow: hidden;
           box-sizing: border-box;
           padding: 28px 50px;
+        "
       >
         <!-- TOP RIGHT DESIGN -->
-        <div
-          style="
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 130px;
-            height: 130px;
-            background: #123d9b;
-            border-bottom-left-radius: 100%;
-          "
-        >
-          <div
-            style="
-              position: absolute;
-              top: 15px;
-              right: 10px;
-              width: 100px;
-              height: 100px;
-              border-radius: 50%;
-              border: 3px dotted rgba(255, 255, 255, 0.5);
-            "
-          ></div>
-
-          <div
-            style="
-              position: absolute;
-              top: 25px;
-              right: -10px;
-              width: 150px;
-              height: 4px;
-              background: #ffd400;
-              transform: rotate(-40deg);
-            "
-          ></div>
-        </div>
+        <img
+            src="${assets.globe}"
+            style="width: 260px;height: auto;object-fit: contain;position: absolute;top: 0;right: -5px;"
+          />
 
         <!-- LOGO -->
         <div style="position: absolute; top: 2px; left: 15px">
           <img
-            src="./eduverse_logo.png"
+            src="${assets.logo}"
             style="width: 260px; height: auto; object-fit: contain"
           />
         </div>
 
         <!-- TITLE -->
-        <div style="text-align: center; margin-top: 0px">
+        <div style="text-align: center; margin-top: 25px">
           <div
             style="
               font-size: 52px;
@@ -145,14 +122,10 @@ export const examCompletionCertificateTemplate = (
             OF COMPLETION
           </div>
 
-          <div
-            style="
-              width: 420px;
-              height: 2px;
-              background: #d8d8d8;
-              margin: 0px auto 0 auto;
-            "
-          ></div>
+          <img
+            src="${assets.line}"
+            style="width: 385px; height: auto; object-fit: contain"
+          />
         </div>
 
         <!-- CONTENT -->
@@ -259,25 +232,15 @@ export const examCompletionCertificateTemplate = (
             text-align: center;
           "
         >
-          <div
-            style="
-              font-family: cursive;
-              font-size: 40px;
-              color: #222;
-              margin-bottom: 5px;
-            "
-          >
-            Rajiv Agarwal
-          </div>
+          <img
+            src="${assets.sign}"
+            style="width: 260px; height: 90px; object-fit: contain"
+          />
 
-          <div
-            style="
-              width: 260px;
-              height: 3px;
-              background: linear-gradient(to right, #ff5a00, #7a00ff);
-              margin: 0 auto 10px auto;
-            "
-          ></div>
+          <img
+            src="${assets.signLine}"
+            style="width: 385px; height: auto; object-fit: contain; margin-top: -30px; margin-bottom: -15px;"
+          />
 
           <div style="font-size: 20px; font-weight: bold">
             Rajiv Agarwal
@@ -300,7 +263,7 @@ export const examCompletionCertificateTemplate = (
         <div
           style="
             position: absolute;
-            bottom: 18px;
+            bottom: 15px;
             left: 25px;
             font-size: 14px;
             color: #6b7280;
@@ -314,7 +277,7 @@ export const examCompletionCertificateTemplate = (
         <div
           style="
             position: absolute;
-            bottom: 18px;
+            bottom: 15px;
             right: 25px;
             font-size: 11px;
             color: #9ca3af;
