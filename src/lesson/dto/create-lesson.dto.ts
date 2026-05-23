@@ -13,22 +13,27 @@ export class CreateLessonDto {
   @IsString()
   @IsNotEmpty()
   @Length(3, 255)
-  title: string;
+  title!: string;
 
   @IsString()
-  topicName: string;
+  @IsNotEmpty()
+  topicName!: string;
 
   @IsString()
   @IsOptional()
-  description: string;
+  description!: string;
 
   @IsEnum(LessonType)
-  lessonType: LessonType;
+  lessonType!: LessonType;
 
   @IsOptional()
   @IsNumber({}, { each: true })
   chapterIds?: number[];
 
+
+  @IsNumber()
+  @IsOptional()
+  sortOrder?: number;
   @IsUrl()
   @IsOptional()
   videoUrl?: string;
@@ -45,7 +50,4 @@ export class CreateLessonDto {
   @IsNumber()
   noOfXpPoints?: number;
 
-  @IsOptional()
-  @IsNumber()
-  sortOrder?: number;
 }

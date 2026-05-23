@@ -351,6 +351,11 @@ export class LessonService {
       },
       include: {
         quizzes: {
+          orderBy: {
+            quiz: {
+              sortOrder: 'asc',
+            },
+          },
           select: {
             quiz: true,
           },
@@ -447,6 +452,7 @@ export class LessonService {
           },
         },
       },
+      orderBy: [{ sortOrder: 'asc' }],
       select: { id: true },
     });
 

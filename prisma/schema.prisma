@@ -236,19 +236,19 @@ model CourseTeacher {
 }
 
 model Subject {
-  id          Int              @id @default(autoincrement())
-  name        String
-  slug        String           @unique
-  description String           @db.Text
-  status      Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  courses     CourseSubject[]  @relation("SubjectCourses")
-  chapters    SubjectChapter[] @relation("SubjectChapters")
-
+  id             Int              @id @default(autoincrement())
+  name           String
+  slug           String           @unique
+  description    String           @db.Text
+  status         Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  courses        CourseSubject[]  @relation("SubjectCourses")
+  chapters       SubjectChapter[] @relation("SubjectChapters")
+  sortOrder      Int              @default(0)
   modules        Module[]
   subjectQuizzes SubjectQuiz[]
-  forum          CourForum[]    @relation("ForumToSubject")
+  forum          CourForum[]      @relation("ForumToSubject")
   live_classes   live_classes[]
 
   @@map("subjects")
@@ -274,6 +274,7 @@ model Chapter {
   description String   @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  sortOrder   Int      @default(0)
 
   subjects       SubjectChapter[]  @relation("SubjectChapters")
   modules        ModuleChapter[]
@@ -346,7 +347,7 @@ model Lesson {
   noOfXpPoints Int               @default(0)
   type         LessonType        @default(video)
   docUrl       String?
-  sortOrder    Int?
+  sortOrder    Int?              @default(0)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   chapters     LessonToChapter[] @relation("LessonToChapters")
@@ -380,6 +381,7 @@ model Quiz {
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
   subMissionFrequency QuizSubmissionFrequency @default(frequently)
+  sortOrder           Int                     @default(0)
 
   questions Question[]
 

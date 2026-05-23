@@ -24,6 +24,7 @@ export class SubjectService {
         name,
         description,
         slug,
+        sortOrder: createSubjectDto.sortOrder,
       },
     });
 
@@ -40,13 +41,22 @@ export class SubjectService {
   }
 
   async subjectsByCourseId(courseId: number) {
-    return this.prisma.courseSubject.findMany({
+    return this.prisma.subject.findMany({
       where: {
-        courseId,
-        subject: { status: true },
+        status: true,
+        courses: {
+          some: {
+            courseId,
+          },
+        },
       },
+      orderBy: [{ sortOrder: 'asc' }],
       include: {
-        subject: true,
+        courses: {
+          include: {
+            course: true,
+          },
+        },
       },
     });
   }
@@ -59,11 +69,10 @@ export class SubjectService {
         where: {
           status: true,
         },
-        orderBy: {
-          createdAt: 'desc',
-        },
+
         take: limit,
         skip,
+        orderBy: [{ sortOrder: 'asc' }],
         include: {
           courses: {
             include: {
@@ -100,6 +109,7 @@ export class SubjectService {
           },
         },
         chapters: {
+          orderBy: [{ chapter: { sortOrder: 'asc' } }],
           include: {
             chapter: true,
           },
@@ -127,6 +137,7 @@ export class SubjectService {
           },
         },
         chapters: {
+          orderBy: [{ chapter: { sortOrder: 'asc' } }],
           include: {
             chapter: true,
           },
@@ -157,6 +168,7 @@ export class SubjectService {
         name,
         description,
         slug,
+        sortOrder: updateSubjectDto.sortOrder,
       },
     });
 
