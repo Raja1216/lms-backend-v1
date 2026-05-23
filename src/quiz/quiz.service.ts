@@ -11,6 +11,7 @@ import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 import { QuizSubmissionFrequency } from 'src/generated/prisma/enums';
 import { CertificateIssuanceService } from 'src/services/certicate-issuance/certicate-issuance.service';
+import { SortOrder } from 'src/generated/prisma/internal/prismaNamespace';
 @Injectable()
 export class QuizService {
   constructor(
@@ -54,6 +55,7 @@ export class QuizService {
         totalMarks: totalMarks ?? 0,
         subMissionFrequency: createQuizDto.submissionFrequency,
         status: true,
+        sortOrder: createQuizDto.sortOrder,
       },
     });
 
@@ -136,7 +138,7 @@ export class QuizService {
       },
       skip: (page - 1) * limit,
       take: +limit,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ sortOrder: 'asc' }],
     });
 
     const allSubjectIds = [
@@ -337,6 +339,7 @@ export class QuizService {
         subMissionFrequency: quiz.subMissionFrequency,
         isUserEnrolled,
         isCompleted: completedSet.has(quiz.id),
+        sortOrder: quiz.sortOrder,
       };
     });
 
@@ -567,6 +570,7 @@ export class QuizService {
         moduleQuizzes: true,
         chapterQuizzes: true,
         lessons: true,
+    
       },
     });
 
@@ -585,6 +589,7 @@ export class QuizService {
         timeLimit: dto.timeLimit ?? quiz.timeLimit,
         passMarks: dto.passMarks ?? quiz.passMarks,
         totalMarks: dto.totalMarks ?? quiz.totalMarks,
+        sortOrder: dto.sortOrder ?? quiz.sortOrder,
         subMissionFrequency:
           dto.submissionFrequency ?? quiz.subMissionFrequency,
       },
@@ -919,6 +924,7 @@ export class QuizService {
       timeLimit?: number;
       passMarks?: number;
       totalMarks?: number;
+      sortOrder?: number;
     },
     attach: {
       courseId?: number;
@@ -939,6 +945,9 @@ export class QuizService {
         timeLimit: quizData.timeLimit ?? 0,
         passMarks: quizData.passMarks ?? 0,
         totalMarks: quizData.totalMarks ?? 0,
+        sortOrder: quizData.sortOrder ?? 0,
+        submissionFrequency: QuizSubmissionFrequency.once,
+        status: true,
       },
     });
 

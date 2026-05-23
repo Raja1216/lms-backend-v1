@@ -40,6 +40,7 @@ export class CertificateIssuanceService {
             },
           },
         },
+        orderBy: [{ sortOrder: 'asc' }],
         select: { id: true },
       });
       const lessonIds = allLessons.map((l) => l.id);

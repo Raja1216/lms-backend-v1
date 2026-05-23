@@ -73,6 +73,7 @@ export class ChapterService {
         title: dto.title,
         description: dto.description ?? '',
         slug,
+        sortOrder: dto.sortOrder,
       },
     });
 
@@ -132,9 +133,7 @@ export class ChapterService {
         },
         status: true,
       },
-      orderBy: {
-        createdAt: 'asc',
-      },
+      orderBy: [{ sortOrder: 'asc' }],
       skip,
       take: limit,
     });
@@ -174,25 +173,53 @@ export class ChapterService {
   }
 
   async findBySubject(subjectId: number) {
-    return this.prisma.subjectChapter.findMany({
+    return this.prisma.chapter.findMany({
       where: {
-        subjectId,
-        chapter: { status: true },
+        status: true,
+        subjects: {
+          some: {
+            subjectId,
+          },
+        },
       },
+      orderBy: [{ sortOrder: 'asc' }],
       include: {
-        chapter: true,
+        subjects: {
+          include: {
+            subject: true,
+          },
+        },
+        modules: {
+          include: {
+            module: true,
+          },
+        },
       },
     });
   }
 
   async findByModule(moduleId: number) {
-    return this.prisma.moduleChapter.findMany({
+    return this.prisma.chapter.findMany({
       where: {
-        moduleId,
-        chapter: { status: true },
+        status: true,
+        modules: {
+          some: {
+            moduleId,
+          },
+        },
       },
+      orderBy: [{ sortOrder: 'asc' }],
       include: {
-        chapter: true,
+        subjects: {
+          include: {
+            subject: true,
+          },
+        },
+        modules: {
+          include: {
+            module: true,
+          },
+        },
       },
     });
   }
@@ -215,6 +242,7 @@ export class ChapterService {
         title: dto.title,
         description: dto.description,
         slug,
+        sortOrder: dto.sortOrder,
       },
     });
     if (dto.subjectId && dto.subjectId !== existing.subjects[0]?.subjectId) {
