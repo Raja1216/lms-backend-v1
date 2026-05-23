@@ -29,6 +29,7 @@ import { InstitutionModule } from './institution/institution.module';
 import { CourseManagementModule } from './institution/course-management/course-management.module';
 import { CertificateGeneratorService } from './services/certicate-generator/certicate-generator.service';
 import { CertificateIssuanceService } from './services/certicate-issuance/certicate-issuance.service';
+import { ShopModule } from './shop/shop.module';
 
 @Module({
   imports: [
@@ -57,7 +58,8 @@ import { CertificateIssuanceService } from './services/certicate-issuance/certic
     LiveClassModule,
     StudentDashboardModule,
     InstitutionModule,
-    CourseManagementModule
+    CourseManagementModule,
+    ShopModule
   ],
   providers: [CertificateGeneratorService, CertificateIssuanceService],
 })

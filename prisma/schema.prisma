@@ -101,6 +101,17 @@ enum EnrollmentSource {
   INSTITUTION
 }
 
+enum ShopItemType {
+  product
+  license
+}
+
+enum ShopItemStatus {
+  active
+  inactive
+  deleted
+}
+
 model User {
   id                         Int                         @id @default(autoincrement())
   uuid                       String                      @unique @default(uuid())
@@ -1001,4 +1012,35 @@ model UserCompletionCertificate {
 
   @@unique([userId, courseId, certificateNumber])
   @@map("user_completion_certificates")
+}
+
+model shop_items {
+  id               Int              @id @default(autoincrement())
+
+  type             ShopItemType
+
+  title            String           @db.Text
+  description      String?          @db.Text
+
+  price            Float
+  original_price   Float?
+
+  class_level      String           @db.VarChar(20)
+
+  image            String?          @db.Text
+  badge            String?          @db.VarChar(100)
+
+  seats            Int?
+
+  stock            Int              @default(0)
+  status           ShopItemStatus   @default(active)
+  rating           Float?           @default(0)
+  students         Int?             @default(0)
+
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+
+  @@index([type])
+  @@index([class_level])
+  @@index([status])
 }
