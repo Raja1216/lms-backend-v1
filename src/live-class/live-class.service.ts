@@ -266,9 +266,13 @@ export class LiveClassService {
       throw new ForbiddenException();
     }
 
-    // ✅ delete zoom meeting
+    // delete zoom safely
     if (cls.zoomMeetingId) {
-      await this.zoom.deleteMeeting(cls.zoomMeetingId);
+      try {
+        await this.zoom.deleteMeeting(cls.zoomMeetingId);
+      } catch (err: any) {
+        console.log('ZOOM DELETE FAILED:', err?.response?.data || err.message);
+      }
     }
 
     await this.prisma.live_class_attendance.deleteMany({

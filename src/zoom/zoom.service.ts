@@ -71,12 +71,23 @@ export class ZoomService {
   }
 
   async deleteMeeting(meetingId: string) {
-    const token = await this.getAccessToken();
+    try {
+      const token = await this.getAccessToken();
 
-    await axios.delete(`${this.baseUrl}/meetings/${meetingId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+      const response = await axios.delete(
+        `${this.baseUrl}/meetings/${meetingId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+      );
+
+      return response.data;
+    } catch (err: any) {
+      console.log('ZOOM DELETE ERROR =>', err?.response?.data || err.message);
+
+      throw err;
+    }
   }
 }
