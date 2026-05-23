@@ -1041,8 +1041,31 @@ model shop_items {
 
   created_at       DateTime         @default(now())
   updated_at       DateTime         @updatedAt
+  cart_items  cart_items[]
 
   @@index([type])
   @@index([class_level])
   @@index([status])
+}
+
+model cart_items {
+  id            Int      @id @default(autoincrement())
+
+  user_id       Int
+
+  shop_item_id  Int
+
+  quantity      Int      @default(1)
+
+  created_at    DateTime @default(now())
+
+  updated_at    DateTime @updatedAt
+
+  shop_items    shop_items @relation(fields: [shop_item_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, shop_item_id])
+
+  @@index([user_id])
+
+  @@index([shop_item_id])
 }
