@@ -3,6 +3,13 @@ export const courseCompletionCertificateTemplate = (
   studentName: string,
   completedDate: string,
   certificateId: string,
+  assets: {
+    globe: string;
+    logo: string;
+    line: string;
+    sign: string;
+    signLine: string;
+  },
   schoolName?: string,
   className?: string,
   grade?: string,
@@ -14,6 +21,27 @@ export const courseCompletionCertificateTemplate = (
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Certificate</title>
+
+    <style>
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }   
+
+      html,
+      body {
+        width: 1123px;
+        height: 794px;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }   
+
+      * {
+        box-sizing: border-box;
+      }
+    </style>
+
   </head>
 
   <body
@@ -27,9 +55,11 @@ export const courseCompletionCertificateTemplate = (
     <!-- CERTIFICATE -->
     <div
       style="
-        width: 1200px;
-        height: 850px;
-        margin: 20px auto;
+        width: 1123px;
+        height: 794px;
+        margin: 0 auto;
+        page-break-inside: avoid;
+        overflow: hidden;
         background: linear-gradient(90deg, #ff5a00, #7a00ff);
         padding: 28px;
         box-sizing: border-box;
@@ -46,59 +76,28 @@ export const courseCompletionCertificateTemplate = (
           position: relative;
           overflow: hidden;
           box-sizing: border-box;
-          padding: 40px 70px;
+          padding: 28px 50px;
         "
       >
         <!-- TOP RIGHT DESIGN -->
-        <div
-          style="
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 130px;
-            height: 130px;
-            background: #123d9b;
-            border-bottom-left-radius: 100%;
-          "
-        >
-          <div
-            style="
-              position: absolute;
-              top: 15px;
-              right: 10px;
-              width: 100px;
-              height: 100px;
-              border-radius: 50%;
-              border: 3px dotted rgba(255, 255, 255, 0.5);
-            "
-          ></div>
-
-          <div
-            style="
-              position: absolute;
-              top: 25px;
-              right: -10px;
-              width: 150px;
-              height: 4px;
-              background: #ffd400;
-              transform: rotate(-40deg);
-            "
-          ></div>
-        </div>
+        <img
+            src="${assets.globe}"
+            style="width: 260px;height: auto;object-fit: contain;position: absolute;top: 0;right: -5px;"
+          />
 
         <!-- LOGO -->
         <div style="position: absolute; top: 2px; left: 15px">
           <img
-            src="./eduverse_logo.png"
+            src="${assets.logo}"
             style="width: 260px; height: auto; object-fit: contain"
           />
         </div>
 
         <!-- TITLE -->
-        <div style="text-align: center; margin-top: 0px">
+        <div style="text-align: center; margin-top: 25px">
           <div
             style="
-              font-size: 62px;
+              font-size: 52px;
               font-weight: 900;
               letter-spacing: 4px;
               line-height: 1;
@@ -122,14 +121,10 @@ export const courseCompletionCertificateTemplate = (
             OF COMPLETION
           </div>
 
-          <div
-            style="
-              width: 420px;
-              height: 2px;
-              background: #d8d8d8;
-              margin: 0px auto 0 auto;
-            "
-          ></div>
+          <img
+            src="${assets.line}"
+            style="width: 385px; height: auto; object-fit: contain"
+          />
         </div>
 
         <!-- CONTENT -->
@@ -145,7 +140,7 @@ export const courseCompletionCertificateTemplate = (
               margin: 0 auto;
               border-bottom: 3px solid transparent;
               border-image: linear-gradient(to right, #ff5a00, #7a00ff) 1;
-              font-size: 52px;
+              font-size: 42px;
               font-weight: bold;
               padding-bottom: 15px;
               color: #111;
@@ -184,7 +179,7 @@ export const courseCompletionCertificateTemplate = (
                 font-weight: bold;
               "
             >
-              ${schoolName??''}
+              ${schoolName ?? ''}
             </span>
           </div>
 
@@ -192,7 +187,7 @@ export const courseCompletionCertificateTemplate = (
           <div
             style="
               margin-top: 18px;
-              font-size: 38px;
+              font-size: 30px;
               font-style: italic;
               color: #222;
             "
@@ -206,7 +201,7 @@ export const courseCompletionCertificateTemplate = (
           style="
             margin-top: 15px;
             margin-left: 20px;
-            font-size: 30px;
+            font-size: 24px;
             line-height: 2;
           "
         >
@@ -231,25 +226,15 @@ export const courseCompletionCertificateTemplate = (
             text-align: center;
           "
         >
-          <div
-            style="
-              font-family: cursive;
-              font-size: 40px;
-              color: #222;
-              margin-bottom: 5px;
-            "
-          >
-            Rajiv Agarwal
-          </div>
+          <img
+            src="${assets.sign}"
+            style="width: 260px; height: 90px; object-fit: contain"
+          />
 
-          <div
-            style="
-              width: 260px;
-              height: 3px;
-              background: linear-gradient(to right, #ff5a00, #7a00ff);
-              margin: 0 auto 10px auto;
-            "
-          ></div>
+          <img
+            src="${assets.signLine}"
+            style="width: 385px; height: auto; object-fit: contain; margin-top: -30px; margin-bottom: -15px;"
+          />
 
           <div style="font-size: 20px; font-weight: bold">
             Rajiv Agarwal
@@ -272,7 +257,7 @@ export const courseCompletionCertificateTemplate = (
         <div
           style="
             position: absolute;
-            bottom: 18px;
+            bottom: 15px;
             left: 25px;
             font-size: 14px;
             color: #6b7280;
@@ -286,7 +271,7 @@ export const courseCompletionCertificateTemplate = (
         <div
           style="
             position: absolute;
-            bottom: 18px;
+            bottom: 15px;
             right: 25px;
             font-size: 11px;
             color: #9ca3af;

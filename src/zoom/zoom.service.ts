@@ -33,7 +33,8 @@ export class ZoomService {
       {
         topic: data.title,
         type: 2,
-        start_time: data.scheduledAt,
+        start_time: data.scheduledAt.toISOString(),
+        timezone: 'Asia/Kolkata',
         duration: data.duration,
         settings: {
           waiting_room: true,
