@@ -14,6 +14,27 @@ export const courseCompletionCertificateTemplate = (
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Certificate</title>
+
+    <style>
+      @page {
+        size: A4 landscape;
+        margin: 0;
+      }   
+
+      html,
+      body {
+        width: 1123px;
+        height: 794px;
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }   
+
+      * {
+        box-sizing: border-box;
+      }
+    </style>
+
   </head>
 
   <body
@@ -27,9 +48,11 @@ export const courseCompletionCertificateTemplate = (
     <!-- CERTIFICATE -->
     <div
       style="
-        width: 1200px;
-        height: 850px;
-        margin: 20px auto;
+        width: 1123px;
+        height: 794px;
+        margin: 0 auto;
+        page-break-inside: avoid;
+        overflow: hidden;
         background: linear-gradient(90deg, #ff5a00, #7a00ff);
         padding: 28px;
         box-sizing: border-box;
@@ -46,7 +69,7 @@ export const courseCompletionCertificateTemplate = (
           position: relative;
           overflow: hidden;
           box-sizing: border-box;
-          padding: 40px 70px;
+          padding: 28px 50px;
         "
       >
         <!-- TOP RIGHT DESIGN -->
@@ -98,7 +121,7 @@ export const courseCompletionCertificateTemplate = (
         <div style="text-align: center; margin-top: 0px">
           <div
             style="
-              font-size: 62px;
+              font-size: 52px;
               font-weight: 900;
               letter-spacing: 4px;
               line-height: 1;
@@ -145,7 +168,7 @@ export const courseCompletionCertificateTemplate = (
               margin: 0 auto;
               border-bottom: 3px solid transparent;
               border-image: linear-gradient(to right, #ff5a00, #7a00ff) 1;
-              font-size: 52px;
+              font-size: 42px;
               font-weight: bold;
               padding-bottom: 15px;
               color: #111;
@@ -192,7 +215,7 @@ export const courseCompletionCertificateTemplate = (
           <div
             style="
               margin-top: 18px;
-              font-size: 38px;
+              font-size: 30px;
               font-style: italic;
               color: #222;
             "
@@ -206,7 +229,7 @@ export const courseCompletionCertificateTemplate = (
           style="
             margin-top: 15px;
             margin-left: 20px;
-            font-size: 30px;
+            font-size: 24px;
             line-height: 2;
           "
         >
