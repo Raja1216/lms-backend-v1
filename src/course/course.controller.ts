@@ -338,4 +338,30 @@ export class CourseController {
       );
     }
   }
+
+  @Get('/users/me/enrolled-courses')
+  async getMyEnrolledCourses(
+    @Req() req: { user: User },
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.courseService.getMyEnrolledCourses(req.user.id);
+
+      return successResponse(
+        res,
+        200,
+        'Enrolled courses fetched successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
 }

@@ -1306,6 +1306,44 @@ export class CourseService {
     });
   }
 
+  async getMyEnrolledCourses(userId: number) {
+    return this.prisma.userEnrolledCourse.findMany({
+      where: {
+        userId,
+      },
+
+      include: {
+        course: {
+          include: {
+            teachers: {
+              include: {
+                teacher: {
+                  select: {
+                    id: true,
+                    name: true,
+                    email: true,
+                  },
+                },
+              },
+            },
+
+            _count: {
+              select: {
+                subjects: true,
+              },
+            },
+          },
+        },
+
+        payment: true,
+      },
+
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
   private async findOrCreateLesson(tx: any, content: any) {
     let lesson = await tx.lesson.findFirst({
       where: { title: content.title },
