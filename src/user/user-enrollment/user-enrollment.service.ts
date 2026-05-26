@@ -115,6 +115,7 @@ export class UserEnrollmentService {
       { header: 'Section', key: 'section', width: 10 },
       { header: 'Roll No', key: 'rollNo', width: 10 },
       { header: 'Contact No.', key: 'mobile', width: 16 },
+      { header: 'School Name', key: 'schoolName', width: 16 },
       { header: 'Institute Id', key: 'instituteId', width: 14 },
       { header: 'Course Ids', key: 'courseIds', width: 22 },
     ];
@@ -144,6 +145,7 @@ export class UserEnrollmentService {
         section: 'A',
         rollNo: '01',
         mobile: '6290582060',
+        schoolName: 'ABC School',
         instituteId: 1,
         courseIds: '1,2,3',
       },
@@ -153,6 +155,7 @@ export class UserEnrollmentService {
         section: 'B',
         rollNo: '02',
         mobile: '9876543210',
+        schoolName: 'XYZ School',
         instituteId: 1,
         courseIds: '1,2',
       },
@@ -162,6 +165,7 @@ export class UserEnrollmentService {
         section: 'C',
         rollNo: '03',
         mobile: '8123456789',
+        schoolName: 'DEF School',
         instituteId: 2,
         courseIds: '3',
       },
@@ -193,6 +197,7 @@ export class UserEnrollmentService {
       ['  Section      Section letter (e.g. A, B, C)', false],
       ['  Roll No      Roll number (e.g. 01, 02)', false],
       ['  Contact No.  10-digit mobile (used to look up the student)', false],
+      ['  School Name  Name of the school', false],
       ['  Institute Id Numeric institution ID', false],
       ['  Course Ids   Comma-separated course IDs (e.g. 1,2,3)', false],
       ['', false],
@@ -248,7 +253,7 @@ export class UserEnrollmentService {
       colMap[String(cell.value ?? '').trim()] = colNum;
     });
 
-    const required = ['Name', 'Contact No.', 'Institute Id', 'Course Ids'];
+    const required = ['Name', 'Contact No.', 'Course Ids'];
     for (const col of required) {
       if (!colMap[col])
         throw new BadRequestException(`Missing column: "${col}"`);
@@ -260,6 +265,7 @@ export class UserEnrollmentService {
       section: string;
       rollNo: string;
       mobile: string;
+      schoolName: string;
       instituteId: string;
       courseIds: string;
       password: string;
@@ -295,6 +301,10 @@ export class UserEnrollmentService {
       const courseIdsRaw = String(
         row.getCell(colMap['Course Ids']).value ?? '',
       ).trim();
+      const schoolName = String(
+        row.getCell(colMap['School Name']?.toString() ? colMap['School Name'] : 0)
+          ?.value ?? '',
+      ).trim();
 
       // Parse course IDs – handles "1,2,3" or "[1,2,3]" or "1"
       const courseIds = courseIdsRaw
@@ -310,6 +320,7 @@ export class UserEnrollmentService {
           section,
           rollNo,
           mobile,
+          schoolName,
           instituteId,
           courseIds: courseIdsRaw,
           password: '',
@@ -327,6 +338,7 @@ export class UserEnrollmentService {
           section,
           rollNo,
           mobile,
+          schoolName,
           instituteId,
           courseIds: courseIdsRaw,
           password: '',
@@ -374,6 +386,7 @@ export class UserEnrollmentService {
             section,
             rollNo,
             mobile,
+            schoolName,
             instituteId,
             courseIds: courseIdsRaw,
             password: rawPassword,
@@ -425,6 +438,7 @@ export class UserEnrollmentService {
         rollNo,
         mobile,
         instituteId,
+        schoolName,
         courseIds: courseIdsRaw,
         password: rawPassword,
         enrolled,
@@ -444,6 +458,7 @@ export class UserEnrollmentService {
       { header: 'Roll No', key: 'rollNo', width: 10 },
       { header: 'Contact No.', key: 'mobile', width: 16 },
       { header: 'Institute Id', key: 'instituteId', width: 14 },
+      { header: 'School Name', key: 'schoolName', width: 16 },
       { header: 'Course Ids', key: 'courseIds', width: 20 },
       { header: 'Password', key: 'password', width: 18 },
       { header: 'Enrolled', key: 'enrolled', width: 12 },
