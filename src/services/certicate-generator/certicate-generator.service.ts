@@ -165,6 +165,11 @@ export class CertificateGeneratorService {
       line: toBase64('Line.png'),
       sign: toBase64('RA_Sign.png'),
       signLine: toBase64('sign_line.png'),
+      background: toBase64('background.jpg'),
+      edudigm_logo: toBase64('Edudigm_Logo.png'),
+      stem_powered_logo: toBase64('STEMpowered_logo.png'),
+      header: toBase64('Header.png'),
+      full_sign: toBase64('sign.png'),
     };
   }
 
