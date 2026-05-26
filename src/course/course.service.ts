@@ -112,9 +112,11 @@ export class CourseService {
         },
       },
     });
+    let courseIds: number[] = [];
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
+
     let filterGrade: string | null = null;
     console.log(
       'User Roles:',
@@ -140,6 +142,17 @@ export class CourseService {
     } else {
       //  always use their classGrade
       filterGrade = user.classGrade;
+      //also his enrolled courses
+      const enrollments = await this.prisma.userEnrolledCourse.findMany({
+        where: {
+          userId,
+        },
+        select: {
+
+          courseId: true,
+        },
+      });
+      courseIds = enrollments.map((e) => e.courseId);
     }
 
     const whereClause: any = {
@@ -155,6 +168,12 @@ export class CourseService {
         { title: { contains: keyword } },
         { slug: { contains: keyword } },
         { description: { contains: keyword } },
+      ];
+    }
+    if (courseIds.length > 0) {
+      whereClause.OR = [
+        ...(whereClause.OR || []),
+        { id: { in: courseIds } },
       ];
     }
 
