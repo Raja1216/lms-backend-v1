@@ -98,7 +98,9 @@ export class CourseService {
       grade = null,
       keyword = null,
     } = paginationDto;
+
     const skip = (page - 1) * limit;
+
     const user = await this.prisma.user.findUnique({
       where: {
         id: userId,
@@ -112,83 +114,125 @@ export class CourseService {
         },
       },
     });
-    let courseIds: number[] = [];
+
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    let filterGrade: string | null = null;
-    console.log(
-      'User Roles:',
-      user.roles.map((r) => r.name),
-    );
-    //check any of roles name include "Super Admin"
-    const isAdmin = user?.roles.some(
+    const isAdmin = user.roles.some(
       (role) => role.name.toLowerCase() === 'super admin',
     );
-    const isTeacher = user?.roles.some(
+
+    const isTeacher = user.roles.some(
       (role) => role.name.toLowerCase() === 'teacher',
     );
+
+    let enrolledCourseIds: number[] = [];
+
+    // Student enrolled courses
     if (!isAdmin && !isTeacher) {
-      if (!user?.classGrade) {
+      if (!user.classGrade) {
         throw new BadRequestException(
           'Please update your profile with class grade to see courses',
         );
       }
-    }
-    if (isAdmin || isTeacher) {
-      //  use provided grade (or no filter)
-      filterGrade = grade ?? null;
-    } else {
-      //  always use their classGrade
-      filterGrade = user.classGrade;
-      //also his enrolled courses
+
       const enrollments = await this.prisma.userEnrolledCourse.findMany({
         where: {
           userId,
         },
         select: {
-
           courseId: true,
         },
       });
-      courseIds = enrollments.map((e) => e.courseId);
+
+      enrolledCourseIds = enrollments.map((e) => e.courseId);
     }
 
     const whereClause: any = {
       status: true,
+      AND: [],
     };
 
-    if (filterGrade !== null) {
-      whereClause.grade = filterGrade;
+    // Keyword Search
+    if (keyword) {
+      whereClause.AND.push({
+        OR: [
+          {
+            title: {
+              contains: keyword,
+            },
+          },
+          {
+            slug: {
+              contains: keyword,
+            },
+          },
+          {
+            description: {
+              contains: keyword,
+            },
+          },
+        ],
+      });
     }
 
-    if (keyword) {
-      whereClause.OR = [
-        { title: { contains: keyword } },
-        { slug: { contains: keyword } },
-        { description: { contains: keyword } },
-      ];
-    }
-    if (courseIds.length > 0) {
-      whereClause.OR = [
-        ...(whereClause.OR || []),
-        { id: { in: courseIds } },
-      ];
+    // Admin / Teacher
+    if (isAdmin || isTeacher) {
+      if (grade) {
+        whereClause.AND.push({
+          grade,
+        });
+      }
+    } else {
+      // Students:
+      // Show:
+      // 1. same class grade courses
+      // 2. enrolled courses from any grade
+
+      whereClause.AND.push({
+        OR: [
+          {
+            grade: user.classGrade,
+          },
+
+          ...(enrolledCourseIds.length > 0
+            ? [
+                {
+                  id: {
+                    in: enrolledCourseIds,
+                  },
+                },
+              ]
+            : []),
+        ],
+      });
     }
 
     const [data, total] = await Promise.all([
       this.prisma.course.findMany({
         where: whereClause,
+
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+
+        orderBy: {
+          createdAt: 'desc',
+        },
+
         include: {
           teachers: {
             include: {
-              teacher: { select: { id: true, name: true, email: true } },
+              teacher: {
+                select: {
+                  id: true,
+                  name: true,
+                  email: true,
+                },
+              },
             },
           },
+
           _count: {
             select: {
               subjects: true,
@@ -196,10 +240,19 @@ export class CourseService {
           },
         },
       }),
-      this.prisma.course.count({ where: whereClause }),
+
+      this.prisma.course.count({
+        where: whereClause,
+      }),
     ]);
 
-    return { data, total };
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: number) {
