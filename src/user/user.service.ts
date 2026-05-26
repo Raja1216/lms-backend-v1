@@ -104,137 +104,73 @@ export class UserService {
     });
   }
 
-async findAll(paginationDto: PaginationDto) {
-  const {
-    page = 1,
-    limit = 10,
-    keyword,
-    grade,
-  } = paginationDto;
+  async findAll(paginationDto: PaginationDto) {
+    const { page = 1, limit = 10, keyword } = paginationDto;
 
-  const currentPage = Number(page) || 1;
-  const take = Number(limit) || 10;
+    const skip = (page - 1) * limit;
 
-  const skip = (currentPage - 1) * take;
-
-  const whereClause: any = {};
-
-  // Keyword Search
-  if (keyword) {
-    whereClause.OR = [
-      {
-        email: {
-          contains: keyword,
-    
-        },
-      },
-      {
-        name: {
-          contains: keyword,
-
-        },
-      },
-      {
-        username: {
-          contains: keyword,
-
-        },
-      },
-      {
-        mobile: {
-          contains: keyword,
-
-        },
-      },
-    ];
-  }
-
-  // Grade Filter
-  if (grade) {
-    whereClause.AND = [
-      {
-        OR: [
-          // User's own grade
-          {
-            classGrade: {
-              equals: grade,
-            },
-          },
-
-          // User enrolled in course of another grade
-          {
-            enrollments: {
-              some: {
-                course: {
-                  grade: {
-                    equals: grade,
-                  },
-                },
+    const whereClause = keyword
+      ? {
+          OR: [
+            {
+              email: {
+                contains: keyword,
               },
             },
-          },
-        ],
-      },
-    ];
-  }
-
-  const [users, total] = await this.prisma.$transaction([
-    this.prisma.user.findMany({
-      where: whereClause,
-      skip,
-      take,
-      orderBy: {
-        createdAt: 'desc',
-      },
-
-      select: {
-        id: true,
-        uuid: true,
-        email: true,
-        name: true,
-        username: true,
-        classGrade: true,
-        status: true,
-        createdAt: true,
-        mobile: true,
-        mobile_prefix: true,
-
-        roles: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-
-        // Include enrolled courses
-        enrollments: {
-          select: {
-            id: true,
-            course: {
-              select: {
-                id: true,
-                title: true,
-                grade: true,
+            {
+              name: {
+                contains: keyword,
               },
+            },
+            {
+              username: {
+                contains: keyword,
+              },
+            },
+            {
+              mobile: {
+                contains: keyword,
+              },
+            },
+          ],
+        }
+      : {};
+
+    const [users, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        select: {
+          id: true,
+          uuid: true,
+          email: true,
+          name: true,
+          username: true,
+          classGrade: true,
+          status: true,
+          createdAt: true,
+          mobile: true,
+          mobile_prefix: true,
+          roles: {
+            select: {
+              id: true,
+              name: true,
             },
           },
         },
-      },
-    }),
+      }),
 
-    this.prisma.user.count({
-      where: whereClause,
-    }),
-  ]);
+      this.prisma.user.count({
+        where: whereClause,
+      }),
+    ]);
 
-  return {
-    data: users,
-    total,
-    page: currentPage,
-    limit: take,
-    totalPages: Math.ceil(total / take),
-  };
-}
+    return { users, total };
+  }
 
   async findByEmail(email: string) {
     return this.prisma.user.findUnique({
