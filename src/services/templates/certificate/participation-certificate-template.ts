@@ -1,8 +1,7 @@
 export const participationCertificateTemplate = (
   studentName: string,
-  schoolName: string,
   className: string,
-  subject: string,
+  course: string,
   score: string,
   grade: string,
   completedDate: string,
@@ -18,6 +17,7 @@ export const participationCertificateTemplate = (
     header: string;
     full_sign: string;
   },
+  schoolName?: string,
 ) => {
   return `
 <!doctype html>
@@ -220,7 +220,7 @@ export const participationCertificateTemplate = (
             text-align: center;
           "
         >
-          ${schoolName}
+          ${schoolName ?? ''}
         </div>
 
         <span style="white-space: nowrap">of class</span>
@@ -236,7 +236,7 @@ export const participationCertificateTemplate = (
         </div>
       </div>
 
-      <!-- SUBJECT + DATE -->
+      <!-- COURSE + DATE -->
       <div
         style="
           position: absolute;
@@ -249,10 +249,10 @@ export const participationCertificateTemplate = (
           z-index: 2;
         "
       >
-        <!-- SUBJECT -->
+        <!-- COURSE -->
         <div style="display: flex; align-items: flex-end; gap: 10px">
           <span style="font-size: 30px; color: #222266">
-            Subject:
+            Course:
           </span>
 
           <div
@@ -266,7 +266,7 @@ export const participationCertificateTemplate = (
               color: #ff6a00;
             "
           >
-            ${subject}
+            ${course}
           </div>
         </div>
 
