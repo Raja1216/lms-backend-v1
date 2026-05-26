@@ -2,7 +2,7 @@ import { IsString, IsOptional, IsInt } from 'class-validator';
 
 export class QuizPayloadDto {
   @IsString()
-  title: string;
+  title!: string;
 
   @IsOptional()
   @IsInt()
@@ -11,4 +11,8 @@ export class QuizPayloadDto {
   @IsOptional()
   @IsInt()
   passMarks?: number;
+
+  @IsOptional()
+  @IsInt()
+  sortOrder?: number;
 }

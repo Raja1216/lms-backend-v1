@@ -39,5 +39,9 @@ export class CreateQuizDto {
   @IsEnum(QuizSubmissionFrequency)
   @IsNotEmpty()
   submissionFrequency!: QuizSubmissionFrequency;
+
+  @IsOptional()
+  @IsInt()
+  sortOrder?: number;
 }
 

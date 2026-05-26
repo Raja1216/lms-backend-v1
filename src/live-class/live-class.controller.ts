@@ -88,7 +88,7 @@ export class LiveClassController {
     return successResponse(res, 200, 'Class ended', result, null);
   }
 
-  @Permissions('live-class-join')
+  // @Permissions('live-class-join')
   @Post(':id/join')
   async join(@Param('id') id, @Req() req, @Res() res) {
     const result = await this.service.join(id, req.user);

@@ -142,6 +142,32 @@ export class CertificateGeneratorService {
     return this.generateAndUpload('quiz', args);
   }
 
+  private getCertificateAssets() {
+    const basePath = path.join(
+      process.cwd(),
+      'dist/src/services/templates/certificate',
+    );
+
+    const toBase64 = (file: string) => {
+      const filePath = path.join(basePath, file);
+      const ext = path.extname(file).replace('.', '');
+
+      const base64 = fs.readFileSync(filePath, {
+        encoding: 'base64',
+      });
+
+      return `data:image/${ext};base64,${base64}`;
+    };
+
+    return {
+      globe: toBase64('globe.png'),
+      logo: toBase64('eduverse_logo.png'),
+      line: toBase64('Line.png'),
+      sign: toBase64('RA_Sign.png'),
+      signLine: toBase64('sign_line.png'),
+    };
+  }
+
   private async generateAndUpload(
     type: 'course' | 'quiz',
     args: CourseCertArgs | QuizCertArgs,
@@ -155,17 +181,20 @@ export class CertificateGeneratorService {
       let htmlContent = '';
       if (type === 'course') {
         const a = args as CourseCertArgs;
+        const assets = this.getCertificateAssets();
         htmlContent = courseCompletionCertificateTemplate(
           a.courseName,
           a.studentName,
           a.completionDate,
           a.certificateId,
+          assets,
           a.schoolName,
           a.className,
           a.grade,
         );
       } else {
         const a = args as QuizCertArgs;
+        const assets = this.getCertificateAssets();
         htmlContent = examCompletionCertificateTemplate(
           a.studentName,
           a.examName,
@@ -173,6 +202,7 @@ export class CertificateGeneratorService {
           a.marks,
           a.completionDate,
           a.certificateId,
+          assets,
           a.className,
           a.schoolName,
         );
@@ -200,6 +230,7 @@ export class CertificateGeneratorService {
   async generateProjectCertificate(
     args: ProjectCertificateArgs,
   ): Promise<CertificateUploadResult> {
+    const assets = this.getCertificateAssets();
     const html = projectCompletionCertificateTemplate(
       args.studentName,
       args.schoolName,
@@ -209,6 +240,7 @@ export class CertificateGeneratorService {
       args.teacherRemarks,
       args.completedDate,
       args.certificateId,
+      assets,
       args.className,
     );
     return this.htmlToPdfAndUpload(html, 'certificates');

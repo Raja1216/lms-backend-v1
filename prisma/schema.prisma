@@ -101,6 +101,17 @@ enum EnrollmentSource {
   INSTITUTION
 }
 
+enum ShopItemType {
+  product
+  license
+}
+
+enum ShopItemStatus {
+  active
+  inactive
+  deleted
+}
+
 model User {
   id                         Int                         @id @default(autoincrement())
   uuid                       String                      @unique @default(uuid())
@@ -225,19 +236,19 @@ model CourseTeacher {
 }
 
 model Subject {
-  id          Int              @id @default(autoincrement())
-  name        String
-  slug        String           @unique
-  description String           @db.Text
-  status      Boolean          @default(true)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
-  courses     CourseSubject[]  @relation("SubjectCourses")
-  chapters    SubjectChapter[] @relation("SubjectChapters")
-
+  id             Int              @id @default(autoincrement())
+  name           String
+  slug           String           @unique
+  description    String           @db.Text
+  status         Boolean          @default(true)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  courses        CourseSubject[]  @relation("SubjectCourses")
+  chapters       SubjectChapter[] @relation("SubjectChapters")
+  sortOrder      Int              @default(0)
   modules        Module[]
   subjectQuizzes SubjectQuiz[]
-  forum          CourForum[]    @relation("ForumToSubject")
+  forum          CourForum[]      @relation("ForumToSubject")
   live_classes   live_classes[]
 
   @@map("subjects")
@@ -263,6 +274,7 @@ model Chapter {
   description String   @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  sortOrder   Int      @default(0)
 
   subjects       SubjectChapter[]  @relation("SubjectChapters")
   modules        ModuleChapter[]
@@ -335,7 +347,7 @@ model Lesson {
   noOfXpPoints Int               @default(0)
   type         LessonType        @default(video)
   docUrl       String?
-  sortOrder    Int?
+  sortOrder    Int?              @default(0)
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
   chapters     LessonToChapter[] @relation("LessonToChapters")
@@ -369,6 +381,7 @@ model Quiz {
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
   subMissionFrequency QuizSubmissionFrequency @default(frequently)
+  sortOrder           Int                     @default(0)
 
   questions Question[]
 
@@ -1001,4 +1014,58 @@ model UserCompletionCertificate {
 
   @@unique([userId, courseId, certificateNumber])
   @@map("user_completion_certificates")
+}
+
+model shop_items {
+  id               Int              @id @default(autoincrement())
+
+  type             ShopItemType
+
+  title            String           @db.Text
+  description      String?          @db.Text
+
+  price            Float
+  original_price   Float?
+
+  class_level      String           @db.VarChar(20)
+
+  image            String?          @db.Text
+  badge            String?          @db.VarChar(100)
+
+  seats            Int?
+
+  stock            Int              @default(0)
+  status           ShopItemStatus   @default(active)
+  rating           Float?           @default(0)
+  students         Int?             @default(0)
+
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+  cart_items  cart_items[]
+
+  @@index([type])
+  @@index([class_level])
+  @@index([status])
+}
+
+model cart_items {
+  id            Int      @id @default(autoincrement())
+
+  user_id       Int
+
+  shop_item_id  Int
+
+  quantity      Int      @default(1)
+
+  created_at    DateTime @default(now())
+
+  updated_at    DateTime @updatedAt
+
+  shop_items    shop_items @relation(fields: [shop_item_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, shop_item_id])
+
+  @@index([user_id])
+
+  @@index([shop_item_id])
 }

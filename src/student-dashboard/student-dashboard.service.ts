@@ -30,6 +30,11 @@ export class StudentDashboardService {
               },
             },
             chapterQuizzes: {
+              orderBy: {
+                quiz: {
+                  sortOrder: 'asc',
+                },
+              },
               include: {
                 chapter: {
                   include: {
@@ -128,10 +133,20 @@ export class StudentDashboardService {
         subject: {
           include: {
             chapters: {
+              orderBy: {
+                chapter: {
+                  sortOrder: 'asc',
+                },
+              },
               include: {
                 chapter: {
                   include: {
                     chapterQuizzes: {
+                      orderBy: {
+                        quiz: {
+                          sortOrder: 'asc',
+                        },
+                      },
                       include: {
                         quiz: {
                           include: {

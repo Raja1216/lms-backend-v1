@@ -4,13 +4,14 @@ import {
   IsOptional,
   IsString,
   Length,
+  IsNumber,
 } from 'class-validator';
 
 export class CreateChapterDto {
   @IsString()
   @IsNotEmpty()
   @Length(3, 255)
-  title: string;
+  title!: string;
 
   @IsString()
   @IsOptional()
@@ -18,9 +19,13 @@ export class CreateChapterDto {
 
   @IsInt()
   @IsOptional()
-  subjectId: number;
+  subjectId?: number;
 
   @IsInt()
   @IsOptional()
   moduleId?: number;
+
+  @IsNumber()
+  @IsOptional()
+  sortOrder?: number;
 }

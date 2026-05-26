@@ -24,18 +24,15 @@ export class WebhookController {
     @Headers('x-zm-signature') signature: string,
     @Headers('x-zm-request-timestamp') timestamp: string,
   ) {
-    console.log('ZOOM WEBHOOK BODY:', body);
+    console.log('ZOOM WEBHOOK EVENT:', body.event);
 
     // =========================================
-    // ✅ URL VALIDATION
+    // URL VALIDATION
     // =========================================
 
     if (body.event === 'endpoint.url_validation') {
       const hashForValidate = crypto
-        .createHmac(
-          'sha256',
-          process.env.ZOOM_WEBHOOK_SECRET!,
-        )
+        .createHmac('sha256', process.env.ZOOM_WEBHOOK_SECRET!)
         .update(body.payload.plainToken)
         .digest('hex');
 
@@ -46,11 +43,10 @@ export class WebhookController {
     }
 
     // =========================================
-    // ✅ NOW GET MEETING ID
+    // GET MEETING ID
     // =========================================
 
-    const meetingId =
-      body.payload?.object?.id?.toString();
+    const meetingId = body.payload?.object?.id?.toString();
 
     if (!meetingId) {
       return {
@@ -60,7 +56,7 @@ export class WebhookController {
     }
 
     // =========================================
-    // ✅ FIND CLASS
+    // FIND LIVE CLASS
     // =========================================
 
     const cls = await this.prisma.live_classes.findFirst({
@@ -70,7 +66,9 @@ export class WebhookController {
     });
 
     if (!cls) {
-      return { success: true };
+      return {
+        success: true,
+      };
     }
 
     // =========================================
@@ -79,7 +77,9 @@ export class WebhookController {
 
     if (body.event === 'meeting.started') {
       await this.prisma.live_classes.update({
-        where: { id: cls.id },
+        where: {
+          id: cls.id,
+        },
         data: {
           status: 'live',
         },
@@ -92,11 +92,48 @@ export class WebhookController {
 
     if (body.event === 'meeting.ended') {
       await this.prisma.live_classes.update({
-        where: { id: cls.id },
+        where: {
+          id: cls.id,
+        },
         data: {
           status: 'ended',
         },
       });
+    }
+
+    // =========================================
+    // recording.completed
+    // =========================================
+
+    if (body.event === 'recording.completed') {
+      const recordings = body.payload?.object?.recording_files || [];
+
+      for (const file of recordings) {
+        // only save mp4 videos
+        if (file.file_type === 'MP4') {
+          await this.prisma.live_class_recordings.create({
+            data: {
+              classId: cls.id,
+
+              url: file.play_url,
+
+              downloadUrl: file.download_url,
+
+              duration: file.recording_end
+                ? Math.floor(
+                    (new Date(file.recording_end).getTime() -
+                      new Date(file.recording_start).getTime()) /
+                      1000,
+                  )
+                : null,
+
+              recordedAt: body.payload.object.recording_start,
+
+              type: file.file_type,
+            },
+          });
+        }
+      }
     }
 
     return {
