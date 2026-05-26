@@ -219,7 +219,7 @@ export class CertificateIssuanceService {
     if (percentage >= 60) return 'B';
     if (percentage >= 50) return 'C';
     if (percentage >= 40) return 'D';
-    return 'F';  
+    return 'F';
   }
 
   private async createQuizCertificate(
@@ -228,6 +228,25 @@ export class CertificateIssuanceService {
     quizAttemptId: number,
   ): Promise<void> {
     // Gather attempt details
+    // const attempt = await this.prisma.quizAttempt.findUnique({
+    //   where: { id: quizAttemptId },
+    //   select: {
+    //     obtainedMarks: true,
+    //     totalMarks: true,
+    //     quiz: {
+    //       select: {
+    //         title: true,
+    //         courseQuizzes: {
+    //           take: 1,
+    //           select: {
+    //             course: { select: { id: true, title: true, grade: true } },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    // });
+
     const attempt = await this.prisma.quizAttempt.findUnique({
       where: { id: quizAttemptId },
       select: {
@@ -236,10 +255,141 @@ export class CertificateIssuanceService {
         quiz: {
           select: {
             title: true,
+
+            // Direct Course Quiz
             courseQuizzes: {
               take: 1,
               select: {
-                course: { select: { id: true, title: true, grade: true } },
+                course: {
+                  select: {
+                    id: true,
+                    title: true,
+                    grade: true,
+                  },
+                },
+              },
+            },
+
+            // Subject Quiz
+            subjectQuizzes: {
+              take: 1,
+              select: {
+                subject: {
+                  select: {
+                    courses: {
+                      take: 1,
+                      select: {
+                        course: {
+                          select: {
+                            id: true,
+                            title: true,
+                            grade: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+
+            // Module Quiz
+            moduleQuizzes: {
+              take: 1,
+              select: {
+                module: {
+                  select: {
+                    subject: {
+                      select: {
+                        courses: {
+                          take: 1,
+                          select: {
+                            course: {
+                              select: {
+                                id: true,
+                                title: true,
+                                grade: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+
+            // Chapter Quiz
+            chapterQuizzes: {
+              take: 1,
+              select: {
+                chapter: {
+                  select: {
+                    subjects: {
+                      take: 1,
+                      select: {
+                        subject: {
+                          select: {
+                            courses: {
+                              take: 1,
+                              select: {
+                                course: {
+                                  select: {
+                                    id: true,
+                                    title: true,
+                                    grade: true,
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+
+            // Lesson Quiz
+            lessons: {
+              take: 1,
+              select: {
+                lesson: {
+                  select: {
+                    chapters: {
+                      take: 1,
+                      select: {
+                        chapter: {
+                          select: {
+                            subjects: {
+                              take: 1,
+                              select: {
+                                subject: {
+                                  select: {
+                                    courses: {
+                                      take: 1,
+                                      select: {
+                                        course: {
+                                          select: {
+                                            id: true,
+                                            title: true,
+                                            grade: true,
+                                          },
+                                        },
+                                      },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -265,8 +415,18 @@ export class CertificateIssuanceService {
 
     if (!attempt || !user) return;
 
-    const courseTitle = attempt.quiz.courseQuizzes?.[0]?.course?.title ?? '';
-    const courseGrade = attempt.quiz.courseQuizzes?.[0]?.course?.grade ?? '';
+    const resolvedCourse =
+      attempt.quiz.courseQuizzes?.[0]?.course ??
+      attempt.quiz.subjectQuizzes?.[0]?.subject?.courses?.[0]?.course ??
+      attempt.quiz.moduleQuizzes?.[0]?.module?.subject?.courses?.[0]?.course ??
+      attempt.quiz.chapterQuizzes?.[0]?.chapter?.subjects?.[0]?.subject
+        ?.courses?.[0]?.course ??
+      attempt.quiz.lessons?.[0]?.lesson?.chapters?.[0]?.chapter?.subjects?.[0]
+        ?.subject?.courses?.[0]?.course;
+
+    const courseTitle = resolvedCourse?.title ?? '';
+    const courseGrade = resolvedCourse?.grade ?? '';
+    const courseId = resolvedCourse?.id;
     const certificateId = `quiz-${quizId}-attempt-${quizAttemptId}`;
     const args: QuizCertArgs = {
       studentName: user.name ?? 'Student',
@@ -278,8 +438,11 @@ export class CertificateIssuanceService {
       certificateId,
       teacherRemarks: '', // Can be enriched later if needed
       schoolName: user.schoolName ?? '',
-      courseId: attempt.quiz.courseQuizzes?.[0]?.course?.id,
-      grade: this.getGradeByMarks(Number(attempt.obtainedMarks), Number(attempt.totalMarks))
+      courseId: courseId,
+      grade: this.getGradeByMarks(
+        Number(attempt.obtainedMarks),
+        Number(attempt.totalMarks),
+      ),
     };
 
     const { filePath, fileUrl } =

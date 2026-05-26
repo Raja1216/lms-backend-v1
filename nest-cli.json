@@ -6,7 +6,7 @@
     "deleteOutDir": true,
     "assets": [
       {
-        "include": "services/templates/**/*.png",
+        "include": "services/templates/**/*",
         "outDir": "dist/src"
       }
     ],
