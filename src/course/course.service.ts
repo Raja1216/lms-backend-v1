@@ -153,6 +153,8 @@ export class CourseService {
         },
       });
       courseIds = enrollments.map((e) => e.courseId);
+      console.log("All Course IDS",courseIds);
+      
     }
 
     const whereClause: any = {
