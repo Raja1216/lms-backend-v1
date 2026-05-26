@@ -9,6 +9,11 @@ export const courseCompletionCertificateTemplate = (
     line: string;
     sign: string;
     signLine: string;
+    background: string;
+    edudigm_logo: string;
+    stem_powered_logo: string;
+    header: string;
+    full_sign: string;
   },
   schoolName?: string,
   className?: string,

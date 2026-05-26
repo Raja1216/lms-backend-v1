@@ -81,7 +81,9 @@ export class CertificateIssuanceService {
     passed: boolean,
   ): Promise<void> {
     // if (!passed) return; // Optionally only issue certs for passed attempts
-    console.log(`Checking quiz cert issuance for user ${userId} on quiz ${quizId} attempt ${quizAttemptId}`);
+    console.log(
+      `Checking quiz cert issuance for user ${userId} on quiz ${quizId} attempt ${quizAttemptId}`,
+    );
     try {
       const quiz = await this.prisma.quiz.findUnique({
         where: { id: quizId },
@@ -209,6 +211,17 @@ export class CertificateIssuanceService {
     );
   }
 
+  private getGradeByMarks(obtainedMarks: number, totalMarks: number) {
+    const percentage = (obtainedMarks / totalMarks) * 100;
+    if (percentage >= 90) return 'A+';
+    if (percentage >= 80) return 'A';
+    if (percentage >= 70) return 'B+';
+    if (percentage >= 60) return 'B';
+    if (percentage >= 50) return 'C';
+    if (percentage >= 40) return 'D';
+    return 'F';  
+  }
+
   private async createQuizCertificate(
     userId: number,
     quizId: number,
@@ -226,7 +239,7 @@ export class CertificateIssuanceService {
             courseQuizzes: {
               take: 1,
               select: {
-                course: { select: { title: true, grade: true } },
+                course: { select: { id: true, title: true, grade: true } },
               },
             },
           },
@@ -238,6 +251,7 @@ export class CertificateIssuanceService {
       where: { id: userId },
       select: {
         name: true,
+        schoolName: true,
         classGrade: true,
         institutionMembers: {
           select: {
@@ -263,6 +277,9 @@ export class CertificateIssuanceService {
       completionDate: new Date().toISOString().split('T')[0],
       certificateId,
       teacherRemarks: '', // Can be enriched later if needed
+      schoolName: user.schoolName ?? '',
+      courseId: attempt.quiz.courseQuizzes?.[0]?.course?.id,
+      grade: this.getGradeByMarks(Number(attempt.obtainedMarks), Number(attempt.totalMarks))
     };
 
     const { filePath, fileUrl } =
@@ -270,7 +287,7 @@ export class CertificateIssuanceService {
 
     await this.prisma.userCompletionCertificate.create({
       data: {
-        certificateNumber:certificateId,
+        certificateNumber: certificateId,
         userId,
         quizId,
         quizAttemptId,

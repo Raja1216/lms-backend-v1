@@ -13,6 +13,11 @@ export const projectCompletionCertificateTemplate = (
     line: string;
     sign: string;
     signLine: string;
+    background: string;
+    edudigm_logo: string;
+    stem_powered_logo: string;
+    header: string;
+    full_sign: string;
   },
   className?: string,
 ): string => `
