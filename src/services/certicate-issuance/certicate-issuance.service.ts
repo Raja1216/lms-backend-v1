@@ -173,7 +173,7 @@ export class CertificateIssuanceService {
     const [user, course] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: userId },
-        select: { name: true, classGrade: true, section: true },
+        select: { name: true, schoolName: true, classGrade: true, section: true },
       }),
       this.prisma.course.findUnique({
         where: { id: courseId },
@@ -187,6 +187,7 @@ export class CertificateIssuanceService {
     const args: CourseCertArgs = {
       studentName: user.name ?? 'Student',
       className: user.classGrade ?? course.grade ?? '',
+      schoolName: user.schoolName ?? '',
       courseName: course.title,
       grade: course.grade ?? '',
       teacherRemarks: '', // Can be enriched later if needed

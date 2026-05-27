@@ -190,6 +190,11 @@ export const participationCertificateTemplate = (
             font-weight: 700;
             color: #111;
             text-transform: uppercase;
+            white-space: nowrap;
+            max-width: 80%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            
           "
         >
           ${studentName}
