@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsIn,
   IsNumberString,
   IsOptional,
@@ -18,9 +19,16 @@ export class ListShopItemDto {
   @IsString()
   search?: string;
 
+  // OLD SUPPORT
   @IsOptional()
   @IsString()
   classLevel?: string;
+
+  // NEW
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  classLevels?: string[];
 
   @IsOptional()
   @IsIn(['product', 'license'])

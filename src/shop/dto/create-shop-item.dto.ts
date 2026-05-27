@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -39,13 +40,32 @@ export class CreateShopItemDto {
   @Min(0)
   originalPrice?: number;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  classLevel!: string;
+  classLevel?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  classLevels?: string[];
 
   @IsOptional()
   @IsString()
   image?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  images?: string[];
+
+  @IsOptional()
+  @IsString()
+  longDescription?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  features?: string[];
 
   @IsOptional()
   @IsString()
@@ -68,9 +88,10 @@ export class CreateShopItemDto {
   |--------------------------------------------------------------------------
   */
 
+  @ValidateIf((o) => o.type === 'product')
   @IsNumber()
   @Min(0)
-  stock!: number;
+  stock?: number;
 
   /*
   |--------------------------------------------------------------------------

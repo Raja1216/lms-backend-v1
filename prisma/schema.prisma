@@ -1025,13 +1025,27 @@ model shop_items {
   title            String           @db.Text
   description      String?          @db.Text
 
+  // NEW
+  long_description String?          @db.Text
+
   price            Float
   original_price   Float?
 
+  // OLD (keep for backward compatibility)
   class_level      String           @db.VarChar(20)
 
+  // NEW
+  class_levels     String?          @db.Text
+
   image            String?          @db.Text
+
+  // NEW
+  images           Json?
+
   badge            String?          @db.VarChar(100)
+
+  // NEW
+  features         Json?
 
   seats            Int?
 
@@ -1042,7 +1056,8 @@ model shop_items {
 
   created_at       DateTime         @default(now())
   updated_at       DateTime         @updatedAt
-  cart_items  cart_items[]
+
+  cart_items       cart_items[]
 
   @@index([type])
   @@index([class_level])

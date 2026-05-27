@@ -543,9 +543,9 @@ export class QuizService {
           },
         });
 
-        if (!enrollment) {
-          throw new ForbiddenException('You are not enrolled in this course');
-        }
+        // if (!enrollment) {
+        //   throw new ForbiddenException('You are not enrolled in this course');
+        // }
       }
     }
     //append already attempted flag in quiz
