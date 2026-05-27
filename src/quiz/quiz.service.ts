@@ -570,7 +570,6 @@ export class QuizService {
         moduleQuizzes: true,
         chapterQuizzes: true,
         lessons: true,
-    
       },
     });
 
@@ -801,6 +800,8 @@ export class QuizService {
       percentage: percentage,
       passed: obtainedMarks >= quiz.passMarks,
       answers,
+      totalQuestions: quiz.questions.length,
+      correctAnswers,
     };
   }
 

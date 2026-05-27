@@ -184,7 +184,6 @@ export const participationCertificateTemplate = (
             left: 50%;
             top: -90px;
             transform: translateX(-50%);
-            background: #f7f7f7;
             padding: 0 35px;
             font-size: 54px;
             font-weight: 700;
