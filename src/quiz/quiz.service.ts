@@ -329,6 +329,7 @@ export class QuizService {
         passMarks: quiz.passMarks,
         timeLimit: quiz.timeLimit,
         status: quiz.status,
+        isLocked: quiz.isLocked,
         createdAt: quiz.createdAt,
         updatedAt: quiz.updatedAt,
         courseId: quiz.courseQuizzes?.[0]?.courseId ?? null,
@@ -382,6 +383,7 @@ export class QuizService {
       passMarks: quiz.passMarks,
       timeLimit: quiz.timeLimit,
       status: quiz.status,
+      isLocked: quiz.isLocked,
       createdAt: quiz.createdAt,
       updatedAt: quiz.updatedAt,
 
