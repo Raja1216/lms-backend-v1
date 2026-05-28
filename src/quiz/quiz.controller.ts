@@ -166,6 +166,33 @@ export class QuizController {
     }
   }
 
+  @Permissions('quiz-update')
+  @Patch('lock/:id')
+  async toggleLock(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const quiz = await this.quizService.toggleLock(id);
+
+      return successResponse(
+        res,
+        200,
+        `Quiz ${quiz.isLocked ? 'locked' : 'unlocked'} successfully`,
+        quiz,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ?? 500,
+        ),
+      );
+    }
+  }
+
   @Post(':quizId/submit')
   async submit(
     @Param('quizId', ParseIntPipe) quizId: number,

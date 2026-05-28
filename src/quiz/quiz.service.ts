@@ -570,7 +570,6 @@ export class QuizService {
         moduleQuizzes: true,
         chapterQuizzes: true,
         lessons: true,
-    
       },
     });
 
@@ -996,6 +995,23 @@ export class QuizService {
       where: { id },
       data: {
         status: false,
+      },
+    });
+  }
+
+  async toggleLock(id: number) {
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id },
+    });
+
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+
+    return this.prisma.quiz.update({
+      where: { id },
+      data: {
+        isLocked: !quiz.isLocked,
       },
     });
   }

@@ -378,6 +378,7 @@ model Quiz {
   passMarks           Int                     @default(0)
   timeLimit           Decimal                 @db.Decimal(10, 2)
   status              Boolean                 @default(true)
+  isLocked            Boolean                 @default(false)
   createdAt           DateTime                @default(now())
   updatedAt           DateTime                @updatedAt
   subMissionFrequency QuizSubmissionFrequency @default(frequently)
