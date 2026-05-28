@@ -1,4 +1,3 @@
-// src/user/user.controller.ts
 import {
   Controller,
   Post,
@@ -33,6 +32,7 @@ import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { createPagedResponse } from 'src/shared/create-paged-response';
 import { User } from 'src/generated/prisma/browser';
 import { FileInterceptor } from '@nestjs/platform-express';
+
 @ApiTags('users')
 @Controller('users')
 export class UserController {
@@ -130,6 +130,7 @@ export class UserController {
       );
     }
   }
+  
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @Permissions('read-users')
   @ApiBearerAuth('access-token')
@@ -462,7 +463,10 @@ export class UserController {
     @Next() next: NextFunction,
   ) {
     try {
-      const certificates = await this.svc.submissionCertificates(req.user.id, paginationDto);
+      const certificates = await this.svc.submissionCertificates(
+        req.user.id,
+        paginationDto,
+      );
 
       return successResponse(
         res,
@@ -479,5 +483,5 @@ export class UserController {
         ),
       );
     }
-    }
+  }
 }

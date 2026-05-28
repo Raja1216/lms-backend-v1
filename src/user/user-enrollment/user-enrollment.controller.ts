@@ -7,7 +7,9 @@ import {
   Query,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
+
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { NextFunction, Response } from 'express';
@@ -16,11 +18,16 @@ import { createPagedResponse } from 'src/shared/create-paged-response';
 import { ErrorHandler } from 'src/utils/error-handler';
 import { successResponse } from 'src/utils/success-response';
 import { UserEnrollmentService } from './user-enrollment.service';
-
+import { JwtAuthGuard } from 'src/auth/jwt.guard';
+import { PermissionGuard } from 'src/guard/permission.guard';
+import { Permissions } from 'src/guard/premission.decorator';
+import { permission } from 'process';
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller(['user-enrollment', 'user-enrollments'])
 export class UserEnrollmentController {
   constructor(private readonly userEnrollmentService: UserEnrollmentService) {}
 
+  @Permissions('read-users')
   @Get()
   async findAll(
     @Query() paginationDto: PaginationDto,
@@ -53,7 +60,7 @@ export class UserEnrollmentController {
       );
     }
   }
-
+  @Permissions('create-users')
   @Get('import/sample')
   async downloadSample(@Res() res: Response) {
     const buffer = await this.userEnrollmentService.generateSampleXlsx();
@@ -65,7 +72,7 @@ export class UserEnrollmentController {
     });
     res.send(buffer);
   }
-
+  @Permissions('create-users')
   @Post('import')
   @UseInterceptors(FileInterceptor('file'))
   async importEnrollments(

@@ -27,16 +27,12 @@ export class ShopController {
   */
 
   @Get('shop/products')
-  async getProducts(
-    @Query() query: ListShopItemDto,
-  ) {
+  async getProducts(@Query() query: ListShopItemDto) {
     return this.shopService.listPublicProducts(query);
   }
 
   @Get('shop/licenses')
-  async getLicenses(
-    @Query() query: ListShopItemDto,
-  ) {
+  async getLicenses(@Query() query: ListShopItemDto) {
     return this.shopService.listPublicLicenses(query);
   }
 
@@ -47,17 +43,23 @@ export class ShopController {
   */
 
   @Get('admin/shop/items')
-  async adminList(
-    @Query() query: ListShopItemDto,
-  ) {
+  async adminList(@Query() query: ListShopItemDto) {
     return this.shopService.listItems(query);
   }
 
   @Post('admin/shop/items')
-  async create(
-    @Body() dto: CreateShopItemDto,
-  ) {
+  async create(@Body() dto: CreateShopItemDto) {
     return this.shopService.create(dto);
+  }
+
+  @Get('shop/items/:id')
+  async getDetails(@Param('id', ParseIntPipe) id: number) {
+    return this.shopService.getDetails(id);
+  }
+
+  @Get('admin/shop/items/:id')
+  async adminDetails(@Param('id', ParseIntPipe) id: number) {
+    return this.shopService.getDetails(id, true);
   }
 
   @Put('admin/shop/items/:id')
@@ -69,9 +71,7 @@ export class ShopController {
   }
 
   @Delete('admin/shop/items/:id')
-  async delete(
-    @Param('id', ParseIntPipe) id: number,
-  ) {
+  async delete(@Param('id', ParseIntPipe) id: number) {
     return this.shopService.delete(id);
   }
 }

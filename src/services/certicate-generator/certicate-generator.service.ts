@@ -19,6 +19,7 @@ import { courseCompletionCertificateTemplate } from '../templates/certificate/co
 import { projectCompletionCertificateTemplate } from '../templates/certificate/project-complitation-certificate.template';
 const execFileAsync = promisify(execFile);
 import { exec } from 'child_process';
+import { participationCertificateTemplate } from '../templates/certificate/participation-certificate-template';
 const execAsync = promisify(exec);
 export interface CourseCertArgs {
   studentName: string;
@@ -41,6 +42,8 @@ export interface QuizCertArgs {
   certificateId: string;
   teacherRemarks?: string;
   schoolName?: string;
+  courseId?: number;
+  grade?: string;
 }
 
 export interface CertificateUploadResult {
@@ -200,17 +203,35 @@ export class CertificateGeneratorService {
       } else {
         const a = args as QuizCertArgs;
         const assets = this.getCertificateAssets();
-        htmlContent = examCompletionCertificateTemplate(
-          a.studentName,
-          a.examName,
-          a.courseName,
-          a.marks,
-          a.completionDate,
-          a.certificateId,
-          assets,
-          a.className,
-          a.schoolName,
-        );
+        if (
+          a.courseId == 102 ||
+          a.courseId == 103 ||
+          a.courseId == 104 ||
+          a.courseId == 108
+        ) {
+          htmlContent = participationCertificateTemplate(
+            a.studentName,
+            a.className,
+            a.courseName,
+            a.marks,
+            a.grade ?? '',
+            a.completionDate,
+            assets,
+            a.schoolName,
+          );
+        } else {
+          htmlContent = examCompletionCertificateTemplate(
+            a.studentName,
+            a.examName,
+            a.courseName,
+            a.marks,
+            a.completionDate,
+            a.certificateId,
+            assets,
+            a.className,
+            a.schoolName,
+          );
+        }
       }
 
       const pdfBuffer = await this.renderHtmlToPdfBuffer(htmlContent);

@@ -214,11 +214,6 @@ export const courseCompletionCertificateTemplate = (
             <span style="font-weight: bold; color: #ff5a00">Course:</span>
             <span style="margin-left: 10px">${courseName}</span>
           </div>
-
-          <div>
-            <span style="font-weight: bold; color: #ff5a00">Grade:</span>
-            <span style="margin-left: 10px">${grade}</span>
-          </div>
         </div>
 
         <!-- SIGNATURE -->
