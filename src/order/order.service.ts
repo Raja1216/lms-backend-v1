@@ -23,17 +23,14 @@ export class OrderService {
     |--------------------------------------------------------------------------
     */
 
-    const cart_items =
-      await this.prisma.cart_items.findMany({
-        where: {
-          user_id,
-        },
-      });
+    const cart_items = await this.prisma.cart_items.findMany({
+      where: {
+        user_id,
+      },
+    });
 
     if (!cart_items.length) {
-      throw new BadRequestException(
-        'Cart is empty',
-      );
+      throw new BadRequestException('Cart is empty');
     }
 
     /*
@@ -54,21 +51,17 @@ export class OrderService {
       */
 
       if (item.item_type === 'course') {
-        const course =
-          await this.prisma.course.findUnique({
-            where: {
-              id: item.item_id,
-            },
-          });
+        const course = await this.prisma.course.findUnique({
+          where: {
+            id: item.item_id,
+          },
+        });
 
         if (!course) continue;
 
-        const price = Number(
-          course.discountedPrice,
-        );
+        const price = Number(course.discountedPrice);
 
-        const subtotal =
-          price * item.quantity;
+        const subtotal = price * item.quantity;
 
         total_amount += subtotal;
 
@@ -93,21 +86,16 @@ export class OrderService {
       |--------------------------------------------------------------------------
       */
 
-      if (
-        item.item_type === 'product' ||
-        item.item_type === 'license'
-      ) {
-        const product =
-          await this.prisma.shop_items.findUnique({
-            where: {
-              id: item.item_id,
-            },
-          });
+      if (item.item_type === 'product' || item.item_type === 'license') {
+        const product = await this.prisma.shop_items.findUnique({
+          where: {
+            id: item.item_id,
+          },
+        });
 
         if (!product) continue;
 
-        const subtotal =
-          product.price * item.quantity;
+        const subtotal = product.price * item.quantity;
 
         total_amount += subtotal;
 
@@ -133,27 +121,25 @@ export class OrderService {
     |--------------------------------------------------------------------------
     */
 
-    const order =
-      await this.prisma.orders.create({
-        data: {
-          user_id,
+    const order = await this.prisma.orders.create({
+      data: {
+        user_id,
 
-          order_number:
-            'ORD-' + Date.now(),
+        order_number: 'ORD-' + Date.now(),
 
-          total_amount,
+        total_amount,
 
-          notes: dto.notes,
+        notes: dto.notes,
 
-          items: {
-            create: order_items,
-          },
+        items: {
+          create: order_items,
         },
+      },
 
-        include: {
-          items: true,
-        },
-      });
+      include: {
+        items: true,
+      },
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -176,22 +162,19 @@ export class OrderService {
     return {
       status: true,
 
-      message:
-        'Order created successfully',
+      message: 'Order created successfully',
 
       data: {
         order_id: order.id,
 
-        order_number:
-          order.order_number,
+        order_number: order.order_number,
 
         total_amount,
 
         payment: {
-          upi_id: 'yourupi@upi',
+          upi_id: 'mentor6@idfcbank',
 
-          qr_image:
-            'https://yourdomain.com/uploads/upi-qr.png',
+          qr_image: 'https://files.edudigm.in/payment_qr.jpeg',
         },
       },
     };
@@ -203,22 +186,16 @@ export class OrderService {
   |--------------------------------------------------------------------------
   */
 
-  async paymentDone(
-    user_id: number,
-    id: number,
-  ) {
-    const order =
-      await this.prisma.orders.findFirst({
-        where: {
-          id,
-          user_id,
-        },
-      });
+  async paymentDone(user_id: number, id: number) {
+    const order = await this.prisma.orders.findFirst({
+      where: {
+        id,
+        user_id,
+      },
+    });
 
     if (!order) {
-      throw new NotFoundException(
-        'Order not found',
-      );
+      throw new NotFoundException('Order not found');
     }
 
     return {
@@ -236,20 +213,19 @@ export class OrderService {
   */
 
   async myOrders(user_id: number) {
-    const orders =
-      await this.prisma.orders.findMany({
-        where: {
-          user_id,
-        },
+    const orders = await this.prisma.orders.findMany({
+      where: {
+        user_id,
+      },
 
-        include: {
-          items: true,
-        },
+      include: {
+        items: true,
+      },
 
-        orderBy: {
-          created_at: 'desc',
-        },
-      });
+      orderBy: {
+        created_at: 'desc',
+      },
+    });
 
     return {
       status: true,
