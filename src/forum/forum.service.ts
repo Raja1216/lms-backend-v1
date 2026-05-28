@@ -160,7 +160,21 @@ export class ForumService {
     const course = await this.prisma.course.findFirst({
       where: isAdmin
         ? { slug: courseSlug }
-        : { slug: courseSlug, grade: userData.classGrade! },
+        : {
+            slug: courseSlug,
+            OR: [
+              {
+                grade: userData.classGrade!,
+              },
+              {
+                userEnrolledCourses: {
+                  some: {
+                    userId: user.id,
+                  },
+                },
+              },
+            ],
+          },
     });
     if (!course) {
       throw new NotFoundException('Invalid course');
@@ -172,7 +186,21 @@ export class ForumService {
         parentId: null,
         course: isAdmin
           ? { slug: courseSlug }
-          : { slug: courseSlug, grade: userData.classGrade! },
+          : {
+              slug: courseSlug,
+              OR: [
+                {
+                  grade: userData.classGrade!,
+                },
+                {
+                  userEnrolledCourses: {
+                    some: {
+                      userId: user.id,
+                    },
+                  },
+                },
+              ],
+            },
       },
       orderBy: { createdAt: 'desc' },
       select: {
@@ -222,7 +250,21 @@ export class ForumService {
         status: true,
         course: isAdmin
           ? { slug: courseSlug }
-          : { slug: courseSlug, grade: userData.classGrade! },
+          : {
+              slug: courseSlug,
+              OR: [
+                {
+                  grade: userData.classGrade!,
+                },
+                {
+                  userEnrolledCourses: {
+                    some: {
+                      userId: user.id,
+                    },
+                  },
+                },
+              ],
+            },
       },
     });
     return { discussions: formattedDiscussions, course, total, page, limit };
@@ -274,7 +316,21 @@ export class ForumService {
     const course = await this.prisma.course.findFirst({
       where: isAdmin
         ? { slug: courseSlug }
-        : { slug: courseSlug, grade: userData.classGrade! },
+        : {
+            slug: courseSlug,
+            OR: [
+              {
+                grade: userData.classGrade!,
+              },
+              {
+                userEnrolledCourses: {
+                  some: {
+                    userId: user.id,
+                  },
+                },
+              },
+            ],
+          },
     });
 
     if (!course) throw new NotFoundException('Invalid course');
@@ -341,7 +397,21 @@ export class ForumService {
         status: true,
         course: isAdmin
           ? { slug: courseSlug }
-          : { slug: courseSlug, grade: userData.classGrade! },
+          : {
+              slug: courseSlug,
+              OR: [
+                {
+                  grade: userData.classGrade!,
+                },
+                {
+                  userEnrolledCourses: {
+                    some: {
+                      userId: user.id,
+                    },
+                  },
+                },
+              ],
+            },
       },
       orderBy: { createdAt: 'asc' },
       select: {
@@ -389,7 +459,21 @@ export class ForumService {
         status: true,
         course: isAdmin
           ? { slug: courseSlug }
-          : { slug: courseSlug, grade: userData.classGrade! },
+          : {
+              slug: courseSlug,
+              OR: [
+                {
+                  grade: userData.classGrade!,
+                },
+                {
+                  userEnrolledCourses: {
+                    some: {
+                      userId: user.id,
+                    },
+                  },
+                },
+              ],
+            },
       },
     });
 
@@ -422,7 +506,21 @@ export class ForumService {
         status: true,
         course: isAdmin
           ? { slug: courseSlug }
-          : { slug: courseSlug, grade: userData.classGrade! },
+          : {
+              slug: courseSlug,
+              OR: [
+                {
+                  grade: userData.classGrade!,
+                },
+                {
+                  userEnrolledCourses: {
+                    some: {
+                      userId: user.id,
+                    },
+                  },
+                },
+              ],
+            },
       },
       select: {
         id: true,
