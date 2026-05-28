@@ -112,6 +112,19 @@ enum ShopItemStatus {
   deleted
 }
 
+enum CartItemType {
+  course
+  product
+  license
+}
+
+enum OrderStatus {
+  pending
+  paid
+  rejected
+  cancelled
+}
+
 model User {
   id                         Int                         @id @default(autoincrement())
   uuid                       String                      @unique @default(uuid())
@@ -124,7 +137,7 @@ model User {
   mobile_prefix              String                      @default("+91")
   mobile                     String?                     @unique
   about                      String?                     @db.Text
-  schoolName                 String?                      
+  schoolName                 String?
   rollNo                     String?
   section                    String?
   password                   String
@@ -1019,46 +1032,44 @@ model UserCompletionCertificate {
 }
 
 model shop_items {
-  id               Int              @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  type             ShopItemType
+  type ShopItemType
 
-  title            String           @db.Text
-  description      String?          @db.Text
+  title       String  @db.Text
+  description String? @db.Text
 
   // NEW
-  long_description String?          @db.Text
+  long_description String? @db.Text
 
-  price            Float
-  original_price   Float?
+  price          Float
+  original_price Float?
 
   // OLD (keep for backward compatibility)
-  class_level      String           @db.VarChar(20)
+  class_level String @db.VarChar(20)
 
   // NEW
-  class_levels     String?          @db.Text
+  class_levels String? @db.Text
 
-  image            String?          @db.Text
-
-  // NEW
-  images           Json?
-
-  badge            String?          @db.VarChar(100)
+  image String? @db.Text
 
   // NEW
-  features         Json?
+  images Json?
 
-  seats            Int?
+  badge String? @db.VarChar(100)
 
-  stock            Int              @default(0)
-  status           ShopItemStatus   @default(active)
-  rating           Float?           @default(0)
-  students         Int?             @default(0)
+  // NEW
+  features Json?
 
-  created_at       DateTime         @default(now())
-  updated_at       DateTime         @updatedAt
+  seats Int?
 
-  cart_items       cart_items[]
+  stock    Int            @default(0)
+  status   ShopItemStatus @default(active)
+  rating   Float?         @default(0)
+  students Int?           @default(0)
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
   @@index([type])
   @@index([class_level])
@@ -1066,23 +1077,71 @@ model shop_items {
 }
 
 model cart_items {
-  id            Int      @id @default(autoincrement())
+  id Int @id @default(autoincrement())
 
-  user_id       Int
+  user_id Int
 
-  shop_item_id  Int
+  item_type CartItemType
 
-  quantity      Int      @default(1)
+  item_id Int
 
-  created_at    DateTime @default(now())
+  quantity Int @default(1)
 
-  updated_at    DateTime @updatedAt
+  created_at DateTime @default(now())
 
-  shop_items    shop_items @relation(fields: [shop_item_id], references: [id], onDelete: Cascade)
+  updated_at DateTime @updatedAt
 
-  @@unique([user_id, shop_item_id])
-
+  @@unique([user_id, item_type, item_id])
   @@index([user_id])
+  @@index([item_type, item_id])
+}
 
-  @@index([shop_item_id])
+model orders {
+  id Int @id @default(autoincrement())
+
+  user_id Int
+
+  order_number String @unique
+
+  total_amount Float
+
+  status OrderStatus @default(pending)
+
+  payment_method String?
+
+  payment_reference String?
+
+  payment_screenshot String?
+
+  notes String? @db.Text
+
+  created_at DateTime @default(now())
+
+  updated_at DateTime @updatedAt
+
+  items order_items[]
+}
+
+model order_items {
+  id Int @id @default(autoincrement())
+
+  order_id Int
+
+  item_type CartItemType
+
+  item_id Int
+
+  title String
+
+  price Float
+
+  quantity Int
+
+  subtotal Float
+
+  created_at DateTime @default(now())
+
+  order orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
+
+  @@index([order_id])
 }

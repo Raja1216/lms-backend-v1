@@ -19,26 +19,66 @@ export class CartService {
   */
 
   async addToCart(user_id: number, dto: AddToCartDto) {
-    const item = await this.prisma.shop_items.findFirst({
-      where: {
-        id: dto.shop_item_id,
-        status: 'active',
-      },
-    });
+    let item: any;
 
-    if (!item) {
-      throw new NotFoundException('Shop item not found');
+    /*
+  |--------------------------------------------------------------------------
+  | COURSE
+  |--------------------------------------------------------------------------
+  */
+
+    if (dto.item_type === 'course') {
+      item = await this.prisma.course.findFirst({
+        where: {
+          id: dto.item_id,
+          status: true,
+        },
+      });
+
+      if (!item) {
+        throw new NotFoundException('Course not found');
+      }
+
+      // course quantity always 1
+      dto.quantity = 1;
     }
 
-    if (item.stock < dto.quantity) {
-      throw new BadRequestException('Insufficient stock');
+    /*
+  |--------------------------------------------------------------------------
+  | PRODUCT / LICENSE
+  |--------------------------------------------------------------------------
+  */
+
+    if (dto.item_type === 'product' || dto.item_type === 'license') {
+      item = await this.prisma.shop_items.findFirst({
+        where: {
+          id: dto.item_id,
+          type: dto.item_type,
+          status: 'active',
+        },
+      });
+
+      if (!item) {
+        throw new NotFoundException('Item not found');
+      }
+
+      if (item.stock < dto.quantity) {
+        throw new BadRequestException('Insufficient stock');
+      }
     }
+
+    /*
+  |--------------------------------------------------------------------------
+  | EXISTING CART ITEM
+  |--------------------------------------------------------------------------
+  */
 
     const existing = await this.prisma.cart_items.findUnique({
       where: {
-        user_id_shop_item_id: {
+        user_id_item_type_item_id: {
           user_id,
-          shop_item_id: dto.shop_item_id,
+          item_type: dto.item_type,
+          item_id: dto.item_id,
         },
       },
     });
@@ -48,7 +88,7 @@ export class CartService {
     if (existing) {
       const new_quantity = existing.quantity + dto.quantity;
 
-      if (item.stock < new_quantity) {
+      if (dto.item_type !== 'course' && item.stock < new_quantity) {
         throw new BadRequestException('Insufficient stock');
       }
 
@@ -64,7 +104,11 @@ export class CartService {
       cart_item = await this.prisma.cart_items.create({
         data: {
           user_id,
-          shop_item_id: dto.shop_item_id,
+
+          item_type: dto.item_type,
+
+          item_id: dto.item_id,
+
           quantity: dto.quantity,
         },
       });
@@ -119,62 +163,125 @@ export class CartService {
         user_id,
       },
 
-      include: {
-        shop_items: true,
-      },
-
       orderBy: {
         created_at: 'desc',
       },
     });
 
-    const formatted_items = items.map((item) => {
-      const subtotal = item.quantity * item.shop_items.price;
+    const formatted_items = await Promise.all(
+      items.map(async (item) => {
+        let product: any = null;
 
-      return {
-        cart_item_id: item.id,
+        /*
+      |--------------------------------------------------------------------------
+      | COURSE
+      |--------------------------------------------------------------------------
+      */
 
-        quantity: item.quantity,
+        if (item.item_type === 'course') {
+          const course = await this.prisma.course.findUnique({
+            where: {
+              id: item.item_id,
+            },
+          });
 
-        subtotal,
+          if (!course) return null;
 
-        product: {
-          id: item.shop_items.id,
+          product = {
+            id: course.id,
 
-          type: item.shop_items.type,
+            type: 'course',
 
-          title: item.shop_items.title,
+            title: course.title,
 
-          description: item.shop_items.description,
+            description: course.description,
 
-          price: item.shop_items.price,
+            image: course.thumbnail,
 
-          original_price: item.shop_items.original_price,
+            price: Number(course.discountedPrice),
 
-          class_level: item.shop_items.class_level,
+            original_price: Number(course.price),
 
-          image: item.shop_items.image,
+            grade: course.grade,
 
-          badge: item.shop_items.badge,
+            duration: course.duration,
+          };
+        }
 
-          stock: item.shop_items.stock,
+        /*
+      |--------------------------------------------------------------------------
+      | PRODUCT / LICENSE
+      |--------------------------------------------------------------------------
+      */
 
-          seats: item.shop_items.seats,
-        },
-      };
-    });
+        if (item.item_type === 'product' || item.item_type === 'license') {
+          const shop_item = await this.prisma.shop_items.findUnique({
+            where: {
+              id: item.item_id,
+            },
+          });
 
-    const total_amount = formatted_items.reduce(
+          if (!shop_item) return null;
+
+          product = {
+            id: shop_item.id,
+
+            type: shop_item.type,
+
+            title: shop_item.title,
+
+            description: shop_item.description,
+
+            image: shop_item.image,
+
+            price: shop_item.price,
+
+            original_price: shop_item.original_price,
+
+            class_level: shop_item.class_level,
+
+            badge: shop_item.badge,
+
+            stock: shop_item.stock,
+
+            seats: shop_item.seats,
+          };
+        }
+
+        const subtotal = item.quantity * product.price;
+
+        return {
+          cart_item_id: item.id,
+
+          item_type: item.item_type,
+
+          item_id: item.item_id,
+
+          quantity: item.quantity,
+
+          subtotal,
+
+          product,
+        };
+      }),
+    );
+
+    const valid_items = formatted_items.filter(
+      (item): item is NonNullable<typeof item> => item !== null,
+    );
+
+    const total_amount = valid_items.reduce(
       (sum, item) => sum + item.subtotal,
       0,
     );
 
     return {
       status: true,
-      data: {
-        items: formatted_items,
 
-        total_items: formatted_items.length,
+      data: {
+        items: valid_items,
+
+        total_items: valid_items.length,
 
         total_amount,
       },
