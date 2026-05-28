@@ -31,6 +31,7 @@ import { CertificateGeneratorService } from './services/certicate-generator/cert
 import { CertificateIssuanceService } from './services/certicate-issuance/certicate-issuance.service';
 import { ShopModule } from './shop/shop.module';
 import { CartModule } from './cart/cart.module';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -61,7 +62,8 @@ import { CartModule } from './cart/cart.module';
     InstitutionModule,
     CourseManagementModule,
     ShopModule,
-    CartModule
+    CartModule,
+    OrderModule
   ],
   providers: [CertificateGeneratorService, CertificateIssuanceService],
 })
