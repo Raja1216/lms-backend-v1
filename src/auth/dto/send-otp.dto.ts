@@ -1,6 +1,13 @@
-import { IsEmail } from 'class-validator';
+import { IsEmail, IsMobilePhone, IsString } from 'class-validator';
 
 export class SendOtpDto {
   @IsEmail()
-  email: string;
+  email!: string;
+}
+
+export class SendMobileOtpDto {
+  @IsMobilePhone()
+  mobile!: string;
+  @IsString()
+  mobilePrefix!: string;
 }

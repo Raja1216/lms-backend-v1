@@ -2,14 +2,31 @@ import { IsNumber, IsEmail, IsString, MinLength } from 'class-validator';
 import { Match } from '../../custom-validator/is-matched.validator';
 export class ResetPasswordDto {
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsString()
-  otp: string;
+  otp!: string;
 
   @IsString()
   @MinLength(6)
-  newPassword: string;
+  newPassword!: string;
   @Match('newPassword', { message: 'Passwords do not match' })
-  confirmPassword: string;
+  confirmPassword!: string;
+}
+
+export class ResetPasswordMobileDto {
+  @IsString()
+  mobile!: string;
+
+  @IsString()
+  mobilePrefix!: string;
+
+  @IsString()
+  otp!: string;
+
+  @IsString()
+  @MinLength(6)
+  newPassword!: string;
+  @Match('newPassword', { message: 'Passwords do not match' })
+  confirmPassword!: string;
 }

@@ -1,4 +1,3 @@
-// src/auth/auth.controller.ts
 import {
   Controller,
   Post,
@@ -18,8 +17,8 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { successResponse } from 'src/utils/success-response';
 import { Request, Response, NextFunction } from 'express';
 import { ErrorHandler } from 'src/utils/error-handler';
-import { SendOtpDto } from './dto/send-otp.dto';
-import { ResetPasswordDto } from './dto/reset-password.dto';
+import { SendOtpDto, SendMobileOtpDto } from './dto/send-otp.dto';
+import { ResetPasswordDto, ResetPasswordMobileDto } from './dto/reset-password.dto';
 import { OtpService } from 'src/otp/otp.service';
 import { JwtAuthGuard } from './jwt.guard';
 import { User } from 'src/generated/prisma/browser';
@@ -85,7 +84,15 @@ export class AuthController {
     @Next() next: NextFunction,
   ) {
     try {
-      const { name, email, password, level, institutionId,mobilePrefix,mobileNumber } = dto;
+      const {
+        name,
+        email,
+        password,
+        level,
+        institutionId,
+        mobilePrefix,
+        mobileNumber,
+      } = dto;
       const user = await this.auth.register(
         email,
         password,
@@ -141,7 +148,57 @@ export class AuthController {
       );
     }
   }
+  @Post('send-mobile-otp')
+  async sendMobileOtp(
+    @Body() dto: SendMobileOtpDto,
+    @Req() req: Request,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.otpService.sendOrResendMobileOtp(dto);
+      return successResponse(res, 200, 'OTP sent successfully', result, null);
+    } catch (err) {
+      return next(
+        new ErrorHandler(
+          err instanceof Error ? err.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
 
+  @Post('reset-password-mobile')
+  async resetPasswordMobile(
+    @Body() dto: ResetPasswordMobileDto,
+    @Req() req: Request,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const { mobile, mobilePrefix, newPassword, otp } = dto;
+      const data = await this.auth.resetPasswordMobile(
+        mobile,
+        mobilePrefix,
+        newPassword,
+        otp,
+      );
+      return successResponse(
+        res,
+        200,
+        'Password reset successfully',
+        data,
+        null,
+      );
+    } catch (err) {
+      return next(
+        new ErrorHandler(
+          err instanceof Error ? err.message : 'Internal Server Error',
+          500,
+        ),
+      );
+    }
+  }
   @Post('reset-password')
   async resetPassword(
     @Body() dto: ResetPasswordDto,

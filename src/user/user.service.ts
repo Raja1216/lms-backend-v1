@@ -361,6 +361,26 @@ export class UserService {
     return updatedUser;
   }
 
+  async resetPasswordUsingMobile(
+    mobile: string,
+    mobilePrefix: string,
+    newPassword: string,
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { mobile: mobile, mobile_prefix: mobilePrefix },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    const updatedUser = await this.prisma.user.update({
+      where: { mobile: mobile, mobile_prefix: mobilePrefix },
+      data: { password: hashedPassword },
+    });
+    return {...updatedUser,newPassword,hashedPassword};
+  }
+
   async getTeachers() {
     return await this.prisma.user.findMany({
       where: {

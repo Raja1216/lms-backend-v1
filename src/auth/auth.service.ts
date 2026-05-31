@@ -5,6 +5,7 @@ import * as bcrypt from 'bcrypt';
 import { OtpService } from 'src/otp/otp.service';
 import { User } from 'src/generated/prisma/browser';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { SendMobileOtpDto } from './dto/send-otp.dto';
 @Injectable()
 export class AuthService {
   constructor(
@@ -55,6 +56,8 @@ export class AuthService {
     };
   }
 
+  
+
   async register(
     email: string,
     password: string,
@@ -84,6 +87,27 @@ export class AuthService {
     const isOtpValid = await this.optService.validateOtp(email, otp);
     if (isOtpValid) {
       const updatedUser = await this.users.resetPassword(email, newPassword);
+      return updatedUser;
+    }
+    throw new UnauthorizedException('Invalid OTP');
+  }
+  async resetPasswordMobile(
+    mobile: string,
+    mobilePrefix: string,
+    newPassword: string,
+    otp: string,
+  ) {
+    const isOtpValid = await this.optService.validateMobileOtp(
+      mobile,
+      otp,
+      mobilePrefix,
+    );
+    if (isOtpValid) {
+      const updatedUser = await this.users.resetPasswordUsingMobile(
+        mobile,
+        mobilePrefix,
+        newPassword,
+      );
       return updatedUser;
     }
     throw new UnauthorizedException('Invalid OTP');
