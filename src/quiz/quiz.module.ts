@@ -8,8 +8,9 @@ import { LessonService } from 'src/lesson/lesson.service';
 import { UploadModule } from 'src/upload/upload.module';
 import { CertificateGeneratorService } from 'src/services/certicate-generator/certicate-generator.service';
 import { CertificateIssuanceService } from 'src/services/certicate-issuance/certicate-issuance.service';
+import { QuizAttemptModule } from './quiz-attempt/quiz-attempt.module';
 @Module({
-  imports: [AuthModule, UserModule, LessonModule, UploadModule],
+  imports: [AuthModule, UserModule, LessonModule, UploadModule, QuizAttemptModule],
   controllers: [QuizController],
   exports: [QuizService],
   providers: [

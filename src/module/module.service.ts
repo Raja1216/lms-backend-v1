@@ -61,6 +61,8 @@ export class ModuleService {
     return { modules, total, page, limit };
   }
   async findBySubject(subjectId: number) {
+      console.log('subjectId:', subjectId);
+
     return this.prisma.module.findMany({
       where: {
         subjectId,
