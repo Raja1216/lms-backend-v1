@@ -48,7 +48,9 @@ export class UpdateQuestionDto {
   @IsOptional()
   @IsString()
   answer?: string;
-
+  @IsOptional()
+  @IsString()
+  solution?: string;
   // duration in minutes
   @IsNotEmpty()
   @IsInt()

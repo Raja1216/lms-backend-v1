@@ -723,8 +723,10 @@ export class QuizService {
         question: q.question,
         submittedAnswer: a.answer,
         correctAnswer,
+        solution: q.solution,
       };
     });
+   
     const totalMarks = quiz.questions.reduce(
       (sum, q) => sum + Number(q.marks),
       0,

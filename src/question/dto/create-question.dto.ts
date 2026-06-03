@@ -60,6 +60,10 @@ export class CreateQuestionItemDto {
   @IsString()
   answer?: string;
 
+  @IsOptional()
+  @IsString()
+  solution?:string
+
   @IsEnum(Difficulty)
   difficulty!: Difficulty;
   @IsOptional()

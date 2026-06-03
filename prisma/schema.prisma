@@ -481,6 +481,7 @@ model Question {
   difficulty Difficulty   @default(medium)
   bloomLevel BloomLevel   @default(remember)
   answer     String?      @db.Text
+  solution   String?      @db.Text
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 

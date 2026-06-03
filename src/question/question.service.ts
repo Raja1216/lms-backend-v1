@@ -45,6 +45,7 @@ export class QuestionService {
                 ? null
                 : q.answer,
             duration: q.duration,
+            solution:q.solution,
             options:
               q.type === QuestionType.MCQ || q.type === QuestionType.TRUEORFALSE
                 ? {
@@ -139,6 +140,7 @@ export class QuestionService {
       difficulty,
       bloomLevel,
       image,
+      solution
     } = updateQuestionDto;
 
     const updatedQuestion = await this.prisma.question.update({
@@ -152,6 +154,7 @@ export class QuestionService {
         difficulty,
         bloomLevel,
         imageUrl: image ? image : null,
+        solution:solution,
         options: options
           ? {
               deleteMany: {},
