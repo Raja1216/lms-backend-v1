@@ -289,6 +289,7 @@ export class UploadCsvService {
           'status',
           'difficulty',
           'bloomLevel',
+          'solution'
         ],
         sampleData: [
           {
@@ -306,6 +307,7 @@ export class UploadCsvService {
             status: 'true',
             difficulty: 'easy',
             bloomLevel: 'remember',
+            solution:"Solution 1+1+2"
           },
           {
             quizSlug: 'algebra-quiz-1',
@@ -322,6 +324,7 @@ export class UploadCsvService {
             status: 'true',
             difficulty: 'easy',
             bloomLevel: 'remember',
+            solution:"Solution: Yes, 5 is greater than 3."
           },
           {
             quizSlug: 'algebra-quiz-1',
@@ -338,6 +341,7 @@ export class UploadCsvService {
             status: 'true',
             difficulty: 'easy',
             bloomLevel: 'remember',
+            solution:"Solution: To find the value of x, we can divide both sides of the equation by 2. So, x = 10 / 2 = 5."
           },
         ],
         description: 'Question import template with options',
@@ -1058,6 +1062,7 @@ export class UploadCsvService {
           status: this.parseBoolean(row.status),
           bloomLevel: row.bloomLevel as BloomLevel,
           difficulty: row.difficulty as Difficulty,
+          solution: row.solution || null,
         };
 
         const question = await this.prisma.question.create({
@@ -1111,7 +1116,7 @@ export class UploadCsvService {
         }
 
         results.created++;
-      } catch (error) {
+      } catch (error:any) {
         results.failed++;
         results.errors.push({ row, error: error.message });
       }

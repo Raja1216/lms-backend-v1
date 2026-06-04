@@ -61,7 +61,7 @@ export class UploadCsvController {
       });
 
       res.send(csvBuffer);
-    } catch (error) {
+    } catch (error:any) {
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'Internal Server Error',
