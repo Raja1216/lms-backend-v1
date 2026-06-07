@@ -7,6 +7,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Length,
   Matches,
   MinLength,
 } from 'class-validator';
@@ -65,4 +66,10 @@ export class CreateUserDto {
   @IsNumber()
   @ApiProperty({ example: 1, required: false })
   institutionId?: number;
+
+  @IsOptional()
+  @IsString()
+  @Length(2, 190)
+  @ApiProperty({ example: 'st. xavier school', required: false })
+  schoolName?: string;
 }

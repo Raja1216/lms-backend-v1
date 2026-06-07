@@ -66,6 +66,7 @@ export class AuthService {
     level: string,
     name?: string,
     institutionId?: number,
+    schoolName?: string
   ) {
     const user = await this.users.createUser(
       email,
@@ -75,6 +76,8 @@ export class AuthService {
       name,
       level,
       institutionId,
+      [],
+      schoolName 
     );
     const jwtPayload = {
       sub: user.id,

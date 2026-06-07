@@ -39,6 +39,7 @@ export class UserService {
     level?: string,
     institutionId?: number,
     roles?: number[],
+    schoolName?: string
   ) {
     const existing = await this.prisma.user.findUnique({
       where: { email },
@@ -64,7 +65,7 @@ export class UserService {
         classGrade: level,
         mobile_prefix: mobilePrefix,
         mobile: mobileNumber,
-
+        schoolName,
         // connect roles if provided
         roles: roles?.length
           ? {

@@ -92,7 +92,9 @@ export class AuthController {
         institutionId,
         mobilePrefix,
         mobileNumber,
+        schoolName
       } = dto;
+      
       const user = await this.auth.register(
         email,
         password,
@@ -101,6 +103,7 @@ export class AuthController {
         level,
         name,
         institutionId,
+        schoolName
       );
       const cookieOptions = {
         expires: new Date(
