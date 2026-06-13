@@ -667,7 +667,18 @@ export class QuizService {
     const quiz = await this.prisma.quiz.findUnique({
       where: { id: quizId },
       include: {
-        questions: { include: { options: true } },
+        questions: {
+          where: {
+            status: true,
+          },
+          include: {
+            options: {
+              where: {
+                status: true,
+              },
+            },
+          },
+        },
         lessons: true,
         courseQuizzes: true,
         subjectQuizzes: true,
@@ -728,7 +739,7 @@ export class QuizService {
         solution: q.solution,
       };
     });
-   
+
     const totalMarks = quiz.questions.reduce(
       (sum, q) => sum + Number(q.marks),
       0,
