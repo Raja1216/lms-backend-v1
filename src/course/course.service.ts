@@ -19,6 +19,8 @@ import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-
 import { QuizService } from 'src/quiz/quiz.service';
 import { UploadService } from 'src/upload/upload.service';
 
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
+
 dotenv.config();
 
 @Injectable()
@@ -27,6 +29,7 @@ export class CourseService {
     private prisma: PrismaService,
     private quizService: QuizService,
     private readonly uploaService: UploadService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -770,6 +773,12 @@ export class CourseService {
         currency: 'INR',
       },
     });
+
+    try {
+      await this.activityLogService.logActivity(user.id, 'Payment Success', course.id);
+    } catch (err) {
+      console.error('Failed to log Payment Success activity', err);
+    }
 
     return this.prisma.userEnrolledCourse.create({
       data: {

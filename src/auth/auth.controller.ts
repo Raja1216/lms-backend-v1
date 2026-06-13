@@ -22,6 +22,7 @@ import { ResetPasswordDto, ResetPasswordMobileDto } from './dto/reset-password.d
 import { OtpService } from 'src/otp/otp.service';
 import { JwtAuthGuard } from './jwt.guard';
 import { User } from 'src/generated/prisma/browser';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -29,6 +30,7 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly otpService: OtpService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   @Post('login')
@@ -46,6 +48,7 @@ export class AuthController {
   ) {
     try {
       const user = await this.auth.login(dto);
+      await this.activityLogService.logActivity(user.user.id, 'Login');
       res.cookie('token', user.access_token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',

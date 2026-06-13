@@ -12,11 +12,13 @@ import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-
 import { QuizSubmissionFrequency } from 'src/generated/prisma/enums';
 import { CertificateIssuanceService } from 'src/services/certicate-issuance/certicate-issuance.service';
 import { SortOrder } from 'src/generated/prisma/internal/prismaNamespace';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 @Injectable()
 export class QuizService {
   constructor(
     private prisma: PrismaService,
     private readonly certificateIssuanceService: CertificateIssuanceService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   async create(createQuizDto: CreateQuizDto) {
@@ -751,6 +753,14 @@ export class QuizService {
       },
       include: { answers: true },
     });
+
+    try {
+      const courseIds = await this.getCourseIdsForQuiz(quiz);
+      const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
+      await this.activityLogService.logActivity(userId, 'Quiz Submitted', primaryCourseId);
+    } catch (err) {
+      console.error('Failed to log Quiz Submitted activity', err);
+    }
 
     /* 🎯 XP ONLY IF QUIZ IS ATTACHED TO LESSON */
     const lessonQuiz = await this.prisma.lessonQuiz.findFirst({

@@ -6,6 +6,8 @@ import {
   QuizCertArgs,
 } from '../certicate-generator/certicate-generator.service';
 
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
+
 @Injectable()
 export class CertificateIssuanceService {
   private readonly logger = new Logger(CertificateIssuanceService.name);
@@ -13,6 +15,7 @@ export class CertificateIssuanceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly generator: CertificateGeneratorService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   async checkAndIssueCourseCompletion(
@@ -206,6 +209,12 @@ export class CertificateIssuanceService {
         fileUrl,
       },
     });
+
+    try {
+      await this.activityLogService.logActivity(userId, 'Certificate Generated', courseId);
+    } catch (err) {
+      this.logger.error('Failed to log Certificate Generated activity for course', err);
+    }
 
     this.logger.log(
       `Course completion certificate issued [user=${userId} course=${courseId}]`,
@@ -459,6 +468,12 @@ export class CertificateIssuanceService {
         fileUrl,
       },
     });
+
+    try {
+      await this.activityLogService.logActivity(userId, 'Certificate Generated', courseId);
+    } catch (err) {
+      this.logger.error('Failed to log Certificate Generated activity for quiz', err);
+    }
 
     this.logger.log(
       `Quiz certificate issued [user=${userId} quiz=${quizId} attempt=${quizAttemptId}]`,
