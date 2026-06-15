@@ -14,13 +14,12 @@ import { AuthGuard } from '@nestjs/passport';
 import { OrderService } from './order.service';
 
 import { CreateOrderDto } from './dto/create-order.dto';
+import { VerifyPaymentDto } from './dto/verify-payment.dto';
 
 @Controller('orders')
 @UseGuards(AuthGuard('jwt'))
 export class OrderController {
-  constructor(
-    private readonly orderService: OrderService,
-  ) {}
+  constructor(private readonly orderService: OrderService) {}
 
   /*
   |--------------------------------------------------------------------------
@@ -29,31 +28,19 @@ export class OrderController {
   */
 
   @Post('checkout')
-  async checkout(
-    @Req() req,
-    @Body() dto: CreateOrderDto,
-  ) {
-    return this.orderService.checkout(
-      Number(req.user.id),
-      dto,
-    );
+  async checkout(@Req() req, @Body() dto: CreateOrderDto) {
+    return this.orderService.checkout(Number(req.user.id), dto);
   }
 
   /*
   |--------------------------------------------------------------------------
-  | PAYMENT DONE
+  | VERIFY ORDER
   |--------------------------------------------------------------------------
   */
 
-  @Post(':id/payment-done')
-  async paymentDone(
-    @Req() req,
-    @Param('id', ParseIntPipe) id: number,
-  ) {
-    return this.orderService.paymentDone(
-      Number(req.user.id),
-      id,
-    );
+  @Post('verify-payment')
+  async verifyPayment(@Req() req, @Body() dto: VerifyPaymentDto) {
+    return this.orderService.verifyPayment(Number(req.user.id), dto);
   }
 
   /*
@@ -64,8 +51,6 @@ export class OrderController {
 
   @Get('my-orders')
   async myOrders(@Req() req) {
-    return this.orderService.myOrders(
-      Number(req.user.id),
-    );
+    return this.orderService.myOrders(Number(req.user.id));
   }
 }

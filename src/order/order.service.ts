@@ -5,10 +5,16 @@ import {
 } from '@nestjs/common';
 
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RazorpayService } from 'src/razorpay/razorpay.service';
+import { VerifyPaymentDto } from './dto/verify-payment.dto';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class OrderService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private razorpayService: RazorpayService,
+  ) {}
 
   /*
   |--------------------------------------------------------------------------
@@ -141,15 +147,20 @@ export class OrderService {
       },
     });
 
-    /*
-    |--------------------------------------------------------------------------
-    | CLEAR CART
-    |--------------------------------------------------------------------------
-    */
+    const razorpayOrder = await this.razorpayService
+      .getInstance()
+      .orders.create({
+        amount: Math.round(total_amount * 100),
+        currency: 'INR',
+        receipt: order.order_number,
+      });
 
-    await this.prisma.cart_items.deleteMany({
+    await this.prisma.orders.update({
       where: {
-        user_id,
+        id: order.id,
+      },
+      data: {
+        razorpay_order_id: razorpayOrder.id,
       },
     });
 
@@ -159,38 +170,54 @@ export class OrderService {
     |--------------------------------------------------------------------------
     */
 
+    // return {
+    //   status: true,
+
+    //   message: 'Order created successfully',
+
+    //   data: {
+    //     order_id: order.id,
+
+    //     order_number: order.order_number,
+
+    //     total_amount,
+
+    //     payment: {
+    //       upi_id: 'mentor6@idfcbank',
+
+    //       qr_image: 'https://files.edudigm.in/payment_qr.jpeg',
+    //     },
+    //   },
+    // };
     return {
       status: true,
-
-      message: 'Order created successfully',
-
       data: {
         order_id: order.id,
-
-        order_number: order.order_number,
-
-        total_amount,
-
-        payment: {
-          upi_id: 'mentor6@idfcbank',
-
-          qr_image: 'https://files.edudigm.in/payment_qr.jpeg',
-        },
+        razorpay_order_id: razorpayOrder.id,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        key: process.env.RAZORPAY_KEY_ID,
       },
     };
   }
 
-  /*
-  |--------------------------------------------------------------------------
-  | PAYMENT DONE
-  |--------------------------------------------------------------------------
-  */
+  async verifyPayment(user_id: number, dto: VerifyPaymentDto) {
+    const generatedSignature = crypto
+      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET!)
+      .update(dto.razorpay_order_id + '|' + dto.razorpay_payment_id)
+      .digest('hex');
 
-  async paymentDone(user_id: number, id: number) {
+    if (generatedSignature !== dto.razorpay_signature) {
+      throw new BadRequestException('Payment verification failed');
+    }
+
     const order = await this.prisma.orders.findFirst({
       where: {
-        id,
+        razorpay_order_id: dto.razorpay_order_id,
         user_id,
+      },
+      include: {
+        items: true,
       },
     });
 
@@ -198,11 +225,53 @@ export class OrderService {
       throw new NotFoundException('Order not found');
     }
 
+    if (order.status === 'paid') {
+      return {
+        status: true,
+        message: 'Payment already verified',
+      };
+    }
+    await this.prisma.orders.update({
+      where: {
+        id: order.id,
+      },
+      data: {
+        status: 'paid',
+        razorpay_payment_id: dto.razorpay_payment_id,
+        razorpay_signature: dto.razorpay_signature,
+        paid_at: new Date(),
+      },
+    });
+
+    for (const item of order.items) {
+      if (item.item_type === 'course') {
+        const exists = await this.prisma.userEnrolledCourse.findFirst({
+          where: {
+            userId: user_id,
+            courseId: item.item_id,
+          },
+        });
+
+        if (!exists) {
+          await this.prisma.userEnrolledCourse.create({
+            data: {
+              userId: user_id,
+              courseId: item.item_id,
+            },
+          });
+        }
+      }
+    }
+
+    await this.prisma.cart_items.deleteMany({
+      where: {
+        user_id,
+      },
+    });
+
     return {
       status: true,
-
-      message:
-        'Payment submitted successfully. Waiting for admin verification.',
+      message: 'Payment successful',
     };
   }
 
