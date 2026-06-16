@@ -138,7 +138,7 @@ export class QuizService {
       },
       skip: (page - 1) * limit,
       take: +limit,
-      orderBy: [{ sortOrder: 'asc' }],
+      orderBy: [{ sortOrder: 'desc' }],
     });
 
     const allSubjectIds = [
