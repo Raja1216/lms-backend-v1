@@ -6,7 +6,9 @@ import {
   MinLength,
   IsNotEmpty,
   Matches,
+  IsEnum,
 } from 'class-validator';
+import { UserType } from 'src/generated/prisma/enums';
 
 export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'updated@example.com' })
@@ -27,6 +29,10 @@ export class UpdateUserDto {
   @IsString()
   @MinLength(6)
   password?: string;
+
+  @IsOptional()
+  @IsEnum(UserType)
+  userType?: UserType;
 
   @IsString()
   @ApiProperty({
@@ -56,7 +62,7 @@ export class UpdateUserDto {
   @ApiPropertyOptional({ example: 'updatedClass' })
   @IsOptional()
   @IsString()
-  class?: string;
+  classGrade?: string;
 
   @ApiPropertyOptional({ example: [2, 3], description: 'Array of role IDs' })
   @IsOptional()
