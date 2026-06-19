@@ -207,7 +207,11 @@ export class CertificateGeneratorService {
           a.courseId == 102 ||
           a.courseId == 103 ||
           a.courseId == 104 ||
-          a.courseId == 108
+          a.courseId == 108 ||
+	  a.courseId == 109 ||
+	  a.courseId == 110 ||
+	  a.courseId == 111 ||
+ 	  a.courseId == 112	 
         ) {
           htmlContent = participationCertificateTemplate(
             a.studentName,
