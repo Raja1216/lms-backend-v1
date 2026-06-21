@@ -12,11 +12,13 @@ import {
 } from './dto/submission.dto';
 import { SubmissionStatus, SubmissionType } from '../../generated/prisma/enums';
 import { UploadService } from 'src/upload/upload.service';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 @Injectable()
 export class ProjectSubmissionService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly uploadService: UploadService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   private async getProjectOrThrow(projectId: number) {
@@ -80,7 +82,7 @@ export class ProjectSubmissionService {
       existing ? existing.version : 0,
     );
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       let submission: any;
 
       if (existing) {
@@ -156,6 +158,14 @@ export class ProjectSubmissionService {
         include: { files: true },
       });
     });
+
+    try {
+      await this.activityLogService.logActivity(studentId, 'Assignment Submitted', project.courseId);
+    } catch (err) {
+      console.error('Failed to log Assignment Submitted activity', err);
+    }
+
+    return result;
   }
 
   private mimeToSubmissionType(mime: string): SubmissionType {

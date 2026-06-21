@@ -15,12 +15,14 @@ import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-
 import { UploadService } from 'src/upload/upload.service';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { CertificateIssuanceService } from 'src/services/certicate-issuance/certicate-issuance.service';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 @Injectable()
 export class LessonService {
   constructor(
     private prisma: PrismaService,
     private uploadService: UploadService,
     private readonly certificateIssuanceService: CertificateIssuanceService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   async create(createLessonDto: CreateLessonDto) {
@@ -483,6 +485,14 @@ export class LessonService {
     }
 
     const courseIds = await this.getCourseIdsForLesson(lessonId);
+    
+    try {
+      const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
+      await this.activityLogService.logActivity(user.id, 'Lesson Completed', primaryCourseId);
+    } catch (err) {
+      console.error('Failed to log Lesson Completed activity', err);
+    }
+
     await Promise.all(
       courseIds.map((courseId) =>
         this.certificateIssuanceService.checkAndIssueCourseCompletion(

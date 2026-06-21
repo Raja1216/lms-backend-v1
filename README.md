@@ -103,3 +103,12 @@ PRISMA_CONN_LIMIT=20
 PRISMA_ACQUIRE_TIMEOUT=30000
 PRISMA_CONNECT_RETRIES=5
 PRISMA_WAIT_FOR_CONNECTIONS=true
+
+npx prisma generate --schema=prisma/schema.prisma
+
+npx prisma generate --schema=prisma/logging/schema.prisma
+
+npx prisma db push --schema=prisma/schema.prisma
+
+npx prisma db push --schema=prisma/logging/schema.prisma --config=prisma/logging/prisma.config.ts
+

@@ -1,0 +1,46 @@
+datasource db {
+  provider = "mysql"
+}
+
+generator client {
+  provider = "prisma-client"
+  output   = "../../src/generated/logging-client"
+}
+
+model UserActivityLog {
+  id        Int            @id @default(autoincrement())
+  userId    Int
+  action    ActivityAction
+  courseId  Int?
+  createdAt DateTime       @default(now())
+
+  @@index([userId, createdAt])
+  @@map("user_activity_logs")
+}
+
+enum ActivityAction {
+  Certificate_Generated @map("Certificate Generated")
+  Lesson_Completed      @map("Lesson Completed")
+  Assignment_Submitted  @map("Assignment Submitted")
+  Quiz_Submitted        @map("Quiz Submitted")
+  Payment_Success       @map("Payment Success")
+  Login                 @map("Login")
+  Logout                @map("Logout")
+  Course_Viewed         @map("Course Viewed")
+  Quiz_Started          @map("Quiz Started")
+  Lesson_Started        @map("Lesson Started")
+  Video_Played          @map("Video Played")
+  Video_Completed       @map("Video Completed")
+}
+
+model UserTimeSpent {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  date      String
+  seconds   Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@map("user_time_spent")
+}
+

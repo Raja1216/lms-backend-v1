@@ -32,11 +32,26 @@ import { CertificateIssuanceService } from './services/certicate-issuance/certic
 import { ShopModule } from './shop/shop.module';
 import { CartModule } from './cart/cart.module';
 import { OrderModule } from './order/order.module';
+import { ActivityLogModule } from './activity-log/activity-log.module';
+import { BullModule } from '@nestjs/bullmq';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    BullModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        connection: {
+          host: configService.get<string>('REDIS_HOST', 'localhost'),
+          port: Number(configService.get<number>('REDIS_PORT', 6379)),
+          password: configService.get<string>('REDIS_PASSWORD'),
+        },
+      }),
+      inject: [ConfigService],
+    }),
     PrismaModule, // make global provider available early (optional)
+    ActivityLogModule,
     UserModule,
     AuthModule,
     OtpModule,
