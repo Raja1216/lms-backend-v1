@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UserService } from 'src/user/user.service';
 import * as bcrypt from 'bcrypt';
 import { OtpService } from 'src/otp/otp.service';
-import { User } from 'src/generated/prisma/browser';
+import { User, UserType } from 'src/generated/prisma/browser';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SendMobileOtpDto } from './dto/send-otp.dto';
 @Injectable()
@@ -56,17 +56,16 @@ export class AuthService {
     };
   }
 
-  
-
   async register(
     email: string,
     password: string,
     mobilePrefix: string,
     mobileNumber: string,
-    level: string,
+    classGrade?: string,
+    userType?: UserType,
     name?: string,
     institutionId?: number,
-    schoolName?: string
+    schoolName?: string,
   ) {
     const user = await this.users.createUser(
       email,
@@ -74,10 +73,11 @@ export class AuthService {
       mobileNumber,
       mobilePrefix,
       name,
-      level,
+      classGrade,
+      userType,
       institutionId,
       [],
-      schoolName 
+      schoolName,
     );
     const jwtPayload = {
       sub: user.id,

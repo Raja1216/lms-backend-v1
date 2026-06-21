@@ -3,6 +3,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -12,6 +13,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { Match } from 'src/custom-validator/is-matched.validator';
+import { UserType } from 'src/generated/prisma/enums';
 
 export class CreateUserDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -28,9 +30,13 @@ export class CreateUserDto {
   // @MinLength(6)
   password!: string;
 
+  @IsOptional()
   @IsString()
-  @ApiProperty({ example: 'user' })
-  level!: string;
+  classGrade?: string;
+
+  @IsOptional()
+  @IsEnum(UserType)
+  userType?: UserType;
 
   @IsArray()
   @ApiProperty({ example: [1, 2], required: false })

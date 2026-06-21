@@ -35,7 +35,6 @@ export class CourseService {
       description,
       thumbnail,
       grade,
-      audience,
       duration,
       price,
       discountedPrice,
@@ -74,7 +73,6 @@ export class CourseService {
         description,
         thumbnail: thumbnailPath ?? '',
         grade,
-        audience,
         duration,
         price,
         discountedPrice,
@@ -109,7 +107,6 @@ export class CourseService {
       },
       select: {
         classGrade: true,
-        userType: true,
         roles: {
           select: {
             name: true,
@@ -132,81 +129,31 @@ export class CourseService {
 
     let enrolledCourseIds: number[] = [];
 
-    const enrollments = await this.prisma.userEnrolledCourse.findMany({
-      where: {
-        userId,
-      },
-      select: {
-        courseId: true,
-      },
-    });
-
-    enrolledCourseIds = enrollments.map((e) => e.courseId);
-
     // Student enrolled courses
-    const userType = user.userType || 'STUDENT';
+    if (!isAdmin && !isTeacher) {
+      if (!user.classGrade) {
+        throw new BadRequestException(
+          'Please update your profile with class grade to see courses',
+        );
+      }
+
+      const enrollments = await this.prisma.userEnrolledCourse.findMany({
+        where: {
+          userId,
+        },
+        select: {
+          courseId: true,
+        },
+      });
+
+      enrolledCourseIds = enrollments.map((e) => e.courseId);
+    }
 
     const whereClause: any = {
       status: true,
       AND: [],
     };
 
-    if (!isAdmin) {
-      if (userType === 'STUDENT') {
-        whereClause.AND.push({
-          OR: [
-            {
-              audience: 'SCHOOL',
-              grade: user.classGrade,
-            },
-            {
-              audience: 'PUBLIC',
-            },
-            {
-              id: {
-                in: enrolledCourseIds,
-              },
-            },
-          ],
-        });
-      }
-
-      if (userType === 'PROFESSIONAL') {
-        whereClause.AND.push({
-          OR: [
-            {
-              audience: 'PROFESSIONAL',
-            },
-            {
-              audience: 'PUBLIC',
-            },
-            {
-              id: {
-                in: enrolledCourseIds,
-              },
-            },
-          ],
-        });
-      }
-
-      if (userType === 'TEACHER') {
-        whereClause.AND.push({
-          OR: [
-            {
-              audience: 'TEACHER',
-            },
-            {
-              audience: 'PUBLIC',
-            },
-            {
-              id: {
-                in: enrolledCourseIds,
-              },
-            },
-          ],
-        });
-      }
-    }
     // Keyword Search
     if (keyword) {
       whereClause.AND.push({
@@ -237,6 +184,29 @@ export class CourseService {
           grade,
         });
       }
+    } else {
+      // Students:
+      // Show:
+      // 1. same class grade courses
+      // 2. enrolled courses from any grade
+
+      whereClause.AND.push({
+        OR: [
+          {
+            grade: user.classGrade,
+          },
+
+          ...(enrolledCourseIds.length > 0
+            ? [
+                {
+                  id: {
+                    in: enrolledCourseIds,
+                  },
+                },
+              ]
+            : []),
+        ],
+      });
     }
 
     const [data, total] = await Promise.all([

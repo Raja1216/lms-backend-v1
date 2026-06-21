@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
-import { Course, User } from 'src/generated/prisma/browser';
+import { Course, User, UserType } from 'src/generated/prisma/browser';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import * as ExcelJS from 'exceljs';
 import { take } from 'rxjs/internal/operators/take';
@@ -36,10 +36,11 @@ export class UserService {
     mobileNumber: string,
     mobilePrefix: string,
     name?: string,
-    level?: string,
+    classGrade?: string,
+    userType?: UserType,
     institutionId?: number,
     roles?: number[],
-    schoolName?: string
+    schoolName?: string,
   ) {
     const existing = await this.prisma.user.findUnique({
       where: { email },
@@ -62,7 +63,8 @@ export class UserService {
         email,
         name,
         password: hashedPassword,
-        classGrade: level,
+        classGrade,
+        userType: userType ?? UserType.STUDENT,
         mobile_prefix: mobilePrefix,
         mobile: mobileNumber,
         schoolName,
@@ -79,6 +81,7 @@ export class UserService {
         email: true,
         name: true,
         classGrade: true,
+        userType: true,
         roles: {
           select: {
             id: true,
@@ -152,6 +155,7 @@ export class UserService {
           name: true,
           username: true,
           classGrade: true,
+          userType: true,
           status: true,
           createdAt: true,
           mobile: true,
@@ -183,6 +187,7 @@ export class UserService {
         name: true,
         username: true,
         classGrade: true,
+        userType: true,
         status: true,
         password: true,
         createdAt: true,
@@ -218,6 +223,7 @@ export class UserService {
       password?: string;
       name?: string;
       classGrade?: string;
+      userType?: UserType;
       roles?: number[];
       status?: boolean;
       mobileNumber: string;
@@ -264,6 +270,7 @@ export class UserService {
         email: data.email,
         name: data.name,
         classGrade: data.classGrade,
+        userType: data.userType,
         status: data.status,
         password: hashedPassword,
         mobile: data.mobileNumber,
@@ -282,6 +289,7 @@ export class UserService {
         email: true,
         name: true,
         classGrade: true,
+        userType: true,
         status: true,
         roles: {
           select: {
@@ -379,7 +387,7 @@ export class UserService {
       where: { mobile: mobile, mobile_prefix: mobilePrefix },
       data: { password: hashedPassword },
     });
-    return {...updatedUser,newPassword,hashedPassword};
+    return { ...updatedUser, newPassword, hashedPassword };
   }
 
   async getTeachers() {
@@ -409,6 +417,7 @@ export class UserService {
         name: true,
         username: true,
         classGrade: true,
+        userType: true,
         dateOfBirth: true,
         avatar: true,
         about: true,
@@ -1115,6 +1124,7 @@ export class UserService {
           update: {
             name,
             classGrade,
+            userType: 'STUDENT',
             section,
             rollNo,
             password: hashedPassword,
@@ -1122,6 +1132,7 @@ export class UserService {
           create: {
             name,
             classGrade,
+            userType: 'STUDENT',
             section,
             rollNo,
             mobile,

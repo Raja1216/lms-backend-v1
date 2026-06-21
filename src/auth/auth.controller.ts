@@ -18,7 +18,10 @@ import { successResponse } from 'src/utils/success-response';
 import { Request, Response, NextFunction } from 'express';
 import { ErrorHandler } from 'src/utils/error-handler';
 import { SendOtpDto, SendMobileOtpDto } from './dto/send-otp.dto';
-import { ResetPasswordDto, ResetPasswordMobileDto } from './dto/reset-password.dto';
+import {
+  ResetPasswordDto,
+  ResetPasswordMobileDto,
+} from './dto/reset-password.dto';
 import { OtpService } from 'src/otp/otp.service';
 import { JwtAuthGuard } from './jwt.guard';
 import { User } from 'src/generated/prisma/browser';
@@ -88,22 +91,24 @@ export class AuthController {
         name,
         email,
         password,
-        level,
+        classGrade,
+        userType,
         institutionId,
         mobilePrefix,
         mobileNumber,
-        schoolName
+        schoolName,
       } = dto;
-      
+
       const user = await this.auth.register(
         email,
         password,
         mobilePrefix,
         mobileNumber,
-        level,
+        classGrade,
+        userType,
         name,
         institutionId,
-        schoolName
+        schoolName,
       );
       const cookieOptions = {
         expires: new Date(

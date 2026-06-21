@@ -55,7 +55,8 @@ export class UserController {
         body.mobileNumber,
         body.mobilePrefix,
         body.name,
-        body.level,
+        body.classGrade,
+        body.userType,
         body.institutionId,
         body.roles,
       );
@@ -130,7 +131,7 @@ export class UserController {
       );
     }
   }
-  
+
   @UseGuards(JwtAuthGuard, PermissionGuard)
   @Permissions('read-users')
   @ApiBearerAuth('access-token')
