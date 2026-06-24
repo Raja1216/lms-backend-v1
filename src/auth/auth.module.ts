@@ -39,6 +39,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt.guard';
+import { OptionalJwtAuthGuard } from './optional-jwt.guard';
 
 import { UserModule } from 'src/user/user.module';
 import { OtpModule } from 'src/otp/otp.module';
@@ -64,11 +65,13 @@ import { PorfileModule } from './porfile/porfile.module';
     AuthService,
     JwtStrategy,
     JwtAuthGuard,
+    OptionalJwtAuthGuard,
   ],
   controllers: [AuthController],
   exports: [
     AuthService,
     JwtAuthGuard,
+    OptionalJwtAuthGuard,
     JwtModule,
   ],
 })

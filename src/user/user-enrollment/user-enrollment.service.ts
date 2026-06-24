@@ -5,9 +5,14 @@ import * as bcrypt from 'bcrypt';
 import { Prisma } from 'src/generated/prisma/client';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
+
 @Injectable()
 export class UserEnrollmentService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly activityLogService: ActivityLogService,
+  ) {}
 
   async findAll(paginationDto: PaginationDto) {
     const { keyword, page = 1, limit = 10 } = paginationDto;
@@ -414,6 +419,12 @@ export class UserEnrollmentService {
             },
           });
           enrolled++;
+
+          try {
+            await this.activityLogService.logActivity(user.id, 'Course Enrolled', courseId);
+          } catch (err) {
+            console.error('Failed to log Course Enrolled activity in bulk import', err);
+          }
         } catch (e: any) {
           // P2002 = unique constraint violation → already enrolled
           if (e?.code === 'P2002') {

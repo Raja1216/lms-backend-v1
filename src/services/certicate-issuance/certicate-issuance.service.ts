@@ -470,7 +470,9 @@ export class CertificateIssuanceService {
     });
 
     try {
-      await this.activityLogService.logActivity(userId, 'Certificate Generated', courseId);
+      await this.activityLogService.logActivity(userId, 'Certificate Generated', courseId, {
+        quizSubmissionId: quizAttemptId,
+      });
     } catch (err) {
       this.logger.error('Failed to log Certificate Generated activity for quiz', err);
     }

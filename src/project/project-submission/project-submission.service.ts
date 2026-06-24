@@ -160,7 +160,9 @@ export class ProjectSubmissionService {
     });
 
     try {
-      await this.activityLogService.logActivity(studentId, 'Assignment Submitted', project.courseId);
+      await this.activityLogService.logActivity(studentId, 'Assignment Submitted', project.courseId, {
+        assigmentSumissionId: result?.id,
+      });
     } catch (err) {
       console.error('Failed to log Assignment Submitted activity', err);
     }

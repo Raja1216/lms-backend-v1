@@ -8,6 +8,8 @@ import {
   Post,
   Put,
   Query,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 
 import { ShopService } from './shop.service';
@@ -15,10 +17,15 @@ import { ShopService } from './shop.service';
 import { CreateShopItemDto } from './dto/create-shop-item.dto';
 import { UpdateShopItemDto } from './dto/update-shop-item.dto';
 import { ListShopItemDto } from './dto/list-shop-item.dto';
+import { OptionalJwtAuthGuard } from 'src/auth/optional-jwt.guard';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 
 @Controller()
 export class ShopController {
-  constructor(private readonly shopService: ShopService) {}
+  constructor(
+    private readonly shopService: ShopService,
+    private readonly activityLogService: ActivityLogService,
+  ) {}
 
   /*
   |--------------------------------------------------------------------------
@@ -26,13 +33,29 @@ export class ShopController {
   |--------------------------------------------------------------------------
   */
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('shop/products')
-  async getProducts(@Query() query: ListShopItemDto) {
+  async getProducts(@Req() req: any, @Query() query: ListShopItemDto) {
+    if (req.user?.id) {
+      try {
+        await this.activityLogService.logActivity(req.user.id, 'Shop Page Visited');
+      } catch (err) {
+        console.error('Failed to log Shop Page Visited activity', err);
+      }
+    }
     return this.shopService.listPublicProducts(query);
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('shop/licenses')
-  async getLicenses(@Query() query: ListShopItemDto) {
+  async getLicenses(@Req() req: any, @Query() query: ListShopItemDto) {
+    if (req.user?.id) {
+      try {
+        await this.activityLogService.logActivity(req.user.id, 'Shop Page Visited');
+      } catch (err) {
+        console.error('Failed to log Shop Page Visited activity', err);
+      }
+    }
     return this.shopService.listPublicLicenses(query);
   }
 

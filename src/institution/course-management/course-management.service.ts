@@ -12,11 +12,14 @@ import { EnrollmentSource } from 'src/generated/prisma/enums';
 import { EnrollStudentDto } from './dto/enroll-student.dto';
 import { AssignTeacherToCourseDto } from './dto/assign-teacher-course.dto';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
+
 @Injectable()
 export class CourseManagementService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly institutionService: InstitutionService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
   async getInstitutionCourses(
     institutionId: number,
@@ -192,6 +195,14 @@ export class CourseManagementService {
         institutionId,
       })),
     });
+
+    for (const userId of toEnroll) {
+      try {
+        await this.activityLogService.logActivity(userId, 'Course Enrolled', dto.courseId);
+      } catch (err) {
+        console.error('Failed to log Course Enrolled activity in bulk enrollment', err);
+      }
+    }
 
     return {
       enrolled: toEnroll.length,

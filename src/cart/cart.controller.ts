@@ -15,12 +15,14 @@ import { AuthGuard } from '@nestjs/passport';
 import { CartService } from './cart.service';
 
 import { AddToCartDto } from './dto/add-to-cart.dto';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 
 @Controller('cart')
 @UseGuards(AuthGuard('jwt'))
 export class CartController {
   constructor(
     private readonly cartService: CartService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   @Post('add')
@@ -47,6 +49,11 @@ export class CartController {
 
   @Get('list')
   async listCart(@Req() req) {
+    try {
+      await this.activityLogService.logActivity(Number(req.user.id), 'Cart Page Visited');
+    } catch (err) {
+      console.error('Failed to log Cart Page Visited activity', err);
+    }
     return this.cartService.listCart(
       Number(req.user.id),
     );

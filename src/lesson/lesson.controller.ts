@@ -29,12 +29,14 @@ import { User } from 'src/generated/prisma/browser';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { createPagedResponse } from 'src/shared/create-paged-response';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('lesson')
 export class LessonController {
   constructor(
     private readonly lessonService: LessonService,
     private readonly chapterService: ChapterService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   @Permissions('lesson-create')
@@ -108,6 +110,7 @@ export class LessonController {
   @Get(':id')
   async findOne(
     @Param('id') id: string,
+    @Req() req: any,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
@@ -116,6 +119,20 @@ export class LessonController {
       if (!lesson) {
         throw new NotFoundException('Lesson not found');
       }
+
+      try {
+        const courseIds = await this.lessonService.getCourseIdsForLesson(lesson.id);
+        const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
+        await this.activityLogService.logActivity(
+          req.user.id,
+          'Lesson Viewed',
+          primaryCourseId,
+          { lessonId: lesson.id },
+        );
+      } catch (err) {
+        console.error('Failed to log Lesson Viewed activity', err);
+      }
+
       return successResponse(
         res,
         200,
@@ -215,6 +232,7 @@ export class LessonController {
   @Get('/slug/:slug')
   async findBySlug(
     @Param('slug') slug: string,
+    @Req() req: any,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
@@ -223,6 +241,20 @@ export class LessonController {
       if (!lesson) {
         throw new NotFoundException('Lesson not found');
       }
+
+      try {
+        const courseIds = await this.lessonService.getCourseIdsForLesson(lesson.id);
+        const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
+        await this.activityLogService.logActivity(
+          req.user.id,
+          'Lesson Viewed',
+          primaryCourseId,
+          { lessonId: lesson.id },
+        );
+      } catch (err) {
+        console.error('Failed to log Lesson Viewed activity', err);
+      }
+
       return successResponse(
         res,
         200,

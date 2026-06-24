@@ -530,6 +530,29 @@ export class CourseService {
                     },
                   },
                 },
+                chapters: {
+                  where: {
+                    chapter: {
+                      status: true,
+                    },
+                  },
+                  include: {
+                    chapter: {
+                      include: {
+                        lessons: {
+                          where: {
+                            lesson: {
+                              status: true,
+                            },
+                          },
+                          include: {
+                            lesson: true,
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
               },
             },
           },
@@ -663,12 +686,81 @@ export class CourseService {
             };
           });
 
+        const directChapters = (subject.chapters ?? [])
+          .filter((subjectChapter) => subjectChapter.chapter?.status)
+          .map((subjectChapter) => {
+            const chapter = subjectChapter.chapter;
+            const chapterClasses = liveClasses.filter(
+              (cls) => cls.chapterId === chapter.id,
+            );
+            return {
+              ...chapter,
+              liveClasses: chapterClasses,
+            };
+          });
+
         return {
           ...subject,
           liveClasses: subjectClasses,
           modules,
+          chapters: directChapters,
         };
       });
+
+    // Find the first lesson ID in the course safely from active subjects/modules/chapters
+    let firstLessonId: number | undefined;
+    for (const sub of subjects) {
+      if (sub.modules) {
+        for (const mod of sub.modules) {
+          if (mod.chapters) {
+            for (const chap of mod.chapters) {
+              if (chap.lessons) {
+                for (const les of chap.lessons) {
+                  if (les.lesson?.id) {
+                    firstLessonId = les.lesson.id;
+                    break;
+                  }
+                }
+              }
+              if (firstLessonId) break;
+            }
+          }
+          if (firstLessonId) break;
+        }
+      }
+      if (firstLessonId) break;
+
+      if (sub.chapters) {
+        for (const chap of sub.chapters) {
+          if (chap.lessons) {
+            for (const les of chap.lessons) {
+              if (les.lesson?.id) {
+                firstLessonId = les.lesson.id;
+                break;
+              }
+            }
+          }
+          if (firstLessonId) break;
+        }
+      }
+      if (firstLessonId) break;
+    }
+
+    try {
+      await this.activityLogService.logActivity(user.id, 'Course Viewed', course.id);
+    } catch (err) {
+      console.error('Failed to log Course Viewed activity', err);
+    }
+
+    if (firstLessonId) {
+      try {
+        await this.activityLogService.logActivity(user.id, 'Lesson Viewed', course.id, {
+          lessonId: firstLessonId,
+        });
+      } catch (err) {
+        console.error('Failed to log Lesson Viewed activity on course details page load', err);
+      }
+    }
 
     return {
       ...course,
@@ -805,9 +897,17 @@ export class CourseService {
     });
 
     try {
-      await this.activityLogService.logActivity(user.id, 'Payment Success', course.id);
+      await this.activityLogService.logActivity(user.id, 'Payment Success', course.id, {
+        paymentId: payment.id,
+      });
     } catch (err) {
       console.error('Failed to log Payment Success activity', err);
+    }
+
+    try {
+      await this.activityLogService.logActivity(user.id, 'Course Enrolled', course.id);
+    } catch (err) {
+      console.error('Failed to log Course Enrolled activity', err);
     }
 
     return this.prisma.userEnrolledCourse.create({

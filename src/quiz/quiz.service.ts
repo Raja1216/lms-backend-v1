@@ -768,7 +768,10 @@ export class QuizService {
     try {
       const courseIds = await this.getCourseIdsForQuiz(quiz);
       const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
-      await this.activityLogService.logActivity(userId, 'Quiz Submitted', primaryCourseId);
+      await this.activityLogService.logActivity(userId, 'Quiz Submitted', primaryCourseId, {
+        quizSubmissionId: attempt.id,
+        quizId,
+      });
     } catch (err) {
       console.error('Failed to log Quiz Submitted activity', err);
     }
@@ -796,6 +799,18 @@ export class QuizService {
             xpPoints: lessonQuiz.lesson.noOfXpPoints,
           },
         });
+
+        try {
+          const courseIds = await this.getCourseIdsForQuiz(quiz);
+          const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
+          await this.activityLogService.logActivity(userId, 'XP Earned', primaryCourseId, {
+            quizId,
+            lessonId: lessonQuiz.lessonId,
+            xpPoints: lessonQuiz.lesson.noOfXpPoints,
+          });
+        } catch (err) {
+          console.error('Failed to log XP Earned activity', err);
+        }
       }
     }
 

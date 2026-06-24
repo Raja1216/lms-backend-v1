@@ -9,11 +9,14 @@ import { RazorpayService } from 'src/razorpay/razorpay.service';
 import { VerifyPaymentDto } from './dto/verify-payment.dto';
 import * as crypto from 'crypto';
 
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
+
 @Injectable()
 export class OrderService {
   constructor(
     private prisma: PrismaService,
     private razorpayService: RazorpayService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
 
   /*
@@ -259,6 +262,29 @@ export class OrderService {
               courseId: item.item_id,
             },
           });
+        }
+
+        try {
+          await this.activityLogService.logActivity(user_id, 'Payment Success', item.item_id, {
+            paymentId: order.id,
+          });
+        } catch (err) {
+          console.error('Failed to log Payment Success activity in order verification', err);
+        }
+
+        try {
+          await this.activityLogService.logActivity(user_id, 'Course Enrolled', item.item_id);
+        } catch (err) {
+          console.error('Failed to log Course Enrolled activity in order verification', err);
+        }
+      } else if (item.item_type === 'product' || item.item_type === 'license') {
+        try {
+          await this.activityLogService.logActivity(user_id, 'Product Bought', undefined, {
+            productId: item.item_id,
+            paymentId: order.id,
+          });
+        } catch (err) {
+          console.error('Failed to log Product Bought activity in order verification', err);
         }
       }
     }

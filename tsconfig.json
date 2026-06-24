@@ -5,6 +5,7 @@
     "esModuleInterop": true,
     "resolvePackageJsonExports": false,
     "target": "ES2023",
+    "useDefineForClassFields": false,
     "outDir": "./dist",
     "emitDecoratorMetadata": true,
     "experimentalDecorators": true,

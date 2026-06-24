@@ -18,11 +18,14 @@ import {
   SubmissionStatus,
   LetterGrade,
 } from '../../generated/prisma/enums';
+import { ActivityLogService } from 'src/activity-log/activity-log.service';
+
 @Injectable()
 export class ProjectGradingService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly projectService: ProjectService,
+    private readonly activityLogService: ActivityLogService,
   ) {}
   private async getSubmissionOrThrow(submissionId: number) {
     const sub = await this.prisma.projectSubmission.findUnique({
@@ -80,7 +83,7 @@ export class ProjectGradingService {
       ? dto.letterGrade
       : calcLetterGrade(percentage, bands.length ? bands : undefined);
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // Upsert grade (supports re-grading)
       const grade = await tx.projectGrade.upsert({
         where: { submissionId },
@@ -113,6 +116,16 @@ export class ProjectGradingService {
 
       return grade;
     });
+
+    try {
+      await this.activityLogService.logActivity(teacherId, 'Project Grading', project.courseId, {
+        projectSumissionId: submissionId,
+      });
+    } catch (err) {
+      console.error('Failed to log Project Grading activity for manual grade', err);
+    }
+
+    return result;
   }
 
   async gradeRubric(
@@ -165,7 +178,7 @@ export class ProjectGradingService {
       bands.length ? bands : undefined,
     );
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // Upsert grade header
       const grade = await tx.projectGrade.upsert({
         where: { submissionId },
@@ -212,6 +225,16 @@ export class ProjectGradingService {
         include: { rubricGrades: { include: { rubric: true } } },
       });
     });
+
+    try {
+      await this.activityLogService.logActivity(teacherId, 'Project Grading', project.courseId, {
+        projectSumissionId: submissionId,
+      });
+    } catch (err) {
+      console.error('Failed to log Project Grading activity for rubric grade', err);
+    }
+
+    return result;
   }
 
   // async publishGrade(submissionId: number, userId: number) {

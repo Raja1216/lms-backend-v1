@@ -8,11 +8,19 @@ generator client {
 }
 
 model UserActivityLog {
-  id        Int            @id @default(autoincrement())
-  userId    Int
-  action    ActivityAction
-  courseId  Int?
-  createdAt DateTime       @default(now())
+  id                   Int            @id @default(autoincrement())
+  userId               Int
+  action               ActivityAction
+  courseId             Int?
+  quizSubmissionId     Int?
+  projectSumissionId   Int?
+  lessonId             Int?
+  assigmentSumissionId Int?
+  paymentId            Int?
+  quizId               Int?
+  productId            Int?
+  xpPoints             Int?
+  createdAt            DateTime       @default(now())
 
   @@index([userId, createdAt])
   @@map("user_activity_logs")
@@ -31,16 +39,25 @@ enum ActivityAction {
   Lesson_Started        @map("Lesson Started")
   Video_Played          @map("Video Played")
   Video_Completed       @map("Video Completed")
+  Project_Grading       @map("Project Grading")
+  Lesson_Viewed         @map("Lesson Viewed")
+  Course_Enrolled       @map("Course Enrolled")
+  Product_Bought        @map("Product Bought")
+  XP_Earned             @map("XP Earned")
+  Shop_Page_Visited     @map("Shop Page Visited")
+  Cart_Page_Visited     @map("Cart Page Visited")
 }
 
 model UserTimeSpent {
   id        Int      @id @default(autoincrement())
   userId    Int
   date      String
+  courseId  Int      @default(0)
   seconds   Int      @default(0)
   updatedAt DateTime @updatedAt
 
-  @@unique([userId, date])
+  @@unique([userId, date, courseId])
   @@map("user_time_spent")
 }
+
 

@@ -485,10 +485,24 @@ export class LessonService {
     }
 
     const courseIds = await this.getCourseIdsForLesson(lessonId);
+    const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
+
+    // Log XP Earned if XP is awarded
+    if (xpToAdd > 0) {
+      try {
+        await this.activityLogService.logActivity(user.id, 'XP Earned', primaryCourseId, {
+          lessonId: lesson.id,
+          xpPoints: xpToAdd,
+        });
+      } catch (err) {
+        console.error('Failed to log XP Earned activity', err);
+      }
+    }
     
     try {
-      const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
-      await this.activityLogService.logActivity(user.id, 'Lesson Completed', primaryCourseId);
+      await this.activityLogService.logActivity(user.id, 'Lesson Completed', primaryCourseId, {
+        lessonId,
+      });
     } catch (err) {
       console.error('Failed to log Lesson Completed activity', err);
     }
@@ -511,7 +525,7 @@ export class LessonService {
     };
   }
 
-  private async getCourseIdsForLesson(lessonId: number): Promise<number[]> {
+  async getCourseIdsForLesson(lessonId: number): Promise<number[]> {
     const lesson = await this.prisma.lesson.findUnique({
       where: { id: lessonId },
       select: {
