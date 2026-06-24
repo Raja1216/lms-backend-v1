@@ -155,7 +155,9 @@ export class CourseService {
     };
 
     if (!isAdmin) {
-      if (userType === 'STUDENT') {
+      if (isTeacher) {
+        // Teachers can see everything
+      } else if (userType === 'STUDENT') {
         whereClause.AND.push({
           OR: [
             {
@@ -897,9 +899,13 @@ export class CourseService {
     });
 
     try {
-      await this.activityLogService.logActivity(user.id, 'Payment Success', course.id, {
+      await this.activityLogService.logActivity(
+        user.id,
+        'Payment Success',
+        course.id, {
         paymentId: payment.id,
-      });
+      },
+      );
     } catch (err) {
       console.error('Failed to log Payment Success activity', err);
     }
