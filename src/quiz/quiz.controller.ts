@@ -78,6 +78,38 @@ export class QuizController {
   }
 
   /* ================= READ ================= */
+  @Permissions('quiz-read')
+  @Get('by-lessons')
+  async findByLessons(
+    @Query('lessonIds') lessonIds: string,
+    @NestjsRequest() req: { user: User },
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const ids = lessonIds
+        .split(',')
+        .map((id) => Number(id.trim()))
+        .filter((id) => !isNaN(id));
+
+      const quizzes = await this.quizService.findByLessonIds(ids, req.user.id);
+
+      return successResponse(
+        res,
+        200,
+        'Quizzes fetched successfully',
+        quizzes,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ?? 500,
+        ),
+      );
+    }
+  }
 
   @Permissions('quiz-read')
   @Get(':id')
