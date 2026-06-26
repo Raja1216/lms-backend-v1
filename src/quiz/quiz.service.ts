@@ -132,11 +132,100 @@ export class QuizService {
     const quizzes = await this.prisma.quiz.findMany({
       where,
       include: {
-        lessons: true,
+        lessons: {
+          include: {
+            lesson: {
+              include: {
+                chapters: {
+                  include: {
+                    chapter: {
+                      include: {
+                        modules: {
+                          include: {
+                            module: true,
+                          },
+                        },
+                        subjects: {
+                          include: {
+                            subject: {
+                              include: {
+                                courses: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        chapterQuizzes: {
+          where: {
+            chapter: {
+              status: true,
+            },
+          },
+          include: {
+            chapter: {
+              include: {
+                modules: {
+                  include: {
+                    module: true,
+                  },
+                },
+                subjects: {
+                  include: {
+                    subject: {
+                      include: {
+                        courses: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        moduleQuizzes: {
+          where: {
+            module: {
+              status: true,
+            },
+          },
+          include: {
+            module: {
+              include: {
+                subject: {
+                  include: {
+                    courses: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        subjectQuizzes: {
+          where: {
+            subject: {
+              status: true,
+            },
+          },
+          include: {
+            subject: {
+              include: {
+                courses: true,
+              },
+            },
+          },
+        },
+
         courseQuizzes: true,
-        subjectQuizzes: true,
-        moduleQuizzes: true,
-        chapterQuizzes: true,
       },
       skip: (page - 1) * limit,
       take: +limit,
@@ -323,6 +412,23 @@ export class QuizService {
         enrolledSet.has(id),
       );
 
+      const lesson = quiz.lessons[0]?.lesson;
+
+      const chapter =
+        lesson?.chapters[0]?.chapter ?? quiz.chapterQuizzes[0]?.chapter;
+
+      const moduleRelation = chapter?.modules[0];
+      const module = moduleRelation?.module ?? quiz.moduleQuizzes[0]?.module;
+
+      const subjectRelation = chapter?.subjects[0];
+
+      const subject =
+        subjectRelation?.subject ?? quiz.subjectQuizzes[0]?.subject;
+
+      const courseRelation = subjectRelation?.subject?.courses[0];
+
+      const course = courseRelation ?? quiz.courseQuizzes[0];
+
       return {
         id: quiz.id,
         title: quiz.title,
@@ -334,11 +440,11 @@ export class QuizService {
         isLocked: quiz.isLocked,
         createdAt: quiz.createdAt,
         updatedAt: quiz.updatedAt,
-        courseId: quiz.courseQuizzes?.[0]?.courseId ?? null,
-        subjectId: quiz.subjectQuizzes?.[0]?.subjectId ?? null,
-        moduleId: quiz.moduleQuizzes?.[0]?.moduleId ?? null,
-        chapterId: quiz.chapterQuizzes?.[0]?.chapterId ?? null,
-        lessonId: quiz.lessons?.[0]?.lessonId ?? null,
+        courseId: course?.courseId ?? course?.id ?? null,
+        subjectId: subject?.id ?? null,
+        moduleId: module?.id ?? null,
+        chapterId: chapter?.id ?? null,
+        lessonId: lesson?.id ?? null,
         subMissionFrequency: quiz.subMissionFrequency,
         isUserEnrolled,
         isCompleted: completedSet.has(quiz.id),
@@ -355,27 +461,182 @@ export class QuizService {
     };
   }
 
+  async findByLessonIds(lessonIds: number[], userId: number) {
+    if (!lessonIds.length) {
+      return [];
+    }
+
+    const quizzes = await this.prisma.quiz.findMany({
+      where: {
+        lessons: {
+          some: {
+            lessonId: {
+              in: lessonIds,
+            },
+          },
+        },
+        status: true,
+      },
+      include: {
+        lessons: {
+          where: {
+            lessonId: {
+              in: lessonIds,
+            },
+          },
+          select: {
+            lessonId: true,
+          },
+        },
+
+        questions: {
+          where: {
+            status: true,
+          },
+          select: {
+            id: true,
+          },
+        },
+
+        quizAttempts: {
+          where: {
+            userId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 1,
+        },
+      },
+      orderBy: {
+        sortOrder: 'asc',
+      },
+    });
+
+    return quizzes.map((quiz) => ({
+      ...quiz,
+      lessonIds: quiz.lessons.map((l) => l.lessonId),
+      totalQuestions: quiz.questions.length,
+      lastAttempt: quiz.quizAttempts[0] ?? null,
+      lessons: undefined,
+      questions: undefined,
+      quizAttempts: undefined,
+    }));
+  }
+
   async findOne(id: number) {
     const quiz = await this.prisma.quiz.findFirst({
       where: { id, status: true },
       include: {
         questions: {
-          where: { status: true },
+          where: {
+            status: true,
+          },
           include: {
             options: true,
           },
         },
-        lessons: true,
+        lessons: {
+          include: {
+            lesson: {
+              include: {
+                chapters: {
+                  include: {
+                    chapter: {
+                      include: {
+                        modules: {
+                          include: {
+                            module: true,
+                          },
+                        },
+                        subjects: {
+                          include: {
+                            subject: {
+                              include: {
+                                courses: true,
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        chapterQuizzes: {
+          include: {
+            chapter: {
+              include: {
+                modules: {
+                  include: {
+                    module: true,
+                  },
+                },
+                subjects: {
+                  include: {
+                    subject: {
+                      include: {
+                        courses: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        moduleQuizzes: {
+          include: {
+            module: {
+              include: {
+                subject: {
+                  include: {
+                    courses: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        subjectQuizzes: {
+          include: {
+            subject: {
+              include: {
+                courses: true,
+              },
+            },
+          },
+        },
+
         courseQuizzes: true,
-        subjectQuizzes: true,
-        moduleQuizzes: true,
-        chapterQuizzes: true,
       },
     });
 
     if (!quiz) {
       throw new NotFoundException('Quiz not found');
     }
+
+    const lesson = quiz.lessons[0]?.lesson;
+
+    const chapter =
+      lesson?.chapters[0]?.chapter ?? quiz.chapterQuizzes[0]?.chapter;
+
+    const moduleRelation = chapter?.modules[0];
+    const module = moduleRelation?.module ?? quiz.moduleQuizzes[0]?.module;
+
+    const subjectRelation = chapter?.subjects[0];
+
+    const subject = subjectRelation?.subject ?? quiz.subjectQuizzes[0]?.subject;
+
+    const courseRelation = subjectRelation?.subject?.courses[0];
+
+    const course = courseRelation ?? quiz.courseQuizzes[0];
 
     return {
       id: quiz.id,
@@ -389,11 +650,11 @@ export class QuizService {
       createdAt: quiz.createdAt,
       updatedAt: quiz.updatedAt,
 
-      courseId: quiz.courseQuizzes?.[0]?.courseId ?? null,
-      subjectId: quiz.subjectQuizzes?.[0]?.subjectId ?? null,
-      moduleId: quiz.moduleQuizzes?.[0]?.moduleId ?? null,
-      chapterId: quiz.chapterQuizzes?.[0]?.chapterId ?? null,
-      lessonId: quiz.lessons?.[0]?.lessonId ?? null,
+      lessonId: lesson?.id ?? null,
+      chapterId: chapter?.id ?? null,
+      moduleId: module?.id ?? null,
+      subjectId: subject?.id ?? null,
+      courseId: course?.courseId ?? null,
 
       questions: quiz.questions,
     };
@@ -768,10 +1029,14 @@ export class QuizService {
     try {
       const courseIds = await this.getCourseIdsForQuiz(quiz);
       const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
-      await this.activityLogService.logActivity(userId, 'Quiz Submitted', primaryCourseId, {
+      await this.activityLogService.logActivity(
+        userId,
+        'Quiz Submitted',
+        primaryCourseId, {
         quizSubmissionId: attempt.id,
         quizId,
-      });
+      },
+      );
     } catch (err) {
       console.error('Failed to log Quiz Submitted activity', err);
     }

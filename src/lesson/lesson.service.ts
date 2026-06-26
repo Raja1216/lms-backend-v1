@@ -114,7 +114,21 @@ export class LessonService {
       include: {
         chapters: {
           include: {
-            chapter: true,
+            chapter: {
+              include: {
+                modules: true,
+
+                subjects: {
+                  include: {
+                    subject: {
+                      include: {
+                        courses: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       },
@@ -133,6 +147,32 @@ export class LessonService {
       include: {
         lesson: {
           include: {
+            quizzes: {
+              where: {
+                quiz: {
+                  status: true,
+                },
+              },
+              orderBy: {
+                quiz: {
+                  sortOrder: 'asc',
+                },
+              },
+              select: {
+                quiz: {
+                  select: {
+                    id: true,
+                    title: true,
+                    slug: true,
+                    totalMarks: true,
+                    passMarks: true,
+                    timeLimit: true,
+                    sortOrder: true,
+                  },
+                },
+              },
+            },
+
             chapters: {
               select: {
                 chapter: {
@@ -165,6 +205,45 @@ export class LessonService {
         lesson: {
           sortOrder: 'asc',
         },
+      },
+    });
+
+    const chapterQuizzes = await this.prisma.chapterQuiz.findMany({
+      where: {
+        quiz: {
+          status: true,
+        },
+        chapterId,
+      },
+      orderBy: {
+        quiz: {
+          sortOrder: 'asc',
+        },
+      },
+      select: {
+        quiz: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            totalMarks: true,
+            passMarks: true,
+            timeLimit: true,
+            sortOrder: true,
+          },
+        },
+      },
+    });
+
+    const chapter = await this.prisma.chapter.findUnique({
+      where: {
+        id: chapterId,
+      },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
       },
     });
 
@@ -240,13 +319,20 @@ export class LessonService {
       )[0]; // take first safely
 
       return {
-        lesson: item.lesson,
+        lesson: {
+          ...item.lesson,
+          quizzes: item.lesson.quizzes.map((q) => q.quiz),
+        },
         isUserEnrolled: courseId ? enrolledCourseSet.has(courseId) : false,
         isCompleted: completedLessonSet.has(item.lesson.id),
       };
     });
 
-    return lessonsWithStatus;
+    return {
+      chapter,
+      chapterQuizzes: chapterQuizzes.map((q) => q.quiz),
+      lessons: lessonsWithStatus,
+    };
   }
 
   async update(id: number, updateLessonDto: UpdateLessonDto) {

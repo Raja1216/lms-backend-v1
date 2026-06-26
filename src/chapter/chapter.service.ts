@@ -104,11 +104,25 @@ export class ChapterService {
       where: { id, status: true },
       include: {
         subjects: {
+          where: {
+            subject: {
+              status: true,
+            },
+          },
           include: {
-            subject: true,
+            subject: {
+              include: {
+                courses: true,
+              },
+            },
           },
         },
         modules: {
+          where: {
+            module: {
+              status: true,
+            },
+          },
           include: {
             module: true,
           },
@@ -120,7 +134,12 @@ export class ChapterService {
       throw new NotFoundException('Chapter not found');
     }
 
-    return chapter;
+    return {
+      ...chapter,
+      subjectId: chapter.subjects[0]?.subjectId ?? null,
+      moduleId: chapter.modules[0]?.moduleId ?? null,
+      courseId: chapter.subjects[0]?.subject?.courses[0]?.courseId ?? null,
+    };
   }
 
   async findAll(paginationDto: PaginationDto) {
@@ -133,9 +152,34 @@ export class ChapterService {
         },
         status: true,
       },
-      orderBy: [{ sortOrder: 'asc' }],
+      orderBy: {
+        sortOrder: 'asc',
+      },
       skip,
       take: limit,
+
+      include: {
+        subjects: {
+          select: {
+            subjectId: true,
+            subject: {
+              select: {
+                courses: {
+                  select: {
+                    courseId: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+
+        modules: {
+          select: {
+            moduleId: true,
+          },
+        },
+      },
     });
     const total = await this.prisma.chapter.count({
       where: {
@@ -145,7 +189,24 @@ export class ChapterService {
         status: true,
       },
     });
-    return { chapters, total, page, limit };
+    const data = chapters.map((chapter) => ({
+      id: chapter.id,
+      title: chapter.title,
+      slug: chapter.slug,
+      description: chapter.description,
+      sortOrder: chapter.sortOrder,
+
+      subjectId: chapter.subjects[0]?.subjectId ?? null,
+      moduleId: chapter.modules[0]?.moduleId ?? null,
+      courseId: chapter.subjects[0]?.subject?.courses[0]?.courseId ?? null,
+    }));
+
+    return {
+      chapters: data,
+      total,
+      page,
+      limit,
+    };
   }
 
   async findBySlug(slug: string) {
@@ -153,11 +214,25 @@ export class ChapterService {
       where: { slug, status: true },
       include: {
         subjects: {
+          where: {
+            subject: {
+              status: true,
+            },
+          },
           include: {
-            subject: true,
+            subject: {
+              include: {
+                courses: true,
+              },
+            },
           },
         },
         modules: {
+          where: {
+            module: {
+              status: true,
+            },
+          },
           include: {
             module: true,
           },
@@ -169,11 +244,16 @@ export class ChapterService {
       throw new NotFoundException('Chapter not found');
     }
 
-    return chapter;
+    return {
+      ...chapter,
+      subjectId: chapter.subjects[0]?.subjectId ?? null,
+      moduleId: chapter.modules[0]?.moduleId ?? null,
+      courseId: chapter.subjects[0]?.subject?.courses[0]?.courseId ?? null,
+    };
   }
 
   async findBySubject(subjectId: number) {
-    return this.prisma.chapter.findMany({
+    const chapters = await this.prisma.chapter.findMany({
       where: {
         status: true,
         subjects: {
@@ -182,24 +262,47 @@ export class ChapterService {
           },
         },
       },
-      orderBy: [{ sortOrder: 'asc' }],
+      orderBy: {
+        sortOrder: 'asc',
+      },
       include: {
         subjects: {
+          where: {
+            subject: {
+              status: true,
+            },
+          },
           include: {
-            subject: true,
+            subject: {
+              include: {
+                courses: true,
+              },
+            },
           },
         },
         modules: {
+          where: {
+            module: {
+              status: true,
+            },
+          },
           include: {
             module: true,
           },
         },
       },
     });
+
+    return chapters.map((chapter) => ({
+      ...chapter,
+      subjectId: chapter.subjects[0]?.subjectId ?? null,
+      moduleId: chapter.modules[0]?.moduleId ?? null,
+      courseId: chapter.subjects[0]?.subject?.courses[0]?.courseId ?? null,
+    }));
   }
 
   async findByModule(moduleId: number) {
-    return this.prisma.chapter.findMany({
+    const chapters = await this.prisma.chapter.findMany({
       where: {
         status: true,
         modules: {
@@ -208,22 +311,44 @@ export class ChapterService {
           },
         },
       },
-      orderBy: [{ sortOrder: 'asc' }],
+      orderBy: {
+        sortOrder: 'asc',
+      },
       include: {
         subjects: {
+          where: {
+            subject: {
+              status: true,
+            },
+          },
           include: {
-            subject: true,
+            subject: {
+              include: {
+                courses: true,
+              },
+            },
           },
         },
         modules: {
+          where: {
+            module: {
+              status: true,
+            },
+          },
           include: {
             module: true,
           },
         },
       },
     });
-  }
 
+    return chapters.map((chapter) => ({
+      ...chapter,
+      subjectId: chapter.subjects[0]?.subjectId ?? null,
+      moduleId: chapter.modules[0]?.moduleId ?? null,
+      courseId: chapter.subjects[0]?.subject?.courses[0]?.courseId ?? null,
+    }));
+  }
   async update(id: number, dto: UpdateChapterDto) {
     const existing = await this.findOne(id);
 
