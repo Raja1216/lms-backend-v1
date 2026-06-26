@@ -23,7 +23,7 @@ export class LessonService {
     private uploadService: UploadService,
     private readonly certificateIssuanceService: CertificateIssuanceService,
     private readonly activityLogService: ActivityLogService,
-  ) {}
+  ) { }
 
   async create(createLessonDto: CreateLessonDto) {
     const {
@@ -206,16 +206,16 @@ export class LessonService {
 
     const institutionCourseAssignments = institutionMembers.length
       ? await this.prisma.institutionCourse.findMany({
-          where: {
-            institutionId: {
-              in: institutionMembers.map((member) => member.institutionId),
-            },
-            courseId: { in: courseIds.length ? courseIds : [0] },
+        where: {
+          institutionId: {
+            in: institutionMembers.map((member) => member.institutionId),
           },
-          select: {
-            courseId: true,
-          },
-        })
+          courseId: { in: courseIds.length ? courseIds : [0] },
+        },
+        select: {
+          courseId: true,
+        },
+      })
       : [];
 
     // Fetch completed lessons in one query
@@ -353,6 +353,11 @@ export class LessonService {
       },
       include: {
         quizzes: {
+          where: {
+            quiz: {
+              status: true,
+            },
+          },
           orderBy: {
             quiz: {
               sortOrder: 'asc',
@@ -448,6 +453,7 @@ export class LessonService {
     //  Get lesson quizzes
     const lessonQuizzes = await this.prisma.quiz.findMany({
       where: {
+        status: true,
         lessons: {
           some: {
             lessonId,
@@ -498,7 +504,7 @@ export class LessonService {
         console.error('Failed to log XP Earned activity', err);
       }
     }
-    
+
     try {
       await this.activityLogService.logActivity(user.id, 'Lesson Completed', primaryCourseId, {
         lessonId,
