@@ -23,6 +23,7 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { GetSubmissionCertificatesDto } from './dto/get-submission-certificates.dto';
 import { PermissionGuard } from 'src/guard/permission.guard';
 import { Permissions } from 'src/guard/premission.decorator';
 import { successResponse } from 'src/utils/success-response';
@@ -458,7 +459,7 @@ export class UserController {
   @ApiBearerAuth('access-token')
   @ApiOperation({ summary: 'Get user submission certificates' })
   async getSubmissionCertificates(
-    @Query() paginationDto: PaginationDto,
+    @Query() query: GetSubmissionCertificatesDto,
     @Request() req: any,
     @Res() res: Response,
     @Next() next: NextFunction,
@@ -466,7 +467,7 @@ export class UserController {
     try {
       const certificates = await this.svc.submissionCertificates(
         req.user.id,
-        paginationDto,
+        query,
       );
 
       return successResponse(

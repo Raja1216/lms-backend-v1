@@ -182,15 +182,15 @@ export const participationCertificateTemplate = (
           style="
             position: absolute;
             left: 50%;
-            top: -90px;
+            top: -72px;
             transform: translateX(-50%);
             padding: 0 35px;
-            font-size: 54px;
+            font-size: 40px;
             font-weight: 700;
             color: #111;
             text-transform: uppercase;
             white-space: nowrap;
-            max-width: 80%;
+            max-width: 90%;
             overflow: hidden;
             text-overflow: ellipsis;
             

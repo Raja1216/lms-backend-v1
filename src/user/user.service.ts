@@ -8,6 +8,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Course, User, UserType } from 'src/generated/prisma/browser';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { GetSubmissionCertificatesDto } from './dto/get-submission-certificates.dto';
 import * as ExcelJS from 'exceljs';
 import { take } from 'rxjs/internal/operators/take';
 
@@ -1252,12 +1253,21 @@ export class UserService {
     return { left: s, right: s, top: s, bottom: s };
   }
 
-  async submissionCertificates(userId: number, paginationDto: PaginationDto) {
-    const { page = 1, limit = 10 } = paginationDto;
+  async submissionCertificates(userId: number, queryDto: GetSubmissionCertificatesDto) {
+    const { page = 1, limit = 10, quizAttemptId, quizId } = queryDto;
     const skip = (page - 1) * limit;
+
+    const where: any = { userId };
+    if (quizAttemptId) {
+      where.quizAttemptId = quizAttemptId;
+    }
+    if (quizId) {
+      where.quizId = quizId;
+    }
+
     const [certificates, total] = await Promise.all([
       this.prisma.userCompletionCertificate.findMany({
-        where: { userId },
+        where,
         include: {
           course: true,
           quizAttempt: true,
@@ -1270,7 +1280,7 @@ export class UserService {
       }),
 
       this.prisma.userCompletionCertificate.count({
-        where: { userId },
+        where,
       }),
     ]);
 
