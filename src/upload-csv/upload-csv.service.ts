@@ -15,6 +15,16 @@ import {
 } from 'src/generated/prisma/enums';
 import { generateSlug } from 'src/shared/generate-slug';
 
+function decodeCsvBuffer(buffer: Buffer): string {
+  try {
+    const decoder = new TextDecoder('utf-8', { fatal: true });
+    return decoder.decode(buffer);
+  } catch (e) {
+    const decoder = new TextDecoder('windows-1252');
+    return decoder.decode(buffer);
+  }
+}
+
 @Injectable()
 export class UploadCsvService {
   constructor(private prisma: PrismaService) {}
@@ -38,7 +48,7 @@ export class UploadCsvService {
     file: Express.Multer.File,
     entityType: CsvEntityType,
   ): Promise<CsvPreviewDto> {
-    const csvText = file.buffer.toString('utf-8');
+    const csvText = decodeCsvBuffer(file.buffer);
 
     return new Promise((resolve, reject) => {
       Papa.parse(csvText, {
