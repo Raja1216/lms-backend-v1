@@ -35,6 +35,7 @@ import { OrderModule } from './order/order.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { BullModule } from '@nestjs/bullmq';
 import { ConfigService } from '@nestjs/config';
+import { PublicModule } from './public/public.module';
 
 @Module({
   imports: [
@@ -78,7 +79,8 @@ import { ConfigService } from '@nestjs/config';
     CourseManagementModule,
     ShopModule,
     CartModule,
-    OrderModule
+    OrderModule,
+    PublicModule
   ],
   providers: [CertificateGeneratorService, CertificateIssuanceService],
 })

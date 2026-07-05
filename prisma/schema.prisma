@@ -179,6 +179,7 @@ model User {
   hosted_live_classes        live_classes[]              @relation("LiveClassHost")
   live_class_attendance      live_class_attendance[]
   userCompletionCertificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
+  pendingRegistrations       PendingRegistration[]
 
   @@map("users")
 }
@@ -236,6 +237,16 @@ model Course {
   price                      Decimal                     @db.Decimal(10, 2)
   discountedPrice            Decimal                     @db.Decimal(10, 2)
   description                String                      @db.Text
+  isFeatured                 Boolean                     @default(false)
+  isLaunch                   Boolean                     @default(false)                      
+  launchDate                 DateTime?                                          
+  previewVideoUrl            String?                     @db.Text                      
+  previewImageUrl            String?                     @db.Text                         
+  shortTagline               String?                     @db.Text                         
+  language                   String?                     @default("English")                          
+  whatYouLearn               Json?                                          
+  requirements               Json?                                           
+  rating                     Float?                      @default(5)
   status                     Boolean                     @default(true)
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime                    @updatedAt
@@ -250,9 +261,61 @@ model Course {
   institutionCourses         InstitutionCourse[]         @relation("InstitutionCourses")
   live_classes               live_classes[]
   userCompletionCertificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
+  pendingRegistrations       PendingRegistration[]
 
   @@map("courses")
 }
+
+model PendingRegistration {
+
+  id Int @id @default(autoincrement())
+
+  userId           Int?
+
+  orderNumber String @unique
+
+  razorpayOrderId String? @unique
+
+  courseId Int
+
+  fullName String
+
+  email String?
+
+  mobilePrefix String @default("+91")
+
+  mobile String
+
+  password String?
+
+  classGrade String?
+
+  schoolName    String?
+
+  city String?
+
+  amount Float
+
+  paymentStatus OrderStatus @default(pending)
+
+  expiresAt DateTime?
+
+  completedAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([email])
+
+  @@index([mobile])
+
+  @@map("pending_registrations")
+}
+
 
 model CourseTeacher {
   id        Int      @id @default(autoincrement())
@@ -1117,7 +1180,7 @@ model cart_items {
 model orders {
   id Int @id @default(autoincrement())
 
-  user_id Int
+  user_id Int?
 
   order_number String @unique
 
