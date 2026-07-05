@@ -361,6 +361,36 @@ export class ChapterService {
       );
     }
 
+    // Validate new subject if provided
+    if (dto.subjectId) {
+      const subject = await this.prisma.subject.findFirst({
+        where: { id: dto.subjectId, status: true },
+      });
+      if (!subject) {
+        throw new NotFoundException('Subject not found');
+      }
+    }
+
+    // Validate module-subject consistency
+    const targetSubjectId = dto.subjectId !== undefined ? dto.subjectId : existing.subjects[0]?.subjectId;
+    const targetModuleId = dto.moduleId !== undefined ? dto.moduleId : existing.modules[0]?.moduleId;
+
+    if (targetModuleId && targetSubjectId) {
+      const module = await this.prisma.module.findFirst({
+        where: {
+          id: targetModuleId,
+          subjectId: targetSubjectId,
+          status: true,
+        },
+      });
+
+      if (!module) {
+        throw new BadRequestException(
+          'Module does not belong to the given subject',
+        );
+      }
+    }
+
     await this.prisma.chapter.update({
       where: { id },
       data: {
@@ -370,31 +400,47 @@ export class ChapterService {
         sortOrder: dto.sortOrder,
       },
     });
-    if (dto.subjectId && dto.subjectId !== existing.subjects[0]?.subjectId) {
+
+    // Update subject association
+    if (dto.subjectId !== undefined && dto.subjectId !== existing.subjects[0]?.subjectId) {
       // Remove old subject association
       await this.prisma.subjectChapter.deleteMany({
-        where: { chapterId: id, subjectId: dto.subjectId },
+        where: { chapterId: id },
       });
-      // Add new subject association
-      await this.prisma.subjectChapter.create({
-        data: {
-          subjectId: dto.subjectId,
-          chapterId: id,
-        },
-      });
+      if (dto.subjectId !== null) {
+        // Add new subject association
+        await this.prisma.subjectChapter.create({
+          data: {
+            subjectId: dto.subjectId,
+            chapterId: id,
+          },
+        });
+      }
+
+      // If subject changed and moduleId is not being explicitly updated in this request,
+      // we must clear the module association since the old module belongs to the old subject.
+      if (dto.moduleId === undefined) {
+        await this.prisma.moduleChapter.deleteMany({
+          where: { chapterId: id },
+        });
+      }
     }
-    if (dto.moduleId && dto.moduleId !== existing.modules[0]?.moduleId) {
+
+    // Update module association
+    if (dto.moduleId !== undefined && dto.moduleId !== existing.modules[0]?.moduleId) {
       // Remove old module association
       await this.prisma.moduleChapter.deleteMany({
-        where: { chapterId: id, moduleId: dto.moduleId },
+        where: { chapterId: id },
       });
-      // Add new module association
-      await this.prisma.moduleChapter.create({
-        data: {
-          moduleId: dto.moduleId,
-          chapterId: id,
-        },
-      });
+      if (dto.moduleId !== null) {
+        // Add new module association
+        await this.prisma.moduleChapter.create({
+          data: {
+            moduleId: dto.moduleId,
+            chapterId: id,
+          },
+        });
+      }
     }
 
     return this.findOne(id);
