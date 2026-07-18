@@ -20,6 +20,7 @@ import { projectCompletionCertificateTemplate } from '../templates/certificate/p
 const execFileAsync = promisify(execFile);
 import { exec } from 'child_process';
 import { participationCertificateTemplate } from '../templates/certificate/participation-certificate-template';
+import { fifaDecodedParticipationCertificateTemplate } from '../templates/certificate/fifa-decoded-participation-certificate.template';
 const execAsync = promisify(exec);
 export interface CourseCertArgs {
   studentName: string;
@@ -173,6 +174,17 @@ export class CertificateGeneratorService {
       stem_powered_logo: toBase64('STEMpowered_logo.png'),
       header: toBase64('Header.png'),
       full_sign: toBase64('sign.png'),
+
+      background_fifa: toBase64(
+        'Kalam_STEM_Camp_Participation_Certificate_CT_20260717_220928_0000.jpg',
+      ),
+      trophy: toBase64('IMG_20260717_224609.png'),
+      year: toBase64('IMG_20260717_224923.png'),
+      center_ball: toBase64('IMG_20260717_225016.png'),
+      bottom_right_sketch: toBase64('IMG_20260717_225138.png'),
+      bottom_right_ball: toBase64('IMG_20260717_225104.png'),
+      title_banner: toBase64('certificate-title.png'),
+      signature: toBase64('RA_Sign.png'),
     };
   }
 
@@ -208,10 +220,10 @@ export class CertificateGeneratorService {
           a.courseId == 103 ||
           a.courseId == 104 ||
           a.courseId == 108 ||
-	  a.courseId == 109 ||
-	  a.courseId == 110 ||
-	  a.courseId == 111 ||
- 	  a.courseId == 112	 
+          a.courseId == 109 ||
+          a.courseId == 110 ||
+          a.courseId == 111 ||
+          a.courseId == 112
         ) {
           htmlContent = participationCertificateTemplate(
             a.studentName,
@@ -223,7 +235,20 @@ export class CertificateGeneratorService {
             assets,
             a.schoolName,
           );
-        } else {
+        } 
+        else if(a.courseId == 113){
+          htmlContent = fifaDecodedParticipationCertificateTemplate(
+            a.studentName,
+            a.className ?? '',
+            a.courseName,
+            a.marks,
+            a.grade ?? '',
+            a.completionDate,
+            assets,
+            a.schoolName,
+          );
+        }
+        else {
           htmlContent = examCompletionCertificateTemplate(
             a.studentName,
             a.examName,
