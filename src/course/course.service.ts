@@ -118,6 +118,14 @@ export class CourseService {
             name: true,
           },
         },
+        institutionMembers: {
+          where: {
+            status: true,
+          },
+          select: {
+            institutionId: true,
+          },
+        },
       },
     });
 
@@ -146,6 +154,10 @@ export class CourseService {
 
     enrolledCourseIds = enrollments.map((e) => e.courseId);
 
+    const institutionIds = user.institutionMembers.map(
+      (member) => member.institutionId,
+    );
+
     // Student enrolled courses
     const userType = user.userType || 'STUDENT';
 
@@ -156,7 +168,27 @@ export class CourseService {
 
     if (!isAdmin) {
       if (isTeacher) {
-        // Teachers can see everything
+        whereClause.AND.push({
+          OR: [
+            // All courses purchased/assigned to the teacher's institution
+            {
+              institutionCourses: {
+                some: {
+                  institutionId: {
+                    in: institutionIds,
+                  },
+                },
+              },
+            },
+
+            // All courses where the teacher is personally enrolled
+            {
+              id: {
+                in: enrolledCourseIds,
+              },
+            },
+          ],
+        });
       } else if (userType === 'STUDENT') {
         whereClause.AND.push({
           OR: [
@@ -174,9 +206,7 @@ export class CourseService {
             },
           ],
         });
-      }
-
-      if (userType === 'PROFESSIONAL') {
+      } else if (userType === 'PROFESSIONAL') {
         whereClause.AND.push({
           OR: [
             {
@@ -192,9 +222,8 @@ export class CourseService {
             },
           ],
         });
-      }
-
-      if (userType === 'TEACHER') {
+      } else if (userType === 'TEACHER') {
+        // Fallback when userType is TEACHER but teacher role is missing
         whereClause.AND.push({
           OR: [
             {
@@ -749,18 +778,30 @@ export class CourseService {
     }
 
     try {
-      await this.activityLogService.logActivity(user.id, 'Course Viewed', course.id);
+      await this.activityLogService.logActivity(
+        user.id,
+        'Course Viewed',
+        course.id,
+      );
     } catch (err) {
       console.error('Failed to log Course Viewed activity', err);
     }
 
     if (firstLessonId) {
       try {
-        await this.activityLogService.logActivity(user.id, 'Lesson Viewed', course.id, {
-          lessonId: firstLessonId,
-        });
+        await this.activityLogService.logActivity(
+          user.id,
+          'Lesson Viewed',
+          course.id,
+          {
+            lessonId: firstLessonId,
+          },
+        );
       } catch (err) {
-        console.error('Failed to log Lesson Viewed activity on course details page load', err);
+        console.error(
+          'Failed to log Lesson Viewed activity on course details page load',
+          err,
+        );
       }
     }
 
@@ -902,16 +943,21 @@ export class CourseService {
       await this.activityLogService.logActivity(
         user.id,
         'Payment Success',
-        course.id, {
-        paymentId: payment.id,
-      },
+        course.id,
+        {
+          paymentId: payment.id,
+        },
       );
     } catch (err) {
       console.error('Failed to log Payment Success activity', err);
     }
 
     try {
-      await this.activityLogService.logActivity(user.id, 'Course Enrolled', course.id);
+      await this.activityLogService.logActivity(
+        user.id,
+        'Course Enrolled',
+        course.id,
+      );
     } catch (err) {
       console.error('Failed to log Course Enrolled activity', err);
     }
