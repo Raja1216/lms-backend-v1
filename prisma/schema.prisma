@@ -140,6 +140,14 @@ enum UserType {
   PUBLIC
 }
 
+enum ProjectLevel {
+  course
+  subject
+  module
+  chapter
+  lesson
+}
+
 model User {
   id                         Int                         @id @default(autoincrement())
   uuid                       String                      @unique @default(uuid())
@@ -343,6 +351,7 @@ model Subject {
   modules        Module[]
   subjectQuizzes SubjectQuiz[]
   forum          CourForum[]      @relation("ForumToSubject")
+  projects       Project[]        @relation("SubjectProjects")
   live_classes   live_classes[]
 
   @@map("subjects")
@@ -377,6 +386,8 @@ model Chapter {
   forum          CourForum[]       @relation("ForumToChapter")
   live_classes   live_classes[]
 
+  projects Project[] @relation("ChapterProjects")
+
   @@map("chapters")
 }
 
@@ -409,6 +420,7 @@ model Module {
   chapters      ModuleChapter[]
   moduleQuizzes ModuleQuiz[]
   live_classes  live_classes[]
+  projects      Project[]       @relation("ModuleProjects")
 
   @@map("modules")
 }
@@ -448,6 +460,7 @@ model Lesson {
   quizzes      LessonQuiz[]
   xpEarned     UserXPEarned[]
   forum        CourForum[]       @relation("ForumToLesson")
+  projects     Project[]         @relation("LessonProjects")
 
   @@map("lessons")
 }
@@ -779,6 +792,13 @@ model ChapterQuiz {
 model Project {
   id             Int            @id @default(autoincrement())
   courseId       Int
+  subjectId      Int?
+  moduleId       Int?
+  chapterId      Int?
+  lessonId       Int?
+
+  level          ProjectLevel   @default(course)
+
   createdBy      Int
   title          String
   slug           String         @unique
@@ -787,19 +807,32 @@ model Project {
   deadline       DateTime
   maxMarks       Int
   gradingMethod  GradingMethod  @default(manual)
-  /// Weight of this project in the course final score (0–100)
+
   weightPercent  Decimal        @default(0) @db.Decimal(5, 2)
   allowLate      Boolean        @default(false)
-  /// Max file size per upload in MB
   maxFileSizeMb  Int            @default(50)
   status         Boolean        @default(true)
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
 
-  course      Course              @relation("CourseProjects", fields: [courseId], references: [id], onDelete: Cascade)
-  creator     User                @relation("TeacherProjects", fields: [createdBy], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course  Course   @relation("CourseProjects", fields: [courseId], references: [id], onDelete: Cascade)
+  subject Subject? @relation("SubjectProjects", fields: [subjectId], references: [id], onDelete: Cascade)
+  module  Module?  @relation("ModuleProjects", fields: [moduleId], references: [id], onDelete: Cascade)
+  chapter Chapter? @relation("ChapterProjects", fields: [chapterId], references: [id], onDelete: Cascade)
+  lesson  Lesson?  @relation("LessonProjects", fields: [lessonId], references: [id], onDelete: Cascade)
+
+  creator User @relation("TeacherProjects", fields: [createdBy], references: [id])
+
   rubrics     ProjectRubric[]     @relation("ProjectRubrics")
   submissions ProjectSubmission[] @relation("ProjectSubmissions")
+
+  @@index([courseId])
+  @@index([subjectId])
+  @@index([moduleId])
+  @@index([chapterId])
+  @@index([lessonId])
+  @@index([level])
 
   @@map("projects")
 }
@@ -953,7 +986,7 @@ model Certificate {
   certificateNumber   String           @unique
   userId              Int
   submissionId        Int?             @unique
-  projectSubmissionId Int?
+  projectSubmissionId Int?             
   type                CertificateType
   filePath            String?
   fileUrl             String?

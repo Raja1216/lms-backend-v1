@@ -18,10 +18,8 @@ import { examCompletionCertificateTemplate } from '../templates/certificate/exam
 import { courseCompletionCertificateTemplate } from '../templates/certificate/course-complitation-certificate.template';
 import { projectCompletionCertificateTemplate } from '../templates/certificate/project-complitation-certificate.template';
 const execFileAsync = promisify(execFile);
-import { exec } from 'child_process';
 import { participationCertificateTemplate } from '../templates/certificate/participation-certificate-template';
 import { fifaDecodedParticipationCertificateTemplate } from '../templates/certificate/fifa-decoded-participation-certificate.template';
-const execAsync = promisify(exec);
 export interface CourseCertArgs {
   studentName: string;
   className: string;
@@ -283,78 +281,55 @@ export class CertificateGeneratorService {
     }
   }
   async generateProjectCertificate(
-    args: ProjectCertificateArgs,
-  ): Promise<CertificateUploadResult> {
-    const assets = this.getCertificateAssets();
-    const html = projectCompletionCertificateTemplate(
-      args.studentName,
-      args.schoolName,
-      args.projectName,
-      args.courseName,
-      args.grade,
-      args.teacherRemarks,
-      args.completedDate,
-      args.certificateId,
-      assets,
-      args.className,
+  args: ProjectCertificateArgs,
+): Promise<CertificateUploadResult> {
+
+  const assets = this.getCertificateAssets();
+
+  const html = projectCompletionCertificateTemplate(
+    args.studentName,
+    args.schoolName,
+    args.projectName,
+    args.courseName,
+    args.grade,
+    args.teacherRemarks,
+    args.completedDate,
+    args.certificateId,
+    assets,
+    args.className,
+  );
+
+  const tmpDir = os.tmpdir();
+  const filename = `cert-${uuid()}.pdf`;
+  const tmpFilePath = path.join(tmpDir, filename);
+
+  try {
+
+    // Same rendering method used by Quiz certificates
+    const pdfBuffer =
+      await this.renderHtmlToPdfBuffer(html);
+
+    fs.writeFileSync(
+      tmpFilePath,
+      pdfBuffer,
     );
-    return this.htmlToPdfAndUpload(html, 'certificates');
-  }
-  private async htmlToPdfAndUpload(
-    html: string,
-    type: string,
-  ): Promise<CertificateUploadResult> {
-    const tmpDir = os.tmpdir();
-    const baseName = uuid();
-    const htmlPath = path.join(tmpDir, `${baseName}.html`);
-    const pdfPath = path.join(tmpDir, `${baseName}.pdf`);
 
-    try {
-      // 1. Write HTML temp file
-      fs.writeFileSync(htmlPath, html, 'utf8');
+    const buffer =
+      fs.readFileSync(tmpFilePath);
 
-      // 2. Convert to PDF via wkhtmltopdf
-      await this.runWkhtmltopdf(htmlPath, pdfPath);
+    return await this.uploadBufferViaFtp(
+      buffer,
+      filename,
+      'certificates',
+    );
 
-      // 3. Read buffer and upload
-      const buffer = fs.readFileSync(pdfPath);
-      return this.uploadBufferViaFtp(buffer, `${baseName}.pdf`, type);
-    } finally {
-      // Clean up temp files
-      for (const f of [htmlPath, pdfPath]) {
-        if (fs.existsSync(f)) fs.unlinkSync(f);
-      }
+  } finally {
+
+    if (fs.existsSync(tmpFilePath)) {
+      fs.unlinkSync(tmpFilePath);
     }
   }
-  private async runWkhtmltopdf(
-    htmlPath: string,
-    pdfPath: string,
-  ): Promise<void> {
-    // Page sized to match the 1200×850 certificate canvas (px → points at 96dpi)
-    const cmd = [
-      'wkhtmltopdf',
-      '--page-width 1260px',
-      '--page-height 910px',
-      '--zoom 1',
-      '--margin-top 0',
-      '--margin-bottom 0',
-      '--margin-left 0',
-      '--margin-right 0',
-      '--enable-local-file-access',
-      '--quiet',
-      `"${htmlPath}"`,
-      `"${pdfPath}"`,
-    ].join(' ');
-
-    try {
-      await execAsync(cmd);
-    } catch (err: any) {
-      this.logger.error('wkhtmltopdf failed', err?.stderr ?? err?.message);
-      throw new InternalServerErrorException(
-        'Certificate PDF generation failed',
-      );
-    }
-  }
+}
 
   private async runPythonGenerator(
     type: 'course' | 'quiz',

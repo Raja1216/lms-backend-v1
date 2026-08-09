@@ -261,75 +261,100 @@ export class ProjectGradingService {
   //   });
   // }
 
-  async publishGrade(submissionId: number, userId: number) {
-    const grade = await this.prisma.projectGrade.findUnique({
-      where: { submissionId },
+  async publishGrade(
+  submissionId: number,
+  userId: number,
+) {
+  const grade =
+    await this.prisma.projectGrade.findUnique({
+      where: {
+        submissionId,
+      },
     });
 
-    const userRoles = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { roles: true },
+  if (!grade) {
+    throw new NotFoundException(
+      'Grade not found for this submission',
+    );
+  }
+
+  const userRoles =
+    await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
+
+      select: {
+        roles: true,
+      },
     });
 
-    if (!grade)
-      throw new NotFoundException('Grade not found for this submission');
+  const isSuperAdmin =
+    userRoles?.roles?.some(
+      (role) =>
+        role.name === 'Super Admin',
+    );
 
-    if (
-      grade.teacherId !== userId &&
-      !userRoles?.roles?.some((role) => role.name === 'Super Admin')
-    ) {
-      throw new ForbiddenException(
-        'Only the grading teacher can publish this grade',
-      );
-    }
+  if (
+    grade.teacherId !== userId &&
+    !isSuperAdmin
+  ) {
+    throw new ForbiddenException(
+      'Only the grading teacher can publish this grade',
+    );
+  }
 
-    // ✅ FIRST: Get submission (MOVE UP)
-    const submission = await this.prisma.projectSubmission.findUnique({
-      where: { id: submissionId },
+  const submission =
+    await this.prisma.projectSubmission.findUnique({
+      where: {
+        id: submissionId,
+      },
+
       include: {
         student: true,
+
         project: {
           include: {
             course: true,
           },
         },
+
         grade: true,
       },
     });
 
-    if (!submission) {
-      throw new NotFoundException('Submission not found');
-    }
+  if (!submission) {
+    throw new NotFoundException(
+      'Submission not found',
+    );
+  }
 
-    // ✅ Update grade
-    const updatedGrade = await this.prisma.projectGrade.update({
-      where: { submissionId },
-      data: { isPublished: true },
-    });
-
-    // ✅ Check duplicate certificate (CLEAN VERSION)
-    // const alreadyExists = await this.prisma.certificate.findFirst({
-    //   where: {
-    //     userId: submission.studentId,
-    //     projectTitle: submission.project.title,
-    //     type: 'project_completion',
-    //   },
-    // });
-    const alreadyExists = await this.prisma.certificate.findUnique({
+  const updatedGrade =
+    await this.prisma.projectGrade.update({
       where: {
-        submissionId: submission.id,
+        submissionId,
+      },
+
+      data: {
+        isPublished: true,
       },
     });
 
-    if (!alreadyExists && updatedGrade.isPublished) {
-      await this.projectService.issueProjectCertificateIfEligible(
-        submission.id,
-        updatedGrade.id,
-      );
-    }
+  /*
+   * Certificate is generated only
+   * after grade is published.
+   *
+   * The certificate service itself
+   * handles create/update.
+   */
+  await this.projectService
+    .issueProjectCertificateIfEligible(
+      submission.id,
+      updatedGrade.id,
+    );
 
-    return updatedGrade;
-  }
+  return updatedGrade;
+}
   async getGrade(submissionId: number) {
     const grade = await this.prisma.projectGrade.findUnique({
       where: { submissionId },

@@ -1253,37 +1253,189 @@ export class UserService {
     return { left: s, right: s, top: s, bottom: s };
   }
 
-  async submissionCertificates(userId: number, queryDto: GetSubmissionCertificatesDto) {
+  // async submissionCertificates(userId: number, queryDto: GetSubmissionCertificatesDto) {
+  //   const { page = 1, limit = 10, quizAttemptId, quizId } = queryDto;
+  //   const skip = (page - 1) * limit;
+
+  //   const where: any = { userId };
+  //   if (quizAttemptId) {
+  //     where.quizAttemptId = quizAttemptId;
+  //   }
+  //   if (quizId) {
+  //     where.quizId = quizId;
+  //   }
+
+  //   const [certificates, total] = await Promise.all([
+  //     this.prisma.userCompletionCertificate.findMany({
+  //       where,
+  //       include: {
+  //         course: true,
+  //         quizAttempt: true,
+  //         quiz: true,
+  //       },
+
+  //       orderBy: { createdAt: 'desc' },
+  //       skip,
+  //       take: limit,
+  //     }),
+
+  //     this.prisma.userCompletionCertificate.count({
+  //       where,
+  //     }),
+  //   ]);
+
+  //   return { certificates, total, page, limit };
+  // }
+
+  async submissionCertificates(
+    userId: number,
+    queryDto: GetSubmissionCertificatesDto,
+  ) {
     const { page = 1, limit = 10, quizAttemptId, quizId } = queryDto;
+
     const skip = (page - 1) * limit;
 
-    const where: any = { userId };
+    const quizWhere: any = {
+      userId,
+    };
+
     if (quizAttemptId) {
-      where.quizAttemptId = quizAttemptId;
-    }
-    if (quizId) {
-      where.quizId = quizId;
+      quizWhere.quizAttemptId = quizAttemptId;
     }
 
-    const [certificates, total] = await Promise.all([
+    if (quizId) {
+      quizWhere.quizId = quizId;
+    }
+
+    const projectWhere: any = {
+      userId,
+    };
+
+    const [quizCertificates, projectCertificates] = await Promise.all([
       this.prisma.userCompletionCertificate.findMany({
-        where,
+        where: quizWhere,
+
         include: {
           course: true,
           quizAttempt: true,
           quiz: true,
         },
 
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
       }),
 
-      this.prisma.userCompletionCertificate.count({
-        where,
+      this.prisma.certificate.findMany({
+        where: projectWhere,
+
+        include: {
+          projectSubmission: {
+            include: {
+              project: {
+                include: {
+                  course: true,
+                  subject: true,
+                  module: true,
+                  chapter: true,
+                  lesson: true,
+                },
+              },
+            },
+          },
+        },
+
+        orderBy: {
+          createdAt: 'desc',
+        },
       }),
     ]);
 
-    return { certificates, total, page, limit };
+    const formattedQuizCertificates = quizCertificates.map((certificate) => ({
+      id: certificate.id,
+
+      certificateType: certificate.quizId ? 'quiz' : 'course',
+
+      certificateNumber: certificate.certificateNumber,
+
+      filePath: certificate.filePath,
+
+      fileUrl: certificate.fileUrl,
+
+      createdAt: certificate.createdAt,
+
+      course: certificate.course,
+
+      quiz: certificate.quiz,
+
+      quizAttempt: certificate.quizAttempt,
+
+      project: null,
+    }));
+
+    const formattedProjectCertificates = projectCertificates.map(
+      (certificate) => ({
+        id: certificate.id,
+
+        certificateType: 'project',
+
+        certificateNumber: certificate.certificateNumber,
+
+        filePath: certificate.filePath,
+
+        fileUrl: certificate.fileUrl,
+
+        createdAt: certificate.createdAt,
+
+        course: certificate.projectSubmission?.project?.course ?? null,
+
+        quiz: null,
+
+        quizAttempt: null,
+
+        project: {
+          id: certificate.projectSubmission?.project?.id,
+
+          title: certificate.projectSubmission?.project?.title,
+
+          level: certificate.projectSubmission?.project?.level,
+
+          subject: certificate.projectSubmission?.project?.subject,
+
+          module: certificate.projectSubmission?.project?.module,
+
+          chapter: certificate.projectSubmission?.project?.chapter,
+
+          lesson: certificate.projectSubmission?.project?.lesson,
+
+          submissionId: certificate.projectSubmissionId,
+
+          grade: certificate.grade,
+
+          teacherRemarks: certificate.teacherRemarks,
+
+          completionDate: certificate.completionDate,
+        },
+      }),
+    );
+
+    const allCertificates = [
+      ...formattedQuizCertificates,
+      ...formattedProjectCertificates,
+    ].sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+
+    const total = allCertificates.length;
+
+    const certificates = allCertificates.slice(skip, skip + limit);
+
+    return {
+      certificates,
+      total,
+      page,
+      limit,
+    };
   }
 }

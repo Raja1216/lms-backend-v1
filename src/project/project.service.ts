@@ -23,7 +23,50 @@ export class ProjectService {
   private async findProjectOrThrow(id: number) {
     const project = await this.prisma.project.findUnique({
       where: { id },
-      include: { rubrics: true },
+      include: {
+        rubrics: true,
+
+        course: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+
+        module: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        chapter: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            topicName: true,
+          },
+        },
+      },
     });
     if (!project) {
       throw new NotFoundException(`Project not found`);
@@ -31,73 +74,240 @@ export class ProjectService {
     return project;
   }
   async create(dto: CreateProjectDto, teacherId: number) {
-    // Validate course exists
-    const course = await this.prisma.course.findUnique({
-      where: { id: dto.courseId },
-    });
-    if (!course) throw new NotFoundException('Course not found');
+    await this.validateProjectHierarchy(dto);
 
-    // Validate rubric weights sum to 100 if rubric grading
     if (dto.gradingMethod === 'rubric' && dto.rubrics?.length) {
-      const totalWeight = dto.rubrics.reduce((s, r) => s + r.weight, 0);
+      const totalWeight = dto.rubrics.reduce(
+        (sum, rubric) => sum + Number(rubric.weight),
+        0,
+      );
+
       if (Math.round(totalWeight) !== 100) {
         throw new BadRequestException('Rubric weights must sum to 100');
       }
     }
+
     const projectSlug = await generateUniqueSlugForTable(
       this.prisma,
       'project',
       dto.title,
     );
+
     return this.prisma.project.create({
       data: {
         courseId: dto.courseId,
+
+        subjectId: dto.level === 'course' ? null : dto.subjectId,
+
+        moduleId: ['module', 'chapter', 'lesson'].includes(dto.level)
+          ? dto.moduleId
+          : null,
+
+        chapterId: ['chapter', 'lesson'].includes(dto.level)
+          ? dto.chapterId
+          : null,
+
+        lessonId: dto.level === 'lesson' ? dto.lessonId : null,
+
+        level: dto.level,
+
         createdBy: teacherId,
+
         title: dto.title,
+
         slug: projectSlug,
+
         description: dto.description,
+
         submissionType: dto.submissionType,
+
         deadline: new Date(dto.deadline),
+
         maxMarks: dto.maxMarks,
+
         gradingMethod: dto.gradingMethod,
+
         weightPercent: dto.weightPercent ?? 0,
+
         allowLate: dto.allowLate ?? false,
+
         maxFileSizeMb: dto.maxFileSizeMb ?? 50,
+
         rubrics: dto.rubrics?.length
           ? {
-              create: dto.rubrics.map((r) => ({
-                title: r.title,
-                description: r.description,
-                weight: r.weight,
-                maxMarks: r.maxMarks,
+              create: dto.rubrics.map((rubric) => ({
+                title: rubric.title,
+                description: rubric.description,
+                weight: rubric.weight,
+                maxMarks: rubric.maxMarks,
               })),
             }
           : undefined,
       },
-      include: { rubrics: true },
+
+      include: {
+        rubrics: true,
+
+        course: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+
+        module: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        chapter: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            topicName: true,
+          },
+        },
+      },
     });
   }
 
   async findAll(query: QueryProjectDto) {
-    const { page = 1, limit = 10, courseId, status } = query;
-    const skip = (page - 1) * limit;
+    const {
+      page = 1,
+      limit = 10,
+
+      courseId,
+      subjectId,
+      moduleId,
+      chapterId,
+      lessonId,
+
+      level,
+      status,
+    } = query;
+
+    const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {};
-    if (courseId) where.courseId = courseId;
-    if (status !== undefined) where.status = status;
+
+    if (courseId) {
+      where.courseId = courseId;
+    }
+
+    if (subjectId) {
+      where.subjectId = subjectId;
+    }
+
+    if (moduleId) {
+      where.moduleId = moduleId;
+    }
+
+    if (chapterId) {
+      where.chapterId = chapterId;
+    }
+
+    if (lessonId) {
+      where.lessonId = lessonId;
+    }
+
+    if (level) {
+      where.level = level;
+    }
+
+    if (status !== undefined) {
+      where.status = status;
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.project.findMany({
         where,
+
         skip,
-        take: limit,
-        include: { rubrics: true, course: { select: { title: true } } },
-        orderBy: { createdAt: 'desc' },
+
+        take: Number(limit),
+
+        include: {
+          rubrics: true,
+
+          course: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
+          },
+
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+
+          module: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
+          },
+
+          chapter: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+            },
+          },
+
+          lesson: {
+            select: {
+              id: true,
+              title: true,
+              slug: true,
+              topicName: true,
+            },
+          },
+        },
+
+        orderBy: {
+          createdAt: 'desc',
+        },
       }),
-      this.prisma.project.count({ where }),
+
+      this.prisma.project.count({
+        where,
+      }),
     ]);
 
-    return { data, total, page, limit };
+    return {
+      data,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    };
   }
   async findProjectsByCourseSlug(
     courseSlug: string,
@@ -119,20 +329,106 @@ export class ProjectService {
     }
     const { page = 1, limit = 10 } = paginationDto;
     const skip = (page - 1) * limit;
-    return this.prisma.project
-      .findMany({
-        where: { courseId: course.id },
-        include: { rubrics: true, course: { select: { title: true } } },
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limit,
-      })
-      .then(async (data) => {
-        const total = await this.prisma.project.count({
-          where: { courseId: course.id },
-        });
-        return { data, total, page, limit };
-      });
+    // return this.prisma.project
+    //   .findMany({
+    //     where: { courseId: course.id },
+    //     include: { rubrics: true, course: { select: { title: true } } },
+    //     orderBy: { createdAt: 'desc' },
+    //     skip,
+    //     take: limit,
+    //   })
+    //   .then(async (data) => {
+    //     const total = await this.prisma.project.count({
+    //       where: { courseId: course.id },
+    //     });
+    //     return { data, total, page, limit };
+    //   });
+
+    const data = await this.prisma.project.findMany({
+      where: {
+        courseId: course.id,
+        status: true,
+      },
+
+      include: {
+        rubrics: true,
+
+        course: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+
+        module: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        chapter: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+          },
+        },
+
+        lesson: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            topicName: true,
+          },
+        },
+
+        submissions: {
+          where: {
+            studentId: userId,
+          },
+
+          include: {
+            files: true,
+            grade: true,
+          },
+
+          take: 1,
+        },
+      },
+
+      orderBy: {
+        createdAt: 'desc',
+      },
+
+      skip,
+      take: Number(limit),
+    });
+
+    const total = await this.prisma.project.count({
+      where: {
+        courseId: course.id,
+        status: true,
+      },
+    });
+
+    return {
+      data,
+      total,
+      page: Number(page),
+      limit: Number(limit),
+    };
   }
 
   async findOne(id: number) {
@@ -256,7 +552,13 @@ export class ProjectService {
         where: { id: submissionId },
         include: {
           student: {
-            select: { id: true, name: true, classGrade: true, section: true },
+            select: {
+              id: true,
+              name: true,
+              classGrade: true,
+              section: true,
+              schoolName: true,
+            },
           },
           project: {
             select: {
@@ -305,7 +607,7 @@ export class ProjectService {
       const { filePath, fileUrl } =
         await this.certificateGenerator.generateProjectCertificate({
           studentName: student.name ?? 'Student',
-          schoolName: course.title, // school = course name line in template
+          schoolName: student.schoolName ?? '', // school = course name line in template
           projectName: project.title,
           courseName: course.title,
           grade: letterGrade,
@@ -363,10 +665,14 @@ export class ProjectService {
         `Project certificate issued [submission=${submissionId} user=${student.id}]`,
       );
     } catch (err) {
+      console.error('PROJECT CERTIFICATE ERROR:', err);
+
       this.logger.error(
         `Project certificate issuance failed [submission=${submissionId}]`,
-        err,
+        err instanceof Error ? err.stack : String(err),
       );
+
+      throw err;
     }
   }
   private generateCertNumber(): string {
@@ -383,5 +689,207 @@ export class ProjectService {
     if (pct >= 40) return 'C';
     if (pct >= 33) return 'D';
     return 'F';
+  }
+  private async validateProjectHierarchy(dto: {
+    courseId: number;
+    subjectId?: number | null;
+    moduleId?: number | null;
+    chapterId?: number | null;
+    lessonId?: number | null;
+    level: string;
+  }) {
+    const course = await this.prisma.course.findUnique({
+      where: {
+        id: dto.courseId,
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException('Course not found');
+    }
+
+    switch (dto.level) {
+      case 'course': {
+        break;
+      }
+
+      case 'subject': {
+        if (!dto.subjectId) {
+          throw new BadRequestException(
+            'subjectId is required for subject level project',
+          );
+        }
+
+        const relation = await this.prisma.courseSubject.findFirst({
+          where: {
+            courseId: dto.courseId,
+            subjectId: dto.subjectId,
+          },
+        });
+
+        if (!relation) {
+          throw new BadRequestException(
+            'Subject does not belong to this course',
+          );
+        }
+
+        break;
+      }
+
+      case 'module': {
+        if (!dto.subjectId || !dto.moduleId) {
+          throw new BadRequestException(
+            'subjectId and moduleId are required for module level project',
+          );
+        }
+
+        const module = await this.prisma.module.findFirst({
+          where: {
+            id: dto.moduleId,
+            subjectId: dto.subjectId,
+          },
+        });
+
+        if (!module) {
+          throw new BadRequestException(
+            'Module does not belong to this subject',
+          );
+        }
+
+        const courseSubject = await this.prisma.courseSubject.findFirst({
+          where: {
+            courseId: dto.courseId,
+            subjectId: dto.subjectId,
+          },
+        });
+
+        if (!courseSubject) {
+          throw new BadRequestException(
+            'Subject does not belong to this course',
+          );
+        }
+
+        break;
+      }
+
+      case 'chapter': {
+        if (!dto.subjectId || !dto.moduleId || !dto.chapterId) {
+          throw new BadRequestException(
+            'subjectId, moduleId and chapterId are required for chapter level project',
+          );
+        }
+
+        const module = await this.prisma.module.findFirst({
+          where: {
+            id: dto.moduleId,
+            subjectId: dto.subjectId,
+          },
+        });
+
+        if (!module) {
+          throw new BadRequestException(
+            'Module does not belong to this subject',
+          );
+        }
+
+        const moduleChapter = await this.prisma.moduleChapter.findFirst({
+          where: {
+            moduleId: dto.moduleId,
+            chapterId: dto.chapterId,
+          },
+        });
+
+        if (!moduleChapter) {
+          throw new BadRequestException(
+            'Chapter does not belong to this module',
+          );
+        }
+
+        const courseSubject = await this.prisma.courseSubject.findFirst({
+          where: {
+            courseId: dto.courseId,
+            subjectId: dto.subjectId,
+          },
+        });
+
+        if (!courseSubject) {
+          throw new BadRequestException(
+            'Subject does not belong to this course',
+          );
+        }
+
+        break;
+      }
+
+      case 'lesson': {
+        if (
+          !dto.subjectId ||
+          !dto.moduleId ||
+          !dto.chapterId ||
+          !dto.lessonId
+        ) {
+          throw new BadRequestException(
+            'subjectId, moduleId, chapterId and lessonId are required for lesson level project',
+          );
+        }
+
+        const courseSubject = await this.prisma.courseSubject.findFirst({
+          where: {
+            courseId: dto.courseId,
+            subjectId: dto.subjectId,
+          },
+        });
+
+        if (!courseSubject) {
+          throw new BadRequestException(
+            'Subject does not belong to this course',
+          );
+        }
+
+        const module = await this.prisma.module.findFirst({
+          where: {
+            id: dto.moduleId,
+            subjectId: dto.subjectId,
+          },
+        });
+
+        if (!module) {
+          throw new BadRequestException(
+            'Module does not belong to this subject',
+          );
+        }
+
+        const moduleChapter = await this.prisma.moduleChapter.findFirst({
+          where: {
+            moduleId: dto.moduleId,
+            chapterId: dto.chapterId,
+          },
+        });
+
+        if (!moduleChapter) {
+          throw new BadRequestException(
+            'Chapter does not belong to this module',
+          );
+        }
+
+        const lessonChapter = await this.prisma.lessonToChapter.findFirst({
+          where: {
+            lessonId: dto.lessonId,
+            chapterId: dto.chapterId,
+          },
+        });
+
+        if (!lessonChapter) {
+          throw new BadRequestException(
+            'Lesson does not belong to this chapter',
+          );
+        }
+
+        break;
+      }
+
+      default:
+        throw new BadRequestException('Invalid project level');
+    }
   }
 }
