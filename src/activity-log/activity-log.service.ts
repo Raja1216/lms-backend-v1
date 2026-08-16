@@ -136,38 +136,84 @@ export class ActivityLogService {
     endDate: Date,
     role?: string,
     keyword?: string,
+    institutionId?: number,
+    classGrade?: string,
+    section?: string,
+    courseId?: number,
   ) {
     const startStr = startDate.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
 
     let matchedUserIds: number[] | null = null;
-    let roleUserIds: number[] | null = null;
 
-    if (role && role !== 'ALL') {
-      const matchingUsers = await this.mainPrisma.user.findMany({
-        where: { userType: role as any },
-        select: { id: true },
-      });
-      roleUserIds = matchingUsers.map((u) => u.id);
-      if (roleUserIds.length === 0) {
-        matchedUserIds = [];
-      }
-    }
+    const hasUserFilter =
+      (role && role !== 'ALL') ||
+      !!keyword ||
+      !!institutionId ||
+      (classGrade && classGrade !== 'ALL') ||
+      (section && section !== 'ALL');
+    !!courseId;
 
-    if (keyword) {
-      const userWhere: any = {
-        OR: [{ name: { contains: keyword } }, { email: { contains: keyword } }],
-      };
-      if (roleUserIds) {
-        userWhere.id = { in: roleUserIds };
+    if (hasUserFilter) {
+      const userWhere: any = {};
+
+      // Role filter
+      if (role && role !== 'ALL') {
+        userWhere.userType = role as any;
       }
+
+      // Keyword filter
+      if (keyword) {
+        userWhere.OR = [
+          {
+            name: {
+              contains: keyword,
+            },
+          },
+          {
+            email: {
+              contains: keyword,
+            },
+          },
+        ];
+      }
+
+      // Class filter
+      if (classGrade && classGrade !== 'ALL') {
+        userWhere.classGrade = classGrade;
+      }
+
+      // Section filter
+      if (section && section !== 'ALL') {
+        userWhere.section = section;
+      }
+
+      // Institution filter
+      if (institutionId) {
+        userWhere.institutionMembers = {
+          some: {
+            institutionId: institutionId,
+            status: true,
+          },
+        };
+      }
+      //Course filter
+      if (courseId) {
+        userWhere.userEnrolledCourses = {
+          some: {
+            courseId: courseId,
+          },
+        };
+      }
+
       const matchedUsers = await this.mainPrisma.user.findMany({
         where: userWhere,
-        select: { id: true },
+        select: {
+          id: true,
+        },
       });
-      matchedUserIds = matchedUsers.map((u) => u.id);
-    } else if (roleUserIds) {
-      matchedUserIds = roleUserIds;
+
+      matchedUserIds = matchedUsers.map((user) => user.id);
     }
 
     if (matchedUserIds !== null && matchedUserIds.length === 0) {
@@ -201,6 +247,13 @@ export class ActivityLogService {
     if (matchedUserIds) {
       where.userId = { in: matchedUserIds };
     }
+    if (courseId) {
+      where.courseId = courseId;
+    }
+
+    const courseCondition = courseId
+      ? Prisma.sql` AND courseId = ${courseId}`
+      : Prisma.empty;
 
     const rawCounts = await this.prisma.userActivityLog.groupBy({
       by: ['action', 'userId'],
@@ -235,14 +288,14 @@ export class ActivityLogService {
       ? await this.prisma.$queryRaw<Array<{ date: string; totalSecs: bigint }>>`
           SELECT date, SUM(seconds) as totalSecs
           FROM user_time_spent
-          WHERE date >= ${startStr} AND date <= ${endStr} AND userId IN (${Prisma.join(matchedUserIds)})
+          WHERE date >= ${startStr} AND date <= ${endStr} AND userId IN (${Prisma.join(matchedUserIds)})${courseCondition}
           GROUP BY date
           ORDER BY date ASC
         `
       : await this.prisma.$queryRaw<Array<{ date: string; totalSecs: bigint }>>`
           SELECT date, SUM(seconds) as totalSecs
           FROM user_time_spent
-          WHERE date >= ${startStr} AND date <= ${endStr}
+          WHERE date >= ${startStr} AND date <= ${endStr}${courseCondition}
           GROUP BY date
           ORDER BY date ASC
         `;
@@ -254,7 +307,7 @@ export class ActivityLogService {
         >`
           SELECT courseId, SUM(seconds) as totalSecs
           FROM user_time_spent
-          WHERE date >= ${startStr} AND date <= ${endStr} AND userId IN (${Prisma.join(matchedUserIds)})
+          WHERE date >= ${startStr} AND date <= ${endStr} AND userId IN (${Prisma.join(matchedUserIds)})${courseCondition}
           GROUP BY courseId
           ORDER BY totalSecs DESC
           LIMIT 20
@@ -264,7 +317,7 @@ export class ActivityLogService {
         >`
           SELECT courseId, SUM(seconds) as totalSecs
           FROM user_time_spent
-          WHERE date >= ${startStr} AND date <= ${endStr}
+          WHERE date >= ${startStr} AND date <= ${endStr}${courseCondition}
           GROUP BY courseId
           ORDER BY totalSecs DESC
           LIMIT 20
@@ -277,7 +330,7 @@ export class ActivityLogService {
         >`
           SELECT userId, SUM(seconds) as totalSecs
           FROM user_time_spent
-          WHERE date >= ${startStr} AND date <= ${endStr} AND userId IN (${Prisma.join(matchedUserIds)})
+          WHERE date >= ${startStr} AND date <= ${endStr} AND userId IN (${Prisma.join(matchedUserIds)})${courseCondition}
           GROUP BY userId
         `
       : await this.prisma.$queryRaw<
@@ -285,7 +338,7 @@ export class ActivityLogService {
         >`
           SELECT userId, SUM(seconds) as totalSecs
           FROM user_time_spent
-          WHERE date >= ${startStr} AND date <= ${endStr}
+          WHERE date >= ${startStr} AND date <= ${endStr}${courseCondition}
           GROUP BY userId
         `;
 
@@ -598,21 +651,34 @@ export class ActivityLogService {
     endDate: Date,
     role?: string,
     keyword?: string,
+    institutionId?: number,
+    classGrade?: string,
+    section?: string,
+    courseId?: number,
   ) {
     const startStr = startDate.toISOString().split('T')[0];
     const endStr = endDate.toISOString().split('T')[0];
 
     const activeUserIdsFromLogs = await this.prisma.userActivityLog.findMany({
-      where: { createdAt: { gte: startDate, lte: endDate } },
+      where: {
+        createdAt: { gte: startDate, lte: endDate },
+        ...(courseId && {
+          courseId,
+        }),
+      },
       select: { userId: true },
       distinct: ['userId'],
     });
+
+    const courseCondition = courseId
+      ? Prisma.sql` AND courseId = ${courseId}`
+      : Prisma.empty;
 
     const activeUserIdsFromTime = await this.prisma.$queryRaw<
       Array<{ userId: number }>
     >`
       SELECT DISTINCT userId FROM user_time_spent
-      WHERE date >= ${startStr} AND date <= ${endStr}
+      WHERE date >= ${startStr} AND date <= ${endStr}${courseCondition}
     `;
 
     const allActiveUserIds = Array.from(
@@ -629,19 +695,64 @@ export class ActivityLogService {
     const userWhere: any = {
       id: { in: allActiveUserIds },
     };
+    // Role
     if (role && role !== 'ALL') {
       userWhere.userType = role as any;
     }
+
+    // Keyword
     if (keyword) {
       userWhere.OR = [
-        { name: { contains: keyword } },
-        { email: { contains: keyword } },
+        {
+          name: {
+            contains: keyword,
+          },
+        },
+        {
+          email: {
+            contains: keyword,
+          },
+        },
       ];
+    }
+
+    // Institution
+    if (institutionId) {
+      userWhere.institutionMembers = {
+        some: {
+          institutionId: institutionId,
+          status: true,
+        },
+      };
+    }
+
+    // Class
+    if (classGrade && classGrade !== 'ALL') {
+      userWhere.classGrade = classGrade;
+    }
+
+    // Section
+    if (section && section !== 'ALL') {
+      userWhere.section = section;
+    }
+
+    // Course
+    if (courseId) {
+      userWhere.userEnrolledCourses = {
+        some: {
+          courseId,
+        },
+      };
     }
 
     const matchedUsers = await this.mainPrisma.user.findMany({
       where: userWhere,
-      select: { id: true, name: true, email: true, userType: true },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        userType: true,
+      },
     });
 
     if (matchedUsers.length === 0) {
@@ -656,7 +767,7 @@ export class ActivityLogService {
     >`
       SELECT userId, SUM(seconds) as totalSecs
       FROM user_time_spent
-      WHERE date >= ${startStr} AND date <= ${endStr} AND userId IN (${Prisma.join(matchedUserIds)})
+      WHERE date >= ${startStr} AND date <= ${endStr} AND userId IN (${Prisma.join(matchedUserIds)})${courseCondition}
       GROUP BY userId
     `;
     const timeSpentMap = new Map(
@@ -671,6 +782,9 @@ export class ActivityLogService {
       where: {
         userId: { in: matchedUserIds },
         createdAt: { gte: startDate, lte: endDate },
+        ...(courseId && {
+          courseId,
+        }),
       },
     });
 
@@ -720,12 +834,20 @@ export class ActivityLogService {
     endDate: Date,
     role?: string,
     keyword?: string,
+    institutionId?: number,
+    classGrade?: string,
+    section?: string,
+    courseId?: number,
   ) {
     const userAggregates = await this.compileUserAggregates(
       startDate,
       endDate,
       role,
       keyword,
+      institutionId,
+      classGrade,
+      section,
+      courseId,
     );
     if (userAggregates.length === 0) {
       return { data: [], total: 0 };
@@ -749,12 +871,20 @@ export class ActivityLogService {
     endDate: Date,
     role?: string,
     keyword?: string,
+    institutionId?: number,
+    classGrade?: string,
+    section?: string,
+    courseId?: number,
   ) {
     const userAggregates = await this.compileUserAggregates(
       startDate,
       endDate,
       role,
       keyword,
+      institutionId,
+      classGrade,
+      section,
+      courseId,
     );
     if (userAggregates.length === 0) {
       return { data: [], total: 0 };

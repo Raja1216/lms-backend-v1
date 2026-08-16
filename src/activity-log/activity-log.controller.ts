@@ -163,6 +163,10 @@ export class ActivityLogController {
         endDate,
         query.role || undefined,
         query.keyword || undefined,
+        query.institutionId ? Number(query.institutionId) : undefined,
+        query.classGrade || undefined,
+        query.section || undefined,
+        query.courseId ? Number(query.courseId) : undefined,
       );
       return successResponse(
         res,
@@ -252,6 +256,10 @@ export class ActivityLogController {
         endDate,
         role || undefined,
         keyword || undefined,
+        query.institutionId ? Number(query.institutionId) : undefined,
+        query.classGrade || undefined,
+        query.section || undefined,
+        query.courseId ? Number(query.courseId) : undefined,
       );
 
       return successResponse(
@@ -299,6 +307,10 @@ export class ActivityLogController {
         endDate,
         role || undefined,
         keyword || undefined,
+        query.institutionId ? Number(query.institutionId) : undefined,
+        query.classGrade || undefined,
+        query.section || undefined,
+        query.courseId ? Number(query.courseId) : undefined,
       );
 
       return successResponse(

@@ -1,4 +1,5 @@
-import { IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsOptional, IsInt, IsString } from 'class-validator';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 
 export class AdminActivityQueryDto extends PaginationDto {
@@ -17,4 +18,22 @@ export class AdminActivityQueryDto extends PaginationDto {
   @IsOptional()
   @IsString({ message: 'category must be a string' })
   category?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  institutionId?: number;
+
+  @IsOptional()
+  @IsString()
+  classGrade?: string;
+
+  @IsOptional()
+  @IsString()
+  section?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  courseId?: number;
 }
