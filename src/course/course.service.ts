@@ -20,6 +20,8 @@ import { QuizService } from 'src/quiz/quiz.service';
 import { UploadService } from 'src/upload/upload.service';
 
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
+import { CategoryService } from 'src/category/category.service';
+import { CourseQueryDto } from './dto/course-query.dto';
 
 dotenv.config();
 
@@ -30,6 +32,7 @@ export class CourseService {
     private quizService: QuizService,
     private readonly uploaService: UploadService,
     private readonly activityLogService: ActivityLogService,
+    private readonly categoryService: CategoryService,
   ) {}
 
   async create(createCourseDto: CreateCourseDto) {
@@ -43,6 +46,7 @@ export class CourseService {
       price,
       discountedPrice,
       teacherIds,
+      categoryIds = [],
     } = createCourseDto;
 
     let thumbnailPath = thumbnail;
@@ -71,6 +75,9 @@ export class CourseService {
 
     const slug = await generateUniqueSlugForTable(this.prisma, 'course', title);
 
+    const validCategoryIds =
+      await this.categoryService.validateCategoryIds(categoryIds);
+
     const course = await this.prisma.course.create({
       data: {
         title,
@@ -82,6 +89,25 @@ export class CourseService {
         price,
         discountedPrice,
         slug,
+        categories: validCategoryIds.length
+          ? {
+              create: validCategoryIds.map((categoryId) => ({
+                category: {
+                  connect: {
+                    id: categoryId,
+                  },
+                },
+              })),
+            }
+          : undefined,
+      },
+
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
 
@@ -96,12 +122,13 @@ export class CourseService {
     return { ...course, teachers };
   }
 
-  async findAll(userId: number, paginationDto: PaginationDto) {
+  async findAll(userId: number, paginationDto: CourseQueryDto) {
     const {
       page = 1,
       limit = 10,
       grade = null,
       keyword = null,
+      categoryId,
     } = paginationDto;
 
     const skip = (page - 1) * limit;
@@ -165,6 +192,16 @@ export class CourseService {
       status: true,
       AND: [],
     };
+
+    if (categoryId) {
+      whereClause.AND.push({
+        categories: {
+          some: {
+            categoryId,
+          },
+        },
+      });
+    }
 
     if (!isAdmin) {
       if (isTeacher) {
@@ -297,6 +334,26 @@ export class CourseService {
             },
           },
 
+          categories: {
+            where: {
+              category: {
+                status: true,
+              },
+            },
+
+            include: {
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  image: true,
+                  parentId: true,
+                },
+              },
+            },
+          },
+
           _count: {
             select: {
               subjects: true,
@@ -334,6 +391,20 @@ export class CourseService {
                 id: true,
                 name: true,
                 email: true,
+              },
+            },
+          },
+        },
+
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                image: true,
+                parentId: true,
               },
             },
           },
@@ -513,6 +584,20 @@ export class CourseService {
                 id: true,
                 name: true,
                 email: true,
+              },
+            },
+          },
+        },
+
+        categories: {
+          include: {
+            category: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                image: true,
+                parentId: true,
               },
             },
           },
@@ -825,8 +910,14 @@ export class CourseService {
       );
     }
 
-    const { teacherIds, price, discountedPrice, thumbnail, ...rest } =
-      updateCourseDto;
+    const {
+      teacherIds,
+      categoryIds,
+      price,
+      discountedPrice,
+      thumbnail,
+      ...rest
+    } = updateCourseDto;
     let thumUrl = thumbnail;
     if (thumbnail?.startsWith('data:')) {
       const matches = thumbnail.match(/^data:(.+);base64,(.+)$/);
@@ -849,6 +940,14 @@ export class CourseService {
 
       thumUrl = uploaded.url;
     }
+
+    let validCategoryIds: number[] | undefined;
+
+    if (categoryIds !== undefined) {
+      validCategoryIds =
+        await this.categoryService.validateCategoryIds(categoryIds);
+    }
+
     const data: Prisma.CourseUpdateInput = {
       ...rest,
       thumbnail: thumUrl ?? existing.thumbnail,
@@ -868,11 +967,30 @@ export class CourseService {
       };
     }
 
+    if (categoryIds !== undefined) {
+      data.categories = {
+        deleteMany: {},
+
+        create: (validCategoryIds ?? []).map((categoryId) => ({
+          category: {
+            connect: {
+              id: categoryId,
+            },
+          },
+        })),
+      };
+    }
+
     return this.prisma.course.update({
       where: { id },
       data,
       include: {
         teachers: true,
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
   }

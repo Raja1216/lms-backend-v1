@@ -10,7 +10,7 @@ import { UploadModule } from 'src/upload/upload.module';
 import { UploadService } from 'src/upload/upload.service';
 @Module({
   controllers: [SubjectController],
-  providers: [SubjectService, CourseService, UploadService],
+  providers: [SubjectService, UploadService],
   imports: [
     AuthModule,
     UploadModule,

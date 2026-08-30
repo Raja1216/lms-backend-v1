@@ -31,6 +31,7 @@ import { createPagedResponse } from 'src/shared/create-paged-response';
 import { get } from 'http';
 import { User } from 'src/generated/prisma/browser';
 import { CreateFullCourseDto } from './dto/create-full-course.dto';
+import { CourseQueryDto } from './dto/course-query.dto';
 
 @UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('course')
@@ -83,7 +84,7 @@ export class CourseController {
 
   @Get()
   async findAll(
-    @Query() paginationDto: PaginationDto,
+    @Query() paginationDto: CourseQueryDto,
     @Res() res: Response,
     @Next() next: NextFunction,
     @NestjsRequest() req: { user: User },

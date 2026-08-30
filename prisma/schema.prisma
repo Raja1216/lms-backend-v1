@@ -148,6 +148,16 @@ enum ProjectLevel {
   lesson
 }
 
+enum GroupType {
+  ADMIN_PUBLIC
+  INSTITUTION_PRIVATE
+}
+
+enum GroupUserSource {
+  ADMIN_MANUAL
+  INSTITUTION_MANUAL
+}
+
 model User {
   id                         Int                         @id @default(autoincrement())
   uuid                       String                      @unique @default(uuid())
@@ -188,6 +198,8 @@ model User {
   live_class_attendance      live_class_attendance[]
   userCompletionCertificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
   pendingRegistrations       PendingRegistration[]
+  createdGroups              Group[]                     @relation("GroupCreator")
+  groupMemberships           GroupUser[]               @relation("GroupUserMember")
 
   @@map("users")
 }
@@ -270,9 +282,29 @@ model Course {
   live_classes               live_classes[]
   userCompletionCertificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
   pendingRegistrations       PendingRegistration[]
+  categories                 CourseCategory[]
 
   @@map("courses")
 }
+
+model CourseCategory {
+  id         Int @id @default(autoincrement())
+  courseId   Int
+  categoryId Int
+
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([courseId, categoryId])
+  @@index([courseId])
+  @@index([categoryId])
+
+  @@map("course_categories")
+}
+
 
 model PendingRegistration {
 
@@ -1030,6 +1062,9 @@ model Institution {
   members            InstitutionMember[]  @relation("InstitutionMembers")
   institutionCourses InstitutionCourse[]  @relation("InstitutionCourses")
   enrollments        UserEnrolledCourse[] @relation("InstitutionEnrollments")
+  privateGroups      Group[]              @relation("InstitutionPrivateGroups")
+  groupAssignments   GroupInstitution[]
+  groupUserSources   GroupUser[]          @relation("GroupUserSourceInstitution")
 
   @@map("institutions")
 }
@@ -1045,6 +1080,7 @@ model InstitutionMember {
 
   institution Institution @relation("InstitutionMembers", fields: [institutionId], references: [id], onDelete: Cascade)
   user        User        @relation("InstitutionMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  role        InstitutionMemberRole @default(STUDENT)
 
   @@unique([institutionId, userId])
   @@map("institution_members")
@@ -1185,9 +1221,29 @@ model shop_items {
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
 
+  categories ShopItemCategory[]
+
   @@index([type])
   @@index([class_level])
   @@index([status])
+}
+
+model ShopItemCategory {
+  id         Int @id @default(autoincrement())
+  shopItemId Int
+  categoryId Int
+
+  shopItem shop_items @relation(fields: [shopItemId], references: [id], onDelete: Cascade)
+  category Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([shopItemId, categoryId])
+  @@index([shopItemId])
+  @@index([categoryId])
+
+  @@map("shop_item_categories")
 }
 
 model cart_items {
@@ -1266,4 +1322,109 @@ model order_items {
   order orders @relation(fields: [order_id], references: [id], onDelete: Cascade)
 
   @@index([order_id])
+}
+
+model Category {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?  @db.Text
+  image       String?
+
+  parentId Int?
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children Category[] @relation("CategoryHierarchy")
+
+  sortOrder  Int     @default(0)
+  isFeatured Boolean @default(false)
+  status     Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  courseCategories   CourseCategory[]
+  shopItemCategories ShopItemCategory[]
+
+  @@index([parentId])
+  @@index([status])
+  @@index([sortOrder])
+
+  @@map("categories")
+}
+
+model Group {
+  id                          Int       @id @default(autoincrement())
+  uuid                        String    @unique @default(uuid())
+  name                        String
+  slug                        String    @unique
+  description                 String?   @db.Text
+
+  type                        GroupType @default(ADMIN_PUBLIC)
+
+  ownerInstitutionId          Int?
+  createdById                 Int
+
+  allowInstituteManageMembers Boolean   @default(true)
+  status                      Boolean   @default(true)
+
+  createdAt                   DateTime  @default(now())
+  updatedAt                   DateTime  @updatedAt
+
+  createdBy User @relation("GroupCreator",fields: [createdById],references: [id],onDelete: Restrict)
+
+  ownerInstitution Institution? @relation("InstitutionPrivateGroups",fields: [ownerInstitutionId],references: [id],onDelete: Cascade)
+
+  institutions GroupInstitution[]
+  users        GroupUser[]
+
+  @@index([type])
+  @@index([ownerInstitutionId])
+  @@index([status])
+
+  @@map("groups")
+}
+
+model GroupInstitution {
+  id            Int      @id @default(autoincrement())
+  groupId       Int
+  institutionId Int
+  addedById     Int?
+  createdAt     DateTime @default(now())
+
+  group Group @relation(fields: [groupId],references: [id],onDelete: Cascade)
+
+  institution Institution @relation(fields: [institutionId],references: [id],onDelete: Cascade)
+
+  @@unique([groupId, institutionId])
+  @@index([institutionId])
+
+  @@map("group_institutions")
+}
+
+model GroupUser {
+  id                  Int             @id @default(autoincrement())
+  groupId             Int
+  userId              Int
+
+  source              GroupUserSource
+  sourceInstitutionId Int?
+
+  sourceKey           String          @db.VarChar(100)
+  addedById           Int?
+
+  createdAt           DateTime        @default(now())
+
+  group Group @relation(fields: [groupId],references: [id],onDelete: Cascade)
+
+  user User @relation("GroupUserMember",fields: [userId],references: [id],onDelete: Cascade)
+
+  sourceInstitution Institution? @relation("GroupUserSourceInstitution",fields: [sourceInstitutionId],references: [id],onDelete: Cascade)
+
+  @@unique([groupId, userId, sourceKey])
+
+  @@index([groupId])
+  @@index([userId])
+  @@index([sourceInstitutionId])
+
+  @@map("group_users")
 }

@@ -1,4 +1,13 @@
-import { IsString, Length, IsNumber, IsOptional, IsEnum } from 'class-validator';
+import {
+  ArrayUnique,
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
 import { IsBase64 } from '../../custom-validator/IsBase64.validator';
 import { CourseAudience } from 'src/generated/prisma/enums';
 
@@ -23,4 +32,9 @@ export class CreateCourseDto {
   discountedPrice: string;
   @IsNumber({}, { each: true })
   teacherIds: number[];
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  categoryIds?: number[];
 }

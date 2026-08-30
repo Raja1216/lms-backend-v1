@@ -1,8 +1,10 @@
 import {
+  ArrayUnique,
   IsArray,
   IsEnum,
   IsNotEmpty,
   IsNumber,
+  IsInt,
   IsOptional,
   IsString,
   Min,
@@ -102,4 +104,10 @@ export class CreateShopItemDto {
   @IsOptional()
   @IsEnum(ShopItemStatusEnum)
   status?: ShopItemStatusEnum;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsInt({ each: true })
+  categoryIds?: number[];
 }

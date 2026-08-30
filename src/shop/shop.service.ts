@@ -5,10 +5,14 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateShopItemDto } from './dto/create-shop-item.dto';
 import { UpdateShopItemDto } from './dto/update-shop-item.dto';
 import { ListShopItemDto } from './dto/list-shop-item.dto';
+import { CategoryService } from 'src/category/category.service';
 
 @Injectable()
 export class ShopService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly categoryService: CategoryService,
+  ) {}
 
   async listPublicProducts(query: ListShopItemDto) {
     return this.listItems(
@@ -51,6 +55,13 @@ export class ShopService {
 
     const item = await this.prisma.shop_items.findFirst({
       where,
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
+      },
     });
 
     if (!item) {
@@ -59,40 +70,7 @@ export class ShopService {
 
     return {
       status: true,
-      data: {
-        id: item.id,
-        type: item.type,
-
-        title: item.title,
-        description: item.description,
-
-        longDescription: item.long_description,
-
-        price: item.price,
-        originalPrice: item.original_price,
-
-        classLevel: item.class_level,
-
-        classLevels: this.parseArray(item.class_levels),
-
-        image: item.image,
-
-        images: Array.isArray(item.images) ? item.images : [],
-
-        badge: item.badge,
-
-        rating: item.rating,
-
-        students: item.students,
-
-        stock: item.stock,
-
-        seats: item.seats,
-
-        status: item.status,
-
-        features: Array.isArray(item.features) ? item.features : [],
-      },
+      data: this.formatItem(item),
     };
   }
 
@@ -137,6 +115,16 @@ export class ShopService {
     */
 
     const andConditions: any[] = [];
+
+    if (query.categoryId) {
+      andConditions.push({
+        categories: {
+          some: {
+            categoryId: query.categoryId,
+          },
+        },
+      });
+    }
 
     if (query.search) {
       andConditions.push({
@@ -201,10 +189,20 @@ export class ShopService {
     const [items, total] = await Promise.all([
       this.prisma.shop_items.findMany({
         where,
+
         skip,
         take: limit,
+
         orderBy: {
           created_at: 'desc',
+        },
+
+        include: {
+          categories: {
+            include: {
+              category: true,
+            },
+          },
         },
       }),
 
@@ -216,43 +214,7 @@ export class ShopService {
     return {
       status: true,
       data: {
-        items: items.map((item) => ({
-          id: item.id,
-
-          type: item.type,
-
-          title: item.title,
-
-          description: item.description,
-
-          longDescription: item.long_description,
-
-          price: item.price,
-
-          originalPrice: item.original_price,
-
-          classLevel: item.class_level,
-
-          classLevels: this.parseArray(item.class_levels),
-
-          image: item.image,
-
-          images: Array.isArray(item.images) ? item.images : [],
-
-          badge: item.badge,
-
-          rating: item.rating,
-
-          students: item.students,
-
-          seats: item.seats,
-
-          stock: item.stock,
-
-          status: item.status,
-
-          features: Array.isArray(item.features) ? item.features : [],
-        })),
+        items: items.map((item) => this.formatItem(item)),
 
         total,
         page,
@@ -272,6 +234,10 @@ export class ShopService {
 
   async create(dto: CreateShopItemDto) {
     const classLevels = dto.classLevels || [];
+
+    const categoryIds = await this.categoryService.validateCategoryIds(
+      dto.categoryIds ?? [],
+    );
 
     const item = await this.prisma.shop_items.create({
       data: {
@@ -308,18 +274,40 @@ export class ShopService {
         status: dto.status || 'active',
 
         rating: this.generateRating(),
+
+        categories: categoryIds.length
+          ? {
+              create: categoryIds.map((categoryId) => ({
+                category: {
+                  connect: {
+                    id: categoryId,
+                  },
+                },
+              })),
+            }
+          : undefined,
+      },
+
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
 
     return {
       status: true,
-      data: item,
+      data: this.formatItem(item),
     };
   }
 
   async update(id: number, dto: UpdateShopItemDto) {
     const exists = await this.prisma.shop_items.findUnique({
-      where: { id },
+      where: {
+        id,
+      },
     });
 
     if (!exists) {
@@ -328,72 +316,137 @@ export class ShopService {
 
     const classLevels = dto.classLevels || [];
 
+    /*
+  |--------------------------------------------------------------------------
+  | VALIDATE CATEGORIES ONLY WHEN PROVIDED
+  |--------------------------------------------------------------------------
+  */
+
+    let validCategoryIds: number[] | undefined;
+
+    if (dto.categoryIds !== undefined) {
+      validCategoryIds = await this.categoryService.validateCategoryIds(
+        dto.categoryIds,
+      );
+    }
+
+    /*
+  |--------------------------------------------------------------------------
+  | PREPARE UPDATE DATA
+  |--------------------------------------------------------------------------
+  */
+
+    const data: any = {
+      ...(dto.type && {
+        type: dto.type,
+      }),
+
+      ...(dto.title && {
+        title: dto.title,
+      }),
+
+      ...(dto.description !== undefined && {
+        description: dto.description,
+      }),
+
+      ...(dto.longDescription !== undefined && {
+        long_description: dto.longDescription,
+      }),
+
+      ...(dto.price !== undefined && {
+        price: dto.price,
+      }),
+
+      ...(dto.originalPrice !== undefined && {
+        original_price: dto.originalPrice,
+      }),
+
+      ...(dto.classLevels !== undefined && {
+        class_level: classLevels[0] || exists.class_level || '',
+
+        class_levels: classLevels.join(','),
+      }),
+
+      ...(dto.image !== undefined && {
+        image: dto.image,
+      }),
+
+      ...(dto.images !== undefined && {
+        images: dto.images,
+      }),
+
+      ...(dto.badge !== undefined && {
+        badge: dto.badge,
+      }),
+
+      ...(dto.features !== undefined && {
+        features: dto.features,
+      }),
+
+      ...(dto.seats !== undefined && {
+        seats: dto.seats,
+      }),
+
+      ...(dto.stock !== undefined && {
+        stock: dto.stock,
+      }),
+
+      ...(dto.status && {
+        status: dto.status,
+      }),
+    };
+
+    /*
+  |--------------------------------------------------------------------------
+  | CATEGORY FULL SYNC
+  |--------------------------------------------------------------------------
+  */
+
+    if (dto.categoryIds !== undefined) {
+      data.categories = {
+        /*
+         * Remove previous mappings
+         */
+        deleteMany: {},
+
+        /*
+         * Create new mappings
+         */
+        create: (validCategoryIds ?? []).map((categoryId) => ({
+          category: {
+            connect: {
+              id: categoryId,
+            },
+          },
+        })),
+      };
+    }
+
+    /*
+  |--------------------------------------------------------------------------
+  | UPDATE
+  |--------------------------------------------------------------------------
+  */
+
     const item = await this.prisma.shop_items.update({
-      where: { id },
+      where: {
+        id,
+      },
 
-      data: {
-        ...(dto.type && {
-          type: dto.type,
-        }),
+      data,
 
-        ...(dto.title && {
-          title: dto.title,
-        }),
-
-        ...(dto.description !== undefined && {
-          description: dto.description,
-        }),
-
-        ...(dto.longDescription !== undefined && {
-          long_description: dto.longDescription,
-        }),
-
-        ...(dto.price !== undefined && {
-          price: dto.price,
-        }),
-
-        ...(dto.originalPrice !== undefined && {
-          original_price: dto.originalPrice,
-        }),
-
-        ...(dto.classLevels !== undefined && {
-          class_level: classLevels[0] || exists.class_level || '',
-          class_levels: classLevels.join(','),
-        }),
-
-        ...(dto.image !== undefined && {
-          image: dto.image,
-        }),
-
-        ...(dto.images !== undefined && {
-          images: dto.images,
-        }),
-
-        ...(dto.badge !== undefined && {
-          badge: dto.badge,
-        }),
-
-        ...(dto.features !== undefined && {
-          features: dto.features,
-        }),
-
-        ...(dto.seats !== undefined && {
-          seats: dto.seats,
-        }),
-
-        ...(dto.stock !== undefined && {
-          stock: dto.stock,
-        }),
-
-        ...(dto.status && {
-          status: dto.status,
-        }),
+      include: {
+        categories: {
+          include: {
+            category: true,
+          },
+        },
       },
     });
 
     return {
       status: true,
-      data: item,
+      data: this.formatItem(item),
     };
   }
 
@@ -417,6 +470,67 @@ export class ShopService {
     return {
       status: true,
       message: 'Deleted',
+    };
+  }
+
+  private formatItem(item: any) {
+    return {
+      id: item.id,
+
+      type: item.type,
+
+      title: item.title,
+
+      description: item.description,
+
+      longDescription: item.long_description,
+
+      price: item.price,
+
+      originalPrice: item.original_price,
+
+      classLevel: item.class_level,
+
+      classLevels: this.parseArray(item.class_levels),
+
+      image: item.image,
+
+      images: Array.isArray(item.images) ? item.images : [],
+
+      badge: item.badge,
+
+      rating: item.rating,
+
+      students: item.students,
+
+      seats: item.seats,
+
+      stock: item.stock,
+
+      status: item.status,
+
+      features: Array.isArray(item.features) ? item.features : [],
+
+      /*
+    |--------------------------------------------------------------------------
+    | CATEGORIES
+    |--------------------------------------------------------------------------
+    */
+
+      categories:
+        item.categories?.map((relation: any) => ({
+          id: relation.category.id,
+
+          name: relation.category.name,
+
+          slug: relation.category.slug,
+
+          parentId: relation.category.parentId,
+
+          image: relation.category.image,
+
+          status: relation.category.status,
+        })) ?? [],
     };
   }
 

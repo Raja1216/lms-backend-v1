@@ -1,6 +1,8 @@
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsIn,
+  IsInt,
   IsNumberString,
   IsOptional,
   IsString,
@@ -33,4 +35,9 @@ export class ListShopItemDto {
   @IsOptional()
   @IsIn(['product', 'license'])
   type?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  categoryId?: number;
 }
