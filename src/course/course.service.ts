@@ -229,13 +229,44 @@ export class CourseService {
       } else if (userType === 'STUDENT') {
         whereClause.AND.push({
           OR: [
+            // 1. School courses matching student's grade
             {
               audience: 'SCHOOL',
               grade: user.classGrade,
             },
+
+            // 2. Courses assigned/purchased by student's institution
+            //    AND course grade matches student OR grade is null
+            {
+              AND: [
+                {
+                  institutionCourses: {
+                    some: {
+                      institutionId: {
+                        in: institutionIds,
+                      },
+                    },
+                  },
+                },
+                {
+                  OR: [
+                    {
+                      grade: user.classGrade,
+                    },
+                    {
+                      grade: null,
+                    },
+                  ],
+                },
+              ],
+            },
+
+            // 3. All public courses
             {
               audience: 'PUBLIC',
             },
+
+            // 4. Courses where student has UserEnrolledCourse
             {
               id: {
                 in: enrolledCourseIds,
