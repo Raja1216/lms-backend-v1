@@ -1,35 +1,60 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
   IsArray,
+  IsBoolean,
   IsEmail,
   IsOptional,
   IsString,
   MinLength,
   ArrayUnique,
-  IsNotEmpty,
 } from 'class-validator';
 
 export class UpdateMemberDto {
   @ApiProperty({ example: 'user@example.com', required: false })
-  @IsNotEmpty()
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
   @ApiProperty({ example: 'Subhajit', required: false })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  name!: string;
+  name?: string;
 
   @ApiProperty({ example: 'strongPassword123', required: false })
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
   @MinLength(6)
-  password!: string;
+  password?: string;
 
   @ApiProperty({ example: 'Grade 10', required: false })
   @IsOptional()
   @IsString()
   level?: string;
+
+  @ApiProperty({ example: '+919876543210', required: false })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiProperty({ example: '+919876543210', required: false })
+  @IsOptional()
+  @IsString()
+  mobile?: string;
+
+  @ApiProperty({ example: 'Teacher', required: false })
+  @IsOptional()
+  @IsString()
+  designation?: string;
+
+  @ApiProperty({ example: 'TEACHER', required: false })
+  @IsOptional()
+  @IsString()
+  role?: string;
+
+  @ApiProperty({ example: true, required: false })
+  @IsOptional()
+  @IsBoolean()
+  status?: boolean;
 
   @ApiProperty({ example: [1, 2], required: false })
   @IsOptional()
