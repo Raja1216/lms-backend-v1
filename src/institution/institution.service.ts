@@ -704,9 +704,7 @@ export class InstitutionService {
 
     const whereClause: any = {
       institutionId,
-      course: {
-        audience: { not: CourseAudience.SCHOOL },
-      },
+    
     };
 
     if (keyword) {
