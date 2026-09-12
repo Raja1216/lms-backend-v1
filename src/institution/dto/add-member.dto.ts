@@ -10,9 +10,14 @@ import {
 } from 'class-validator';
 
 export class AddMemberDto {
-  @ApiProperty({ example: 'user@example.com' })
+  @ApiProperty({ example: 123, required: false })
+  @IsOptional()
+  userId?: number;
+
+  @ApiProperty({ example: 'user@example.com', required: false })
+  @IsOptional()
   @IsEmail()
-  email!: string;
+  email?: string;
 
   @ApiProperty({ example: 'Subhajit', required: false })
   @IsOptional()

@@ -284,9 +284,14 @@ model Course {
   pendingRegistrations       PendingRegistration[]
   categories                 CourseCategory[]
   certificateTemplates       CertificateTemplate[]       @relation("CourseCertificateTemplates")
+  create_institution_id      Int?
+  createdInstitution         Institution?                @relation("InstitutionCreatedCourses", fields: [create_institution_id], references: [id], onDelete: SetNull)
 
+
+  @@index([create_institution_id])
   @@map("courses")
 }
+
 
 model CourseCategory {
   id         Int @id @default(autoincrement())
@@ -1059,7 +1064,7 @@ model Institution {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner              User                 @relation("InstitutionOwner", fields: [ownerId], references: [id])
+  owner              User                 @relation("InstitutionOwner", fields: [ownerId], references: [id], onDelete: Cascade)
   members            InstitutionMember[]  @relation("InstitutionMembers")
   institutionCourses InstitutionCourse[]  @relation("InstitutionCourses")
   enrollments        UserEnrolledCourse[] @relation("InstitutionEnrollments")
@@ -1067,9 +1072,11 @@ model Institution {
   groupAssignments   GroupInstitution[]
   groupUserSources   GroupUser[]          @relation("GroupUserSourceInstitution")
   certificateTemplates CertificateTemplate[] @relation("InstitutionCertificateTemplates")
+  createdCourses     Course[]             @relation("InstitutionCreatedCourses")
 
   @@map("institutions")
 }
+
 
 model InstitutionMember {
   id            Int      @id @default(autoincrement())

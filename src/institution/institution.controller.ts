@@ -480,6 +480,8 @@ export class InstitutionController {
   async getAvailableCatalogCourses(
     @Param('id', ParseIntPipe) id: number,
     @Query('keyword') keyword: string,
+    @Query('grade') grade: string,
+    @Query('class') classFilter: string,
     @NestjsRequest() req: { user: User },
     @Res() res: Response,
     @Next() next: NextFunction,
@@ -490,6 +492,7 @@ export class InstitutionController {
           id,
           req.user.id,
           keyword,
+          grade || classFilter,
         );
       return successResponse(
         res,
@@ -499,6 +502,7 @@ export class InstitutionController {
         null,
       );
     } catch (error: any) {
+
       return next(
         new ErrorHandler(
           error instanceof Error ? error.message : 'An unexpected error occurred',
@@ -815,11 +819,6 @@ export class InstitutionController {
     @NestjsRequest() req: { user: User },
   ) {
     try {
-      const { email } = addMemberDto;
-      const userExists = await this.institutionService.findUserByEmail(email);
-      if (userExists) {
-        throw new ConflictException('A user with this email already exists');
-      }
       const result = await this.institutionService.addMember(
         institutionId,
         req.user.id,

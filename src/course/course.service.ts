@@ -35,7 +35,7 @@ export class CourseService {
     private readonly categoryService: CategoryService,
   ) {}
 
-  async create(createCourseDto: CreateCourseDto) {
+  async create(createCourseDto: CreateCourseDto, user?: User) {
     const {
       title,
       description,
@@ -48,6 +48,30 @@ export class CourseService {
       teacherIds,
       categoryIds = [],
     } = createCourseDto;
+
+    let institutionId: number | null = null;
+    if (user?.id) {
+      const dbUser = await this.prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          ownedInstitutions: {
+            where: { status: true },
+            select: { id: true },
+            take: 1,
+          },
+          institutionMembers: {
+            where: { status: true },
+            select: { institutionId: true },
+            take: 1,
+          },
+        },
+      });
+
+      institutionId =
+        dbUser?.ownedInstitutions?.[0]?.id ||
+        dbUser?.institutionMembers?.[0]?.institutionId ||
+        null;
+    }
 
     let thumbnailPath = thumbnail;
 
@@ -89,7 +113,9 @@ export class CourseService {
         price,
         discountedPrice,
         slug,
+        create_institution_id: institutionId,
         categories: validCategoryIds.length
+
           ? {
               create: validCategoryIds.map((categoryId) => ({
                 category: {
@@ -929,6 +955,324 @@ export class CourseService {
     };
   }
 
+  async getCourseProgress(identifier: string, user: User) {
+    const isNumericId = !isNaN(Number(identifier));
+    const course = await this.prisma.course.findFirst({
+      where: {
+        OR: [
+          { slug: identifier },
+          ...(isNumericId ? [{ id: Number(identifier) }] : []),
+        ],
+        status: true,
+      },
+      include: {
+        courseQuizzes: {
+          where: { quiz: { status: true } },
+          select: { quizId: true },
+        },
+        subjects: {
+          where: { subject: { status: true } },
+          include: {
+            subject: {
+              include: {
+                subjectQuizzes: {
+                  where: { quiz: { status: true } },
+                  select: { quizId: true },
+                },
+                modules: {
+                  where: { status: true },
+                  include: {
+                    moduleQuizzes: {
+                      where: { quiz: { status: true } },
+                      select: { quizId: true },
+                    },
+                    chapters: {
+                      where: { chapter: { status: true } },
+                      include: {
+                        chapter: {
+                          include: {
+                            chapterQuizzes: {
+                              where: { quiz: { status: true } },
+                              select: { quizId: true },
+                            },
+                            lessons: {
+                              where: { lesson: { status: true } },
+                              include: {
+                                lesson: {
+                                  include: {
+                                    quizzes: {
+                                      where: { quiz: { status: true } },
+                                      select: { quizId: true },
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                chapters: {
+                  where: { chapter: { status: true } },
+                  include: {
+                    chapter: {
+                      include: {
+                        chapterQuizzes: {
+                          where: { quiz: { status: true } },
+                          select: { quizId: true },
+                        },
+                        lessons: {
+                          where: { lesson: { status: true } },
+                          include: {
+                            lesson: {
+                              include: {
+                                quizzes: {
+                                  where: { quiz: { status: true } },
+                                  select: { quizId: true },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      throw new BadRequestException('Course not found');
+    }
+
+    // Check enrollment
+    const enrolled = await this.prisma.userEnrolledCourse.findFirst({
+      where: {
+        userId: user.id,
+        courseId: course.id,
+      },
+      select: { courseId: true },
+    });
+
+    const institutionMembers = await this.prisma.institutionMember.findMany({
+      where: { userId: user.id, status: true },
+      select: { institutionId: true },
+    });
+
+    const institutionCourseAssignments = institutionMembers.length
+      ? await this.prisma.institutionCourse.findMany({
+          where: {
+            institutionId: {
+              in: institutionMembers.map((m) => m.institutionId),
+            },
+            courseId: course.id,
+          },
+          select: { courseId: true },
+        })
+      : [];
+
+    const isEnrolled = !!enrolled || institutionCourseAssignments.length > 0;
+
+    // Collect all lessonIds and quizIds
+    const allLessonIds = new Set<number>();
+    const allQuizIds = new Set<number>();
+
+    // Direct course quizzes
+    course.courseQuizzes?.forEach((cq) => allQuizIds.add(cq.quizId));
+
+    const subjectsProgress: any[] = [];
+
+    for (const cs of course.subjects ?? []) {
+      const subject = cs.subject;
+      if (!subject) continue;
+
+      const subjectLessonIds = new Set<number>();
+      const subjectQuizIds = new Set<number>();
+
+      subject.subjectQuizzes?.forEach((sq) => {
+        allQuizIds.add(sq.quizId);
+        subjectQuizIds.add(sq.quizId);
+      });
+
+      // Modules
+      for (const mod of subject.modules ?? []) {
+        mod.moduleQuizzes?.forEach((mq) => {
+          allQuizIds.add(mq.quizId);
+          subjectQuizIds.add(mq.quizId);
+        });
+
+        for (const mc of mod.chapters ?? []) {
+          const ch = mc.chapter;
+          if (!ch) continue;
+          ch.chapterQuizzes?.forEach((cq) => {
+            allQuizIds.add(cq.quizId);
+            subjectQuizIds.add(cq.quizId);
+          });
+          for (const ltc of ch.lessons ?? []) {
+            if (ltc.lesson) {
+              allLessonIds.add(ltc.lesson.id);
+              subjectLessonIds.add(ltc.lesson.id);
+              ltc.lesson.quizzes?.forEach((lq) => {
+                allQuizIds.add(lq.quizId);
+                subjectQuizIds.add(lq.quizId);
+              });
+            }
+          }
+        }
+      }
+
+      // Direct Chapters
+      for (const sc of subject.chapters ?? []) {
+        const ch = sc.chapter;
+        if (!ch) continue;
+        ch.chapterQuizzes?.forEach((cq) => {
+          allQuizIds.add(cq.quizId);
+          subjectQuizIds.add(cq.quizId);
+        });
+        for (const ltc of ch.lessons ?? []) {
+          if (ltc.lesson) {
+            allLessonIds.add(ltc.lesson.id);
+            subjectLessonIds.add(ltc.lesson.id);
+            ltc.lesson.quizzes?.forEach((lq) => {
+              allQuizIds.add(lq.quizId);
+              subjectQuizIds.add(lq.quizId);
+            });
+          }
+        }
+      }
+
+      subjectsProgress.push({
+        id: subject.id,
+        name: subject.name,
+        slug: subject.slug,
+        lessonIds: [...subjectLessonIds],
+        quizIds: [...subjectQuizIds],
+      });
+    }
+
+    const lessonIdsArray = [...allLessonIds];
+    const quizIdsArray = [...allQuizIds];
+
+    // Completed Lessons for user
+    const completedXp = lessonIdsArray.length
+      ? await this.prisma.userXPEarned.findMany({
+          where: {
+            userId: user.id,
+            lessonId: { in: lessonIdsArray },
+          },
+          select: { lessonId: true },
+          distinct: ['lessonId'],
+        })
+      : [];
+
+    const completedLessonIds = [
+      ...new Set(
+        completedXp
+          .map((x) => x.lessonId)
+          .filter((id): id is number => id !== null),
+      ),
+    ];
+
+    // Attempted Quizzes for user
+    const quizAttempts = quizIdsArray.length
+      ? await this.prisma.quizAttempt.findMany({
+          where: {
+            userId: user.id,
+            quizId: { in: quizIdsArray },
+          },
+          select: { quizId: true },
+          distinct: ['quizId'],
+        })
+      : [];
+
+    const completedQuizIds = [
+      ...new Set(quizAttempts.map((q) => q.quizId)),
+    ];
+
+    // Certificate issued
+    const certificate = await this.prisma.userCompletionCertificate.findFirst({
+      where: { userId: user.id, courseId: course.id },
+      select: { id: true, certificateNumber: true, createdAt: true, fileUrl: true },
+    });
+
+    const totalLessons = lessonIdsArray.length;
+    const completedLessons = completedLessonIds.length;
+    const totalQuizzes = quizIdsArray.length;
+    const completedQuizzes = completedQuizIds.length;
+
+    const totalItems = totalLessons + totalQuizzes;
+    const completedItems = completedLessons + completedQuizzes;
+
+    const progressPercentage =
+      totalItems > 0
+        ? Math.round((completedItems / totalItems) * 100)
+        : totalLessons > 0
+          ? Math.round((completedLessons / totalLessons) * 100)
+          : 0;
+
+    const isCompleted =
+      totalItems > 0
+        ? completedItems >= totalItems
+        : totalLessons > 0
+          ? completedLessons >= totalLessons
+          : false;
+
+    // Map subject breakdown
+    const enrichedSubjectsProgress = subjectsProgress.map((sp) => {
+      const sCompletedLessons = sp.lessonIds.filter((lid: number) =>
+        completedLessonIds.includes(lid),
+      ).length;
+      const sCompletedQuizzes = sp.quizIds.filter((qid: number) =>
+        completedQuizIds.includes(qid),
+      ).length;
+      const sTotalItems = sp.lessonIds.length + sp.quizIds.length;
+      const sCompletedItems = sCompletedLessons + sCompletedQuizzes;
+      const sPercentage =
+        sTotalItems > 0
+          ? Math.round((sCompletedItems / sTotalItems) * 100)
+          : sp.lessonIds.length > 0
+            ? Math.round((sCompletedLessons / sp.lessonIds.length) * 100)
+            : 0;
+
+      return {
+        id: sp.id,
+        name: sp.name,
+        slug: sp.slug,
+        totalLessons: sp.lessonIds.length,
+        completedLessons: sCompletedLessons,
+        totalQuizzes: sp.quizIds.length,
+        completedQuizzes: sCompletedQuizzes,
+        progressPercentage: sPercentage,
+      };
+    });
+
+    return {
+      courseId: course.id,
+      courseSlug: course.slug,
+      courseTitle: course.title,
+      isEnrolled,
+      totalLessons,
+      completedLessons,
+      totalQuizzes,
+      completedQuizzes,
+      totalItems,
+      completedItems,
+      progressPercentage,
+      isCompleted,
+      certificateIssued: !!certificate,
+      certificateDetails: certificate || null,
+      completedLessonIds,
+      completedQuizIds,
+      subjectsProgress: enrichedSubjectsProgress,
+    };
+  }
+
   async update(id: number, updateCourseDto: UpdateCourseDto) {
     const existing = await this.findOne(id);
 
@@ -1120,7 +1464,31 @@ export class CourseService {
     });
   }
 
-  async createFullCourse(dto: CreateFullCourseDto) {
+  async createFullCourse(dto: CreateFullCourseDto, user?: User) {
+    let institutionId: number | null = null;
+    if (user?.id) {
+      const dbUser = await this.prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          ownedInstitutions: {
+            where: { status: true },
+            select: { id: true },
+            take: 1,
+          },
+          institutionMembers: {
+            where: { status: true },
+            select: { institutionId: true },
+            take: 1,
+          },
+        },
+      });
+
+      institutionId =
+        dbUser?.ownedInstitutions?.[0]?.id ||
+        dbUser?.institutionMembers?.[0]?.institutionId ||
+        null;
+    }
+
     return this.prisma.$transaction(async (tx) => {
       // 1️⃣ Course
       const courseSlug = await generateUniqueSlugForTable(
@@ -1139,8 +1507,10 @@ export class CourseService {
           discountedPrice: dto.discountedPrice,
           thumbnail: dto.thumbnail,
           slug: courseSlug,
+          create_institution_id: institutionId,
         },
       });
+
 
       if (dto.quiz) {
         await this.quizService.createQuizAndAttach(tx, dto.quiz, {

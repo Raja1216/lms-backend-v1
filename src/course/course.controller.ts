@@ -64,7 +64,10 @@ export class CourseController {
           throw new BadRequestException('User is not assigned as a teacher');
         }
       }
-      const result = await this.courseService.create(createCourseDto);
+      const result = await this.courseService.create(
+        createCourseDto,
+        (req as any)?.user,
+      );
       return successResponse(
         res,
         201,
@@ -239,6 +242,35 @@ export class CourseController {
     }
   }
 
+  @Get(':slug/progress')
+  async getCourseProgress(
+    @Param('slug') slug: string,
+    @Next() next: NextFunction,
+    @Res() res: Response,
+    @Req() req: { user: User },
+  ) {
+    try {
+      const result = await this.courseService.getCourseProgress(
+        slug,
+        req.user,
+      );
+      return successResponse(
+        res,
+        200,
+        'Course progress fetched successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+
   @Get(':slug')
   async findCourseBySlug(
     @Param('slug') slug: string,
@@ -300,9 +332,10 @@ export class CourseController {
     @Body() dto: CreateFullCourseDto,
     @Res() res: Response,
     @Next() next: NextFunction,
+    @NestjsRequest() req: { user: User },
   ) {
     try {
-      const result = await this.courseService.createFullCourse(dto);
+      const result = await this.courseService.createFullCourse(dto, req?.user);
       return successResponse(
         res,
         201,

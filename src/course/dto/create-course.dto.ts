@@ -38,3 +38,4 @@ export class CreateCourseDto {
   @IsInt({ each: true })
   categoryIds?: number[];
 }
+

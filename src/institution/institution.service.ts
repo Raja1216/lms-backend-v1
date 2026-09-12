@@ -25,7 +25,7 @@ import {
 
 @Injectable()
 export class InstitutionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async create(dto: CreateInstitutionDto) {
     const role = await this.prisma.role.findFirst({
@@ -43,8 +43,8 @@ export class InstitutionService {
         password: hashedPassword,
         roles: role
           ? {
-              connect: { id: role.id },
-            }
+            connect: { id: role.id },
+          }
           : undefined,
       },
     });
@@ -110,11 +110,11 @@ export class InstitutionService {
     const { isSuperAdmin, institutionId } = await this.checkSuperAdmin(userId);
     const whereClause: any = keyword
       ? {
-          name: {
-            contains: keyword,
-          },
-          status: true,
-        }
+        name: {
+          contains: keyword,
+        },
+        status: true,
+      }
       : { status: true };
     if (!isSuperAdmin) {
       if (!institutionId) {
@@ -252,14 +252,12 @@ export class InstitutionService {
           institutionId,
         },
       }),
-      this.prisma.institutionCourse.count({
+      this.prisma.course.count({
         where: {
-          institutionId,
-          course: {
-            audience: CourseAudience.SCHOOL,
-          },
+          create_institution_id: institutionId,
         },
       }),
+
       this.prisma.institutionCourse.findMany({
         where: { institutionId },
         include: {
@@ -704,7 +702,6 @@ export class InstitutionService {
 
     const whereClause: any = {
       institutionId,
-    
     };
 
     if (keyword) {
@@ -826,6 +823,7 @@ export class InstitutionService {
     institutionId: number,
     userId: number,
     keyword?: string,
+    grade?: string,
   ) {
     await this.validateInstitutionAccess(institutionId, userId);
 
@@ -837,12 +835,19 @@ export class InstitutionService {
 
     const whereClause: any = {
       status: true,
-      audience: { not: CourseAudience.SCHOOL },
       ...(assignedIds.length ? { id: { notIn: assignedIds } } : {}),
     };
 
-    if (keyword) {
-      whereClause.title = { contains: keyword };
+    if (keyword && typeof keyword === 'string' && keyword.trim()) {
+      const kw = keyword.trim();
+      whereClause.OR = [
+        { title: { contains: kw } },
+        { description: { contains: kw } },
+      ];
+    }
+
+    if (grade && typeof grade === 'string' && grade.trim() && grade.toLowerCase() !== 'all') {
+      whereClause.grade = { contains: grade.trim() };
     }
 
     return await this.prisma.course.findMany({
@@ -850,12 +855,15 @@ export class InstitutionService {
       select: {
         id: true,
         title: true,
+        description: true,
         price: true,
         grade: true,
         thumbnail: true,
+        duration: true,
+        audience: true,
       },
       orderBy: { title: 'asc' },
-      take: 50,
+      take: 100,
     });
   }
 
@@ -870,41 +878,32 @@ export class InstitutionService {
     const skip = (page - 1) * limit;
 
     const whereClause: any = {
-      institutionId,
-      course: {
-        audience: { in: [CourseAudience.SCHOOL, CourseAudience.PUBLIC] },
-      },
+      create_institution_id: institutionId,
     };
 
-    if (keyword) {
-      whereClause.course.title = { contains: keyword };
+    if (keyword && typeof keyword === 'string' && keyword.trim()) {
+      const kw = keyword.trim();
+      whereClause.OR = [
+        { title: { contains: kw } },
+        { description: { contains: kw } },
+      ];
     }
-    if (grade) {
-      whereClause.course.grade = grade;
+    if (grade && typeof grade === 'string' && grade.trim() && grade.toLowerCase() !== 'all') {
+      whereClause.grade = grade.trim();
     }
 
     const [records, total] = await Promise.all([
-      this.prisma.institutionCourse.findMany({
+      this.prisma.course.findMany({
         where: whereClause,
         include: {
-          course: {
+          institutionCourses: {
+            where: { institutionId },
+            select: { id: true, source: true },
+          },
+          _count: {
             select: {
-              id: true,
-              title: true,
-              description: true,
-              thumbnail: true,
-              grade: true,
-              duration: true,
-              price: true,
-              audience: true,
-              status: true,
-              createdAt: true,
-              _count: {
-                select: {
-                  userEnrolledCourses: {
-                    where: { institutionId },
-                  },
-                },
+              userEnrolledCourses: {
+                where: { institutionId },
               },
             },
           },
@@ -913,21 +912,21 @@ export class InstitutionService {
         skip,
         take: limit,
       }),
-      this.prisma.institutionCourse.count({ where: whereClause }),
+      this.prisma.course.count({ where: whereClause }),
     ]);
 
-    const data = records.map((r) => ({
-      id: r.courseId,
-      institutionCourseId: r.id,
-      title: r.course.title,
-      description: r.course.description,
-      grade: r.course.grade || 'All',
-      duration: r.course.duration,
-      price: Number(r.course.price) || 0,
+    const data = records.map((c) => ({
+      id: c.id,
+      institutionCourseId: c.institutionCourses?.[0]?.id || c.id,
+      title: c.title,
+      description: c.description,
+      grade: c.grade || 'All',
+      duration: c.duration,
+      price: Number(c.price) || 0,
       visibility:
-        r.course.audience === CourseAudience.PUBLIC ? 'public' : 'private',
-      enrolledCount: r.course._count?.userEnrolledCourses || 0,
-      createdAt: r.course.createdAt,
+        c.audience === CourseAudience.PUBLIC ? 'public' : 'private',
+      enrolledCount: c._count?.userEnrolledCourses || 0,
+      createdAt: c.createdAt,
     }));
 
     return { data, total, page, limit };
@@ -962,16 +961,18 @@ export class InstitutionService {
         price: dto.price ?? 0,
         discountedPrice: dto.price ?? 0,
         status: true,
+        create_institution_id: institutionId,
       },
     });
 
     const institutionCourse = await this.prisma.institutionCourse.create({
       data: {
-        institutionId,
+        institutionId: institutionId,
         courseId: course.id,
         source: 'owned',
       },
     });
+
 
     return {
       id: course.id,
@@ -1041,8 +1042,9 @@ export class InstitutionService {
       },
     });
 
-    return await this.prisma.course.delete({
+    return await this.prisma.course.update({
       where: { id: courseId },
+      data: { status: false },
     });
   }
 
@@ -1101,8 +1103,6 @@ export class InstitutionService {
   ) {
     await this.validateInstitutionAccess(institutionId, requesterId);
 
-    const hashedPassword = await bcrypt.hash(dto.password || 'Temp1234!', 10);
-
     const roleUpper = (dto.role || dto.designation || '').toUpperCase();
     const memberRole =
       roleUpper === 'ADMIN'
@@ -1114,18 +1114,129 @@ export class InstitutionService {
     const userType =
       roleUpper === 'STUDENT' ? UserType.STUDENT : UserType.TEACHER;
 
+    // Check if assigning an existing user by userId or by existing email
+    let targetUserId = dto.userId;
+
+    if (!targetUserId && dto.email) {
+      const existingUser = await this.prisma.user.findFirst({
+        where: { email: dto.email.trim() },
+      });
+      if (existingUser) {
+        targetUserId = existingUser.id;
+      }
+    }
+
+    if (targetUserId) {
+      const user = await this.prisma.user.findUnique({
+        where: { id: targetUserId },
+        include: { roles: true },
+      });
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Check if user is already a member of this institution
+      const existingMember = await this.prisma.institutionMember.findUnique({
+        where: {
+          institutionId_userId: {
+            institutionId,
+            userId: user.id,
+          },
+        },
+      });
+
+      if (existingMember) {
+        throw new ConflictException(
+          'User is already a member of this institution',
+        );
+      }
+
+      // Ensure appropriate role is connected to user if missing
+      const requiredRoleName =
+        memberRole === InstitutionMemberRole.TEACHER
+          ? 'Teacher'
+          : memberRole === InstitutionMemberRole.STUDENT
+            ? 'Student'
+            : null;
+
+      if (
+        requiredRoleName &&
+        !user.roles.some((r) => r.name.toLowerCase() === requiredRoleName.toLowerCase())
+      ) {
+        const roleRecord = await this.prisma.role.findFirst({
+          where: { name: { equals: requiredRoleName } },
+        });
+        if (roleRecord) {
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+              roles: { connect: { id: roleRecord.id } },
+            },
+          });
+        }
+      }
+
+      return this.prisma.institutionMember.create({
+        data: {
+          institutionId,
+          userId: user.id,
+          role: memberRole,
+          status: dto.status !== undefined ? dto.status : true,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              mobile: true,
+              status: true,
+            },
+          },
+        },
+      });
+    }
+
+    // Creating a brand new user
+    if (!dto.email || !dto.name) {
+      throw new BadRequestException('Name and email are required to create a new member');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password || 'Temp1234!', 10);
+
+    let roleConnect: { id: number }[] = [];
+    if (dto?.roles?.length) {
+      roleConnect = dto.roles.map((id) => ({ id }));
+    } else {
+      const defaultRoleName =
+        memberRole === InstitutionMemberRole.TEACHER
+          ? 'Teacher'
+          : memberRole === InstitutionMemberRole.STUDENT
+            ? 'Student'
+            : null;
+      if (defaultRoleName) {
+        const defaultRole = await this.prisma.role.findFirst({
+          where: { name: defaultRoleName },
+        });
+        if (defaultRole) {
+          roleConnect.push({ id: defaultRole.id });
+        }
+      }
+    }
+
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
-        name: dto.name,
+        email: dto.email.trim(),
+        name: dto.name.trim(),
         mobile: dto.phone || dto.mobile,
         classGrade: dto.level,
         userType,
         password: hashedPassword,
         status: dto.status !== undefined ? dto.status : true,
-        roles: dto?.roles?.length
+        roles: roleConnect.length
           ? {
-              connect: dto.roles.map((id) => ({ id })),
+              connect: roleConnect,
             }
           : undefined,
       },
@@ -1317,8 +1428,10 @@ export class InstitutionService {
               id: true,
               name: true,
               email: true,
+              mobile: true,
               avatar: true,
               classGrade: true,
+              roles: { select: { name: true } },
             },
           },
         },
@@ -1329,7 +1442,34 @@ export class InstitutionService {
       this.prisma.institutionMember.count({ where: whereClause }),
     ]);
 
-    return { data: members, total, page, limit };
+    const data = members.map((m) => {
+      let roleLabel: string = m.role;
+      let designation = 'Member';
+      if (m.role === InstitutionMemberRole.ADMIN) {
+        designation = 'Admin';
+      } else if (m.role === InstitutionMemberRole.TEACHER) {
+        designation = 'Teacher';
+      } else if (m.role === InstitutionMemberRole.STUDENT) {
+        designation = 'Student';
+      } else if (m.user?.roles?.length) {
+        designation = m.user.roles[0].name;
+      }
+
+      return {
+        id: m.id,
+        userId: m.userId,
+        name: m.user?.name || `User #${m.userId}`,
+        email: m.user?.email || '—',
+        mobile: m.user?.mobile || '—',
+        role: roleLabel,
+        classGrade: m.user?.classGrade,
+        designation,
+        status: m.status ? 'active' : 'inactive',
+        joinedAt: m.joinedAt,
+      };
+    });
+
+    return { data, total, page, limit };
   }
 
   async getMember(
@@ -1372,14 +1512,19 @@ export class InstitutionService {
   ) {
     await this.validateInstitutionAccess(institutionId, requesterId);
 
-    const member = await this.prisma.institutionMember.delete({
+    const member = await this.prisma.institutionMember.findFirst({
       where: {
-        id: memberId,
         institutionId,
+        OR: [{ id: memberId }, { userId: memberId }],
       },
     });
-    return await this.prisma.user.delete({
-      where: { id: member.userId },
+
+    if (!member) {
+      throw new NotFoundException('Member not found in this institution');
+    }
+
+    return await this.prisma.institutionMember.delete({
+      where: { id: member.id },
     });
   }
 
