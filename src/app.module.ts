@@ -38,7 +38,7 @@ import { ConfigService } from '@nestjs/config';
 import { PublicModule } from './public/public.module';
 import { CategoryModule } from './category/category.module';
 import { GroupModule } from './group/group.module';
-
+import { CertificateModule } from './certificate/certificate.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -85,7 +85,8 @@ import { GroupModule } from './group/group.module';
     PublicModule,
     CategoryModule,
     GroupModule,
+    CertificateModule
   ],
   providers: [CertificateGeneratorService, CertificateIssuanceService],
 })
-export class AppModule {}
+export class AppModule { }

@@ -20,6 +20,14 @@ import { projectCompletionCertificateTemplate } from '../templates/certificate/p
 const execFileAsync = promisify(execFile);
 import { participationCertificateTemplate } from '../templates/certificate/participation-certificate-template';
 import { fifaDecodedParticipationCertificateTemplate } from '../templates/certificate/fifa-decoded-participation-certificate.template';
+import {
+  dynamicCertificateTemplate,
+  DynamicCertificateData,
+  DynamicCertificateTemplateConfig,
+} from '../templates/certificate/dynamic-certificate.template';
+
+export { DynamicCertificateData, DynamicCertificateTemplateConfig };
+
 export interface CourseCertArgs {
   studentName: string;
   className: string;
@@ -29,6 +37,8 @@ export interface CourseCertArgs {
   teacherRemarks?: string;
   completionDate: string; // ISO date string
   certificateId: string;
+  institutionName?: string;
+  template?: DynamicCertificateTemplateConfig | null;
 }
 
 export interface QuizCertArgs {
@@ -43,12 +53,15 @@ export interface QuizCertArgs {
   schoolName?: string;
   courseId?: number;
   grade?: string;
+  institutionName?: string;
+  template?: DynamicCertificateTemplateConfig | null;
 }
 
 export interface CertificateUploadResult {
   filePath: string; // remote FTP path
   fileUrl: string; // public HTTP URL
 }
+
 export interface ProjectCertificateArgs {
   studentName: string;
   schoolName: string;
@@ -59,6 +72,8 @@ export interface ProjectCertificateArgs {
   completedDate: string; // e.g. "17 May 2025"
   certificateId: string; // unique cert number
   className?: string;
+  institutionName?: string;
+  template?: DynamicCertificateTemplateConfig | null;
 }
 
 @Injectable()
@@ -233,8 +248,7 @@ export class CertificateGeneratorService {
             assets,
             a.schoolName,
           );
-        } 
-        else if(a.courseId == 113){
+        } else if (a.courseId == 113) {
           htmlContent = fifaDecodedParticipationCertificateTemplate(
             a.studentName,
             a.className ?? '',
@@ -245,8 +259,7 @@ export class CertificateGeneratorService {
             assets,
             a.schoolName,
           );
-        }
-        else {
+        } else {
           htmlContent = examCompletionCertificateTemplate(
             a.studentName,
             a.examName,
@@ -280,56 +293,83 @@ export class CertificateGeneratorService {
       }
     }
   }
+
   async generateProjectCertificate(
-  args: ProjectCertificateArgs,
-): Promise<CertificateUploadResult> {
+    args: ProjectCertificateArgs,
+  ): Promise<CertificateUploadResult> {
+    const assets = this.getCertificateAssets();
 
-  const assets = this.getCertificateAssets();
-
-  const html = projectCompletionCertificateTemplate(
-    args.studentName,
-    args.schoolName,
-    args.projectName,
-    args.courseName,
-    args.grade,
-    args.teacherRemarks,
-    args.completedDate,
-    args.certificateId,
-    assets,
-    args.className,
-  );
-
-  const tmpDir = os.tmpdir();
-  const filename = `cert-${uuid()}.pdf`;
-  const tmpFilePath = path.join(tmpDir, filename);
-
-  try {
-
-    // Same rendering method used by Quiz certificates
-    const pdfBuffer =
-      await this.renderHtmlToPdfBuffer(html);
-
-    fs.writeFileSync(
-      tmpFilePath,
-      pdfBuffer,
+    const html = projectCompletionCertificateTemplate(
+      args.studentName,
+      args.schoolName,
+      args.projectName,
+      args.courseName,
+      args.grade,
+      args.teacherRemarks,
+      args.completedDate,
+      args.certificateId,
+      assets,
+      args.className,
     );
 
-    const buffer =
-      fs.readFileSync(tmpFilePath);
+    const tmpDir = os.tmpdir();
+    const filename = `cert-${uuid()}.pdf`;
+    const tmpFilePath = path.join(tmpDir, filename);
 
-    return await this.uploadBufferViaFtp(
-      buffer,
-      filename,
-      'certificates',
-    );
+    try {
+      const pdfBuffer = await this.renderHtmlToPdfBuffer(html);
+      fs.writeFileSync(tmpFilePath, pdfBuffer);
 
-  } finally {
+      const buffer = fs.readFileSync(tmpFilePath);
 
-    if (fs.existsSync(tmpFilePath)) {
-      fs.unlinkSync(tmpFilePath);
+      return await this.uploadBufferViaFtp(
+        buffer,
+        filename,
+        'certificates',
+      );
+    } finally {
+      if (fs.existsSync(tmpFilePath)) {
+        fs.unlinkSync(tmpFilePath);
+      }
     }
   }
-}
+
+  async generateDynamicCertificate(
+    data: DynamicCertificateData,
+    template: DynamicCertificateTemplateConfig,
+  ): Promise<CertificateUploadResult> {
+    const assets = this.getCertificateAssets();
+    const html = dynamicCertificateTemplate(data, template, assets);
+
+    const tmpDir = os.tmpdir();
+    const filename = `cert-${uuid()}.pdf`;
+    const tmpFilePath = path.join(tmpDir, filename);
+
+    try {
+      const pdfBuffer = await this.renderHtmlToPdfBuffer(html);
+      fs.writeFileSync(tmpFilePath, pdfBuffer);
+
+      const buffer = fs.readFileSync(tmpFilePath);
+      return await this.uploadBufferViaFtp(
+        buffer,
+        filename,
+        'certificates',
+      );
+    } finally {
+      if (fs.existsSync(tmpFilePath)) {
+        fs.unlinkSync(tmpFilePath);
+      }
+    }
+  }
+
+  async renderDynamicTemplateToPdf(
+    data: DynamicCertificateData,
+    config: DynamicCertificateTemplateConfig,
+  ): Promise<Buffer> {
+    const assets = this.getCertificateAssets();
+    const html = dynamicCertificateTemplate(data, config, assets);
+    return this.renderHtmlToPdfBuffer(html);
+  }
 
   private async runPythonGenerator(
     type: 'course' | 'quiz',

@@ -1,11 +1,17 @@
 import { Module } from '@nestjs/common';
 import { CertificateService } from './certificate.service';
 import { CertificateController } from './certificate.controller';
-import { PrismaService } from '../prisma/prisma.service';
+import { AdminCertificateTemplateController } from './admin-certificate-template.controller';
+import { CertificateTemplateService } from './certificate-template.service';
+import { CertificateGeneratorService } from '../services/certicate-generator/certicate-generator.service';
 
 @Module({
-  controllers: [CertificateController],
-  providers: [CertificateService, PrismaService],
-  exports: [CertificateService],
+  controllers: [CertificateController, AdminCertificateTemplateController],
+  providers: [
+    CertificateService,
+    CertificateTemplateService,
+    CertificateGeneratorService,
+  ],
+  exports: [CertificateService, CertificateTemplateService],
 })
-export class CertificateModule {}
+export class CertificateModule { }

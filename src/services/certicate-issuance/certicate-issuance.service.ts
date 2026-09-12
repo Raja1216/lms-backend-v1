@@ -16,7 +16,7 @@ export class CertificateIssuanceService {
     private readonly prisma: PrismaService,
     private readonly generator: CertificateGeneratorService,
     private readonly activityLogService: ActivityLogService,
-  ) {}
+  ) { }
 
   async checkAndIssueCourseCompletion(
     userId: number,
@@ -480,5 +480,94 @@ export class CertificateIssuanceService {
     this.logger.log(
       `Quiz certificate issued [user=${userId} quiz=${quizId} attempt=${quizAttemptId}]`,
     );
+  }
+
+  async issueDynamicCertificate(params: {
+    userId: number;
+    templateId: number;
+    courseId?: number;
+    quizId?: number;
+    quizAttemptId?: number;
+    customData?: {
+      studentName?: string;
+      courseName?: string;
+      examName?: string;
+      projectName?: string;
+      schoolName?: string;
+      className?: string;
+      grade?: string;
+      marks?: string;
+      teacherRemarks?: string;
+    };
+  }) {
+    const { userId, templateId, courseId, quizId, quizAttemptId, customData } =
+      params;
+
+    const [user, template, course] = await Promise.all([
+      this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          name: true,
+          schoolName: true,
+          classGrade: true,
+          institutionMembers: {
+            select: { institution: { select: { name: true } } },
+          },
+        },
+      }),
+      this.prisma.certificateTemplate.findUnique({
+        where: { id: templateId },
+      }),
+      courseId
+        ? this.prisma.course.findUnique({
+          where: { id: courseId },
+          select: { title: true, grade: true },
+        })
+        : null,
+    ]);
+
+    if (!user || !template) {
+      throw new Error('User or Certificate Template not found');
+    }
+
+    const certificateId = `CERT-DYN-${Date.now()}-${Math.floor(
+      1000 + Math.random() * 9000,
+    )}`;
+
+    const dynamicData = {
+      studentName: customData?.studentName || user.name || 'Student',
+      courseName: customData?.courseName || course?.title || 'Certification Course',
+      examName: customData?.examName || 'Assessment',
+      projectName: customData?.projectName || '',
+      completionDate: new Date().toISOString().split('T')[0],
+      certificateId,
+      schoolName:
+        customData?.schoolName ||
+        user.institutionMembers?.[0]?.institution?.name ||
+        user.schoolName ||
+        '',
+      className: customData?.className || user.classGrade || course?.grade || '',
+      grade: customData?.grade || '',
+      marks: customData?.marks || '',
+      teacherRemarks: customData?.teacherRemarks || '',
+      institutionName: user.institutionMembers?.[0]?.institution?.name || '',
+    };
+
+    const { filePath, fileUrl } =
+      await this.generator.generateDynamicCertificate(dynamicData, template);
+
+    const certificate = await this.prisma.userCompletionCertificate.create({
+      data: {
+        certificateNumber: certificateId,
+        userId,
+        courseId: courseId || null,
+        quizId: quizId || null,
+        quizAttemptId: quizAttemptId || null,
+        filePath,
+        fileUrl,
+      },
+    });
+
+    return certificate;
   }
 }

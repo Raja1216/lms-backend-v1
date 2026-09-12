@@ -283,6 +283,7 @@ model Course {
   userCompletionCertificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
   pendingRegistrations       PendingRegistration[]
   categories                 CourseCategory[]
+  certificateTemplates       CertificateTemplate[]       @relation("CourseCertificateTemplates")
 
   @@map("courses")
 }
@@ -1065,6 +1066,7 @@ model Institution {
   privateGroups      Group[]              @relation("InstitutionPrivateGroups")
   groupAssignments   GroupInstitution[]
   groupUserSources   GroupUser[]          @relation("GroupUserSourceInstitution")
+  certificateTemplates CertificateTemplate[] @relation("InstitutionCertificateTemplates")
 
   @@map("institutions")
 }
@@ -1428,4 +1430,52 @@ model GroupUser {
   @@index([sourceInstitutionId])
 
   @@map("group_users")
+}
+
+model CertificateTemplate {
+  id                Int      @id @default(autoincrement())
+  uuid              String   @unique @default(uuid())
+  title             String
+  description       String?  @db.Text
+  type              String   @default("course") // "course" | "quiz" | "project" | "all"
+  
+  backgroundUrl     String?  @db.Text
+  logoUrl           String?  @db.Text
+  secondaryLogoUrl  String?  @db.Text
+  signatureUrl      String?  @db.Text
+  signatoryName     String?
+  signatoryTitle    String?
+  
+  primaryColor      String?  @default("#7a00ff")
+  secondaryColor    String?  @default("#ff5a00")
+  textColor         String?  @default("#1f2937")
+  fontFamily        String?  @default("Inter, Arial, sans-serif")
+  
+  headerText        String?  @default("CERTIFICATE OF COMPLETION")
+  subHeaderText     String?  @default("PROUDLY PRESENTED TO")
+  bodyText          String?  @db.Text
+  footerText        String?  @db.Text
+  
+  showQrCode        Boolean  @default(true)
+  showGrade         Boolean  @default(true)
+  showScore         Boolean  @default(true)
+  showIssueDate     Boolean  @default(true)
+  showCertificateId Boolean  @default(true)
+  
+  customHtml        String?  @db.Text
+  
+  institutionId     Int?
+  courseId          Int?
+  isDefault         Boolean  @default(false)
+  status            Boolean  @default(true)
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  institution       Institution? @relation("InstitutionCertificateTemplates", fields: [institutionId], references: [id], onDelete: Cascade)
+  course            Course?      @relation("CourseCertificateTemplates", fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@index([institutionId])
+  @@index([courseId])
+  @@map("certificate_templates")
 }

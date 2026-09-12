@@ -3,10 +3,12 @@ import { InstitutionService } from './institution.service';
 import { InstitutionController } from './institution.controller';
 import { UserModule } from 'src/user/user.module';
 import { AuthModule } from 'src/auth/auth.module';
+import { CertificateGeneratorService } from 'src/services/certicate-generator/certicate-generator.service';
+
 @Module({
   imports: [UserModule, AuthModule],
   controllers: [InstitutionController],
-  providers: [InstitutionService],
+  providers: [InstitutionService, CertificateGeneratorService],
   exports: [InstitutionService],
 })
 export class InstitutionModule {}
