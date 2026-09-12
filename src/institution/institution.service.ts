@@ -17,7 +17,11 @@ import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateMemberDto } from './dto/update-member.dto';
 import { CreateOwnedCourseDto } from './dto/create-owned-course.dto';
 import { AssignCatalogCourseDto } from './dto/assign-catalog-course.dto';
-import { CourseAudience, InstitutionMemberRole, UserType } from 'src/generated/prisma/enums';
+import {
+  CourseAudience,
+  InstitutionMemberRole,
+  UserType,
+} from 'src/generated/prisma/enums';
 
 @Injectable()
 export class InstitutionService {
@@ -194,7 +198,13 @@ export class InstitutionService {
           OR: [
             { role: InstitutionMemberRole.TEACHER },
             { user: { userType: UserType.TEACHER } },
-            { user: { roles: { some: { name: { in: ['TEACHER', 'Teacher', 'Instructor'] } } } } },
+            {
+              user: {
+                roles: {
+                  some: { name: { in: ['TEACHER', 'Teacher', 'Instructor'] } },
+                },
+              },
+            },
           ],
         },
       }),
@@ -210,7 +220,22 @@ export class InstitutionService {
               AND: [
                 { role: { not: InstitutionMemberRole.TEACHER } },
                 { user: { userType: { not: UserType.TEACHER } } },
-                { user: { roles: { none: { name: { in: ['TEACHER', 'Teacher', 'Instructor', 'Institution Owner'] } } } } },
+                {
+                  user: {
+                    roles: {
+                      none: {
+                        name: {
+                          in: [
+                            'TEACHER',
+                            'Teacher',
+                            'Instructor',
+                            'Institution Owner',
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
               ],
             },
           ],
@@ -264,12 +289,33 @@ export class InstitutionService {
     await this.validateInstitutionAccess(institutionId, userId);
 
     const months: { month: string; start: Date; end: Date }[] = [];
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     const now = new Date();
 
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
+      const end = new Date(
+        d.getFullYear(),
+        d.getMonth() + 1,
+        0,
+        23,
+        59,
+        59,
+        999,
+      );
       months.push({
         month: monthNames[d.getMonth()],
         start: d,
@@ -345,17 +391,23 @@ export class InstitutionService {
       },
     });
 
-    const subjectMap = new Map<string, { title: string; totalScore: number; count: number }>();
+    const subjectMap = new Map<
+      string,
+      { title: string; totalScore: number; count: number }
+    >();
 
     for (const qa of quizAttempts) {
       const subName = qa.quiz?.subjectQuizzes?.[0]?.subject?.name || 'General';
       const totalMarks = Number(qa.totalMarks) || 100;
       const obtainedMarks = Number(qa.obtainedMarks) || 0;
-      const percentage = totalMarks > 0
-        ? Math.round((obtainedMarks / totalMarks) * 100)
-        : 0;
+      const percentage =
+        totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
 
-      const entry = subjectMap.get(subName) || { title: subName, totalScore: 0, count: 0 };
+      const entry = subjectMap.get(subName) || {
+        title: subName,
+        totalScore: 0,
+        count: 0,
+      };
       entry.totalScore += percentage;
       entry.count += 1;
       subjectMap.set(subName, entry);
@@ -380,27 +432,18 @@ export class InstitutionService {
         where: {
           institutionId,
           source: 'granted',
-          course: {
-            audience: { not: CourseAudience.SCHOOL },
-          },
         },
       }),
       this.prisma.institutionCourse.count({
         where: {
           institutionId,
           source: 'purchased',
-          course: {
-            audience: { not: CourseAudience.SCHOOL },
-          },
         },
       }),
       this.prisma.institutionCourse.count({
         where: {
           institutionId,
-          OR: [
-            { source: 'owned' },
-            { course: { audience: CourseAudience.SCHOOL } },
-          ],
+          source: 'owned',
         },
       }),
     ]);
@@ -431,7 +474,13 @@ export class InstitutionService {
         { role: InstitutionMemberRole.TEACHER },
         { role: InstitutionMemberRole.ADMIN },
         { user: { userType: UserType.TEACHER } },
-        { user: { roles: { some: { name: { in: ['TEACHER', 'Teacher', 'Instructor'] } } } } },
+        {
+          user: {
+            roles: {
+              some: { name: { in: ['TEACHER', 'Teacher', 'Instructor'] } },
+            },
+          },
+        },
       ],
     };
 
@@ -516,7 +565,22 @@ export class InstitutionService {
           AND: [
             { role: { not: InstitutionMemberRole.TEACHER } },
             { user: { userType: { not: UserType.TEACHER } } },
-            { user: { roles: { none: { name: { in: ['TEACHER', 'Teacher', 'Instructor', 'Institution Owner'] } } } } },
+            {
+              user: {
+                roles: {
+                  none: {
+                    name: {
+                      in: [
+                        'TEACHER',
+                        'Teacher',
+                        'Instructor',
+                        'Institution Owner',
+                      ],
+                    },
+                  },
+                },
+              },
+            },
           ],
         },
       ],
@@ -713,7 +777,9 @@ export class InstitutionService {
       },
     });
     if (existing) {
-      throw new ConflictException('Course is already assigned to this institution');
+      throw new ConflictException(
+        'Course is already assigned to this institution',
+      );
     }
 
     const source = dto.source || 'granted';
@@ -726,7 +792,9 @@ export class InstitutionService {
         seats: dto.seats ?? null,
       },
       include: {
-        course: { select: { id: true, title: true, price: true, thumbnail: true } },
+        course: {
+          select: { id: true, title: true, price: true, thumbnail: true },
+        },
       },
     });
   }
@@ -744,7 +812,9 @@ export class InstitutionService {
       },
     });
     if (!record) {
-      throw new NotFoundException('Assigned course not found for this institution');
+      throw new NotFoundException(
+        'Assigned course not found for this institution',
+      );
     }
 
     return await this.prisma.institutionCourse.delete({
@@ -856,7 +926,8 @@ export class InstitutionService {
       grade: r.course.grade || 'All',
       duration: r.course.duration,
       price: Number(r.course.price) || 0,
-      visibility: r.course.audience === CourseAudience.PUBLIC ? 'public' : 'private',
+      visibility:
+        r.course.audience === CourseAudience.PUBLIC ? 'public' : 'private',
       enrolledCount: r.course._count?.userEnrolledCourses || 0,
       createdAt: r.course.createdAt,
     }));
@@ -871,8 +942,15 @@ export class InstitutionService {
   ) {
     await this.validateInstitutionAccess(institutionId, userId);
 
-    const slug = await generateUniqueSlugForTable(this.prisma, 'course', dto.title);
-    const audience = dto.visibility === 'public' ? CourseAudience.PUBLIC : CourseAudience.SCHOOL;
+    const slug = await generateUniqueSlugForTable(
+      this.prisma,
+      'course',
+      dto.title,
+    );
+    const audience =
+      dto.visibility === 'public'
+        ? CourseAudience.PUBLIC
+        : CourseAudience.SCHOOL;
 
     const course = await this.prisma.course.create({
       data: {
@@ -905,7 +983,8 @@ export class InstitutionService {
       grade: course.grade,
       duration: course.duration,
       price: Number(course.price) || 0,
-      visibility: course.audience === CourseAudience.PUBLIC ? 'public' : 'private',
+      visibility:
+        course.audience === CourseAudience.PUBLIC ? 'public' : 'private',
       enrolledCount: 0,
       createdAt: course.createdAt,
     };
@@ -928,7 +1007,8 @@ export class InstitutionService {
       throw new NotFoundException('Course not found in this institution');
     }
 
-    const audience = visibility === 'public' ? CourseAudience.PUBLIC : CourseAudience.SCHOOL;
+    const audience =
+      visibility === 'public' ? CourseAudience.PUBLIC : CourseAudience.SCHOOL;
     const updated = await this.prisma.course.update({
       where: { id: courseId },
       data: { audience },
@@ -936,7 +1016,8 @@ export class InstitutionService {
 
     return {
       id: updated.id,
-      visibility: updated.audience === CourseAudience.PUBLIC ? 'public' : 'private',
+      visibility:
+        updated.audience === CourseAudience.PUBLIC ? 'public' : 'private',
     };
   }
 
@@ -1029,13 +1110,11 @@ export class InstitutionService {
       roleUpper === 'ADMIN'
         ? InstitutionMemberRole.ADMIN
         : roleUpper === 'STUDENT'
-        ? InstitutionMemberRole.STUDENT
-        : InstitutionMemberRole.TEACHER;
+          ? InstitutionMemberRole.STUDENT
+          : InstitutionMemberRole.TEACHER;
 
     const userType =
-      roleUpper === 'STUDENT'
-        ? UserType.STUDENT
-        : UserType.TEACHER;
+      roleUpper === 'STUDENT' ? UserType.STUDENT : UserType.TEACHER;
 
     const user = await this.prisma.user.create({
       data: {
@@ -1103,8 +1182,10 @@ export class InstitutionService {
     const roleUpper = (dto.role || dto.designation || '').toUpperCase();
     let memberRole: InstitutionMemberRole | undefined = undefined;
     if (roleUpper === 'ADMIN') memberRole = InstitutionMemberRole.ADMIN;
-    else if (roleUpper === 'STUDENT') memberRole = InstitutionMemberRole.STUDENT;
-    else if (roleUpper === 'TEACHER') memberRole = InstitutionMemberRole.TEACHER;
+    else if (roleUpper === 'STUDENT')
+      memberRole = InstitutionMemberRole.STUDENT;
+    else if (roleUpper === 'TEACHER')
+      memberRole = InstitutionMemberRole.TEACHER;
 
     const userUpdateData: any = {};
     if (dto.email !== undefined) userUpdateData.email = dto.email;
@@ -1316,7 +1397,8 @@ export class InstitutionService {
   }
 
   async validateInstitutionAccess(institutionId: number, userId: number) {
-    const { isSuperAdmin, institutionId: userInstitutionId } = await this.checkSuperAdmin(userId);
+    const { isSuperAdmin, institutionId: userInstitutionId } =
+      await this.checkSuperAdmin(userId);
     if (isSuperAdmin) return true;
     if (userInstitutionId === institutionId) return true;
 

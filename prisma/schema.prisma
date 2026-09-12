@@ -1093,7 +1093,7 @@ model InstitutionCourse {
   institutionId Int
   courseId      Int
   purchasedAt   DateTime @default(now())
-  source        String   @default("granted") // "granted" | "purchased"
+  source        String   @default("purchased") // "granted" | "purchased"
   seats         Int? // null = unlimited
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
