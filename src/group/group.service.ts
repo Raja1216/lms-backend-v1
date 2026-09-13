@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import {
   GroupType,
@@ -108,15 +109,72 @@ export class GroupService {
     return userIds;
   }
 
+  /**
+   * Private authorization check to verify that actorUserId has administrative
+   * permissions for institutionId (or is a platform Super Admin / Admin).
+   */
   private async assertInstitutionManager(userId: number, institutionId: number) {
-    const institution = await this.prisma.institution.findUnique({
-      where: { id: institutionId },
-      select: { id: true, ownerId: true, status: true },
+    if (!userId || !Number.isInteger(userId) || userId <= 0) {
+      throw new UnauthorizedException('User authentication required');
+    }
+
+    if (!institutionId || !Number.isInteger(institutionId) || institutionId <= 0) {
+      throw new BadRequestException('Invalid institution ID');
+    }
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        status: true,
+        roles: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
+      },
     });
 
-    if (!institution) throw new NotFoundException('Institution not found');
-    if (institution.ownerId === userId) return institution;
+    if (!user || !user.status) {
+      throw new UnauthorizedException('User not found or inactive');
+    }
 
+    // Platform Super Admin / Admin has universal management access
+    const isPlatformAdmin = user.roles?.some((r) => {
+      const name = r.name?.toUpperCase();
+      const slug = r.slug?.toLowerCase();
+      return (
+        name === 'SUPER ADMIN' ||
+        name === 'ADMIN' ||
+        slug === 'super-admin' ||
+        slug === 'admin'
+      );
+    });
+
+    const institution = await this.prisma.institution.findUnique({
+      where: { id: institutionId },
+      select: { id: true, ownerId: true, status: true, name: true },
+    });
+
+    if (!institution) {
+      throw new NotFoundException('Institution not found');
+    }
+
+    if (!institution.status && !isPlatformAdmin) {
+      throw new ForbiddenException('Institution is inactive');
+    }
+
+    if (isPlatformAdmin) {
+      return institution;
+    }
+
+    // Institution Owner check
+    if (institution.ownerId === userId) {
+      return institution;
+    }
+
+    // Institution Member ADMIN role check
     const membership = await this.prisma.institutionMember.findUnique({
       where: {
         institutionId_userId: {
@@ -870,12 +928,16 @@ export class GroupService {
       membershipSources: [
         ...user.groupMemberships.map((membership) => ({
           type: membership.source,
+          source: membership.source,
           institution: membership.sourceInstitution,
-          removable: true,
+          removable: restrictInstitutionId
+            ? membership.sourceInstitutionId === restrictInstitutionId
+            : true,
           sourceKey: membership.sourceKey,
         })),
         ...user.institutionMembers.map((membership) => ({
           type: 'INSTITUTION_INHERITED',
+          source: 'INSTITUTION_INHERITED',
           institution: membership.institution,
           removable: false,
           sourceKey: `INHERITED:${membership.institutionId}`,
@@ -897,6 +959,17 @@ export class GroupService {
         ownerInstitutionId: true,
       },
     });
+  }
+
+  async getUsersForInstitute(
+    groupId: number,
+    institutionId: number,
+    actorUserId: number,
+    query: GroupUserQueryDto,
+  ) {
+    await this.assertInstitutionManager(actorUserId, institutionId);
+    await this.assertInstituteCanAccessGroup(groupId, institutionId);
+    return this.getUsers(groupId, query, institutionId);
   }
 
   async getInstituteOptions(institutionId: number, actorUserId: number) {

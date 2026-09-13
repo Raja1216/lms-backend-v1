@@ -2,12 +2,14 @@ import {
   ArrayUnique,
   IsArray,
   IsBoolean,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
   Length,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { GroupType } from 'src/generated/prisma/client';
 
 export class CreateInstituteGroupDto {
   @IsString()
@@ -17,6 +19,10 @@ export class CreateInstituteGroupDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsEnum(GroupType)
+  type?: GroupType;
 
   @IsOptional()
   @IsBoolean()
@@ -29,3 +35,4 @@ export class CreateInstituteGroupDto {
   @IsInt({ each: true })
   userIds?: number[];
 }
+

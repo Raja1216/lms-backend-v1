@@ -14,8 +14,6 @@ import {
 } from '@nestjs/common';
 import { NextFunction, Request, Response } from 'express';
 import { JwtAuthGuard } from 'src/auth/jwt.guard';
-import { PermissionGuard } from 'src/guard/permission.guard';
-import { Permissions } from 'src/guard/premission.decorator';
 import { createPagedResponse } from 'src/shared/create-paged-response';
 import { ErrorHandler } from 'src/utils/error-handler';
 import { successResponse } from 'src/utils/success-response';
@@ -27,7 +25,7 @@ import { UpdateGroupDto } from './dto/update-group.dto';
 import { GroupService } from './group.service';
 
 @Controller('institution/:institutionId/group')
-@UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard)
 export class InstituteGroupController {
   constructor(private readonly groupService: GroupService) {}
 
@@ -35,7 +33,6 @@ export class InstituteGroupController {
     return Number(req.user?.id ?? req.user?.userId ?? req.user?.sub);
   }
 
-  @Permissions('institute-group-create')
   @Post()
   async create(
     @Param('institutionId') institutionId: string,
@@ -56,7 +53,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-read')
   @Get()
   async findAll(
     @Param('institutionId') institutionId: string,
@@ -78,7 +74,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-read')
   @Get('options')
   async options(
     @Param('institutionId') institutionId: string,
@@ -97,7 +92,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-read')
   @Get(':id/users')
   async users(
     @Param('institutionId') institutionId: string,
@@ -108,11 +102,11 @@ export class InstituteGroupController {
     @Next() next: NextFunction,
   ) {
     try {
-      await this.groupService.findOneForInstitute(+id, +institutionId, this.actorId(req));
-      const { data, total } = await this.groupService.getUsers(
+      const { data, total } = await this.groupService.getUsersForInstitute(
         +id,
-        query,
         +institutionId,
+        this.actorId(req),
+        query,
       );
       const result = createPagedResponse(data, query.page ?? 1, query.limit ?? 10, total);
       return successResponse(res, 200, 'Group users fetched successfully', result, null);
@@ -121,7 +115,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-manage-users')
   @Post(':id/users')
   async addUsers(
     @Param('institutionId') institutionId: string,
@@ -144,7 +137,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-manage-users')
   @Delete(':id/users/:userId')
   async removeUser(
     @Param('institutionId') institutionId: string,
@@ -167,7 +159,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-read')
   @Get(':id')
   async findOne(
     @Param('institutionId') institutionId: string,
@@ -188,7 +179,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-update')
   @Patch(':id/status')
   async status(
     @Param('institutionId') institutionId: string,
@@ -209,7 +199,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-update')
   @Patch(':id')
   async update(
     @Param('institutionId') institutionId: string,
@@ -232,7 +221,6 @@ export class InstituteGroupController {
     }
   }
 
-  @Permissions('institute-group-delete')
   @Delete(':id')
   async remove(
     @Param('institutionId') institutionId: string,
