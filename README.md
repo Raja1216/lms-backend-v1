@@ -112,3 +112,4 @@ npx prisma db push --schema=prisma/schema.prisma
 
 npx prisma db push --schema=prisma/logging/schema.prisma --config=prisma/logging/prisma.config.ts
 
+npx ts-node src/gamification/seed/run-seed.ts

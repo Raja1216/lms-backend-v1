@@ -200,6 +200,14 @@ model User {
   pendingRegistrations       PendingRegistration[]
   createdGroups              Group[]                     @relation("GroupCreator")
   groupMemberships           GroupUser[]               @relation("GroupUserMember")
+  xpWallet                   UserXpWallet?
+  xpTransactions             XpTransaction[]
+  userBadges                 UserBadge[]
+  userAchievements           UserAchievement[]
+  streak                     UserStreak?
+  streakHistories            StreakHistory[]
+  levelHistories             UserLevelHistory[]
+  leagueStates               UserLeagueState[]
 
   @@map("users")
 }
@@ -1485,4 +1493,347 @@ model CertificateTemplate {
   @@index([institutionId])
   @@index([courseId])
   @@map("certificate_templates")
+}
+
+enum XpType {
+  ENGAGEMENT
+  PERFORMANCE
+}
+
+enum XpSourceType {
+  COURSE
+  LESSON
+  QUIZ
+  PROJECT
+  LIVE_CLASS
+  COMMUNITY
+  STREAK
+  CERTIFICATE
+  SYSTEM
+  ADMIN_ADJUSTMENT
+}
+
+enum XpRepeatPolicy {
+  ONCE_EVER
+  ONCE_PER_CONTENT
+  ONCE_DAILY
+  UNLIMITED_WITH_DAILY_CAP
+}
+
+enum BadgeCategory {
+  LEARNING
+  QUIZ
+  PROJECT
+  ATTENDANCE
+  STREAK
+  COMMUNITY
+  CERTIFICATE
+  DOMAIN
+}
+
+enum BadgeRarity {
+  COMMON
+  UNCOMMON
+  RARE
+  EPIC
+  LEGENDARY
+}
+
+enum SeasonType {
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+enum SeasonStatus {
+  ACTIVE
+  FINALIZED
+}
+
+enum LeagueTier {
+  EXPLORER
+  CHALLENGER
+  ACHIEVER
+  SCHOLAR
+  MASTER
+  ELITE
+}
+
+enum LeagueUserStatus {
+  PROMOTED
+  RELEGATED
+  MAINTAINED
+}
+
+model UserXpWallet {
+  id             Int      @id @default(autoincrement())
+  userId         Int      @unique
+  engagementXp   Int      @default(0)
+  performanceXp  Int      @default(0)
+  totalXp        Int      @default(0)
+  currentLevelId Int      @default(1)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentLevel GamificationLevel @relation(fields: [currentLevelId], references: [id])
+
+  @@index([totalXp])
+  @@index([performanceXp])
+  @@index([engagementXp])
+  @@map("user_xp_wallets")
+}
+
+model XpTransaction {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  xpType         XpType
+  eventKey       String       @db.VarChar(100)
+  xpAmount       Int
+  sourceType     XpSourceType
+  sourceId       String?      @db.VarChar(100)
+  courseId       Int?
+  institutionId  Int?
+  idempotencyKey String       @unique @db.VarChar(191)
+  metadata       Json?
+  createdAt      DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([userId, eventKey])
+  @@index([eventKey])
+  @@index([courseId, createdAt])
+  @@index([institutionId, createdAt])
+  @@map("xp_transactions")
+}
+
+model GamificationXpRule {
+  id               Int            @id @default(autoincrement())
+  ruleName         String         @db.VarChar(120)
+  eventKey         String         @unique @db.VarChar(100)
+  xpType           XpType
+  xpAmount         Int
+  repeatPolicy     XpRepeatPolicy @default(ONCE_PER_CONTENT)
+  dailyCap         Int?
+  courseScopeId    Int?
+  institutionScope Int?
+  startDate        DateTime?
+  endDate          DateTime?
+  isEnabled        Boolean        @default(true)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([eventKey])
+  @@index([isEnabled])
+  @@map("gamification_xp_rules")
+}
+
+model GamificationLevel {
+  id                   Int      @id @default(autoincrement())
+  levelNumber          Int      @unique
+  title                String   @db.VarChar(80)
+  minimumTotalXp       Int      @default(0)
+  minimumPerformanceXp Int      @default(0)
+  icon                 String?  @db.VarChar(255)
+  benefits             Json?
+  isActive             Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  wallets              UserXpWallet[]
+  levelHistoriesTarget UserLevelHistory[] @relation("TargetLevel")
+  levelHistoriesSource UserLevelHistory[] @relation("SourceLevel")
+
+  @@map("gamification_levels")
+}
+
+model UserLevelHistory {
+  id                   Int      @id @default(autoincrement())
+  userId               Int
+  fromLevelId          Int
+  toLevelId            Int
+  triggerTransactionId Int?
+  achievedAt           DateTime @default(now())
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromLevel   GamificationLevel @relation("SourceLevel", fields: [fromLevelId], references: [id])
+  toLevel     GamificationLevel @relation("TargetLevel", fields: [toLevelId], references: [id])
+
+  @@index([userId])
+  @@map("user_level_histories")
+}
+
+model Badge {
+  id                   Int           @id @default(autoincrement())
+  name                 String        @db.VarChar(100)
+  slug                 String        @unique @db.VarChar(100)
+  description          String        @db.Text
+  icon                 String        @db.VarChar(255)
+  category             BadgeCategory @default(LEARNING)
+  rarity               BadgeRarity   @default(COMMON)
+  conditionType        String        @db.VarChar(80)
+  conditionConfig      Json?
+  xpRewardEngagement   Int           @default(0)
+  xpRewardPerformance  Int           @default(0)
+  isActive             Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  userBadges           UserBadge[]
+  achievements         Achievement[]
+
+  @@index([category])
+  @@index([rarity])
+  @@map("badges")
+}
+
+model UserBadge {
+  id         Int          @id @default(autoincrement())
+  userId     Int
+  badgeId    Int
+  earnedAt   DateTime     @default(now())
+  sourceType XpSourceType @default(SYSTEM)
+  sourceId   String?      @db.VarChar(100)
+  createdAt  DateTime     @default(now())
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge Badge @relation(fields: [badgeId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+  @@index([userId])
+  @@index([badgeId])
+  @@map("user_badges")
+}
+
+model Achievement {
+  id                   Int           @id @default(autoincrement())
+  name                 String        @db.VarChar(100)
+  description          String        @db.Text
+  category             BadgeCategory @default(LEARNING)
+  conditionConfig      Json?
+  badgeId              Int?
+  engagementXpReward   Int           @default(0)
+  performanceXpReward  Int           @default(0)
+  isRepeatable         Boolean       @default(false)
+  isActive             Boolean       @default(true)
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  badge                Badge?            @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+  userAchievements     UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            Int      @id @default(autoincrement())
+  userId        Int
+  achievementId Int
+  earnedAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievement Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, achievementId])
+  @@index([userId])
+  @@map("user_achievements")
+}
+
+model UserStreak {
+  id                        Int       @id @default(autoincrement())
+  userId                    Int       @unique
+  currentStreak             Int       @default(0)
+  longestStreak             Int       @default(0)
+  lastQualifiedActivityDate DateTime? @db.Date
+  freezeTokensAvailable     Int       @default(0)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([currentStreak])
+  @@map("user_streaks")
+}
+
+model StreakHistory {
+  id                    Int      @id @default(autoincrement())
+  userId                Int
+  activityDate          DateTime @db.Date
+  qualifyingAction      String   @db.VarChar(80)
+  sourceId              String?  @db.VarChar(100)
+  awardedBonusXp        Int      @default(0)
+  createdAt             DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, activityDate])
+  @@index([userId])
+  @@map("streak_histories")
+}
+
+model LeaderboardSeason {
+  id         Int          @id @default(autoincrement())
+  seasonType SeasonType   @default(WEEKLY)
+  name       String       @db.VarChar(100)
+  startDate  DateTime
+  endDate    DateTime
+  status     SeasonStatus @default(ACTIVE)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  snapshots  LeaderboardSnapshot[]
+  leagues    UserLeagueState[]
+
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("leaderboard_seasons")
+}
+
+model LeaderboardSnapshot {
+  id          Int               @id @default(autoincrement())
+  seasonId    Int
+  scopeType   String            @db.VarChar(50) // GLOBAL, INSTITUTION, COURSE, CLASS, BATCH
+  scopeId     Int?
+  metricType  String            @db.VarChar(50) // PERFORMANCE_XP, ENGAGEMENT_XP, TOTAL_XP, MOST_IMPROVED, WEIGHTED
+  rankings    Json              // Array of { rank, userId, score, prevRank }
+  snapshotAt  DateTime          @default(now())
+
+  season      LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@index([seasonId])
+  @@index([scopeType, scopeId])
+  @@map("leaderboard_snapshots")
+}
+
+model UserLeagueState {
+  id          Int              @id @default(autoincrement())
+  userId      Int
+  seasonId    Int
+  leagueTier  LeagueTier       @default(EXPLORER)
+  divisionId  Int              @default(1) // sub-groups of 30 learners
+  weeklyPx    Int              @default(0)
+  currentRank Int              @default(0)
+  status      LeagueUserStatus @default(MAINTAINED)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user   User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  season LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, seasonId])
+  @@index([seasonId, leagueTier, divisionId])
+  @@index([weeklyPx])
+  @@map("user_league_states")
+}
+
+model GamificationConfig {
+  id          Int      @id @default(autoincrement())
+  configKey   String   @unique @db.VarChar(100)
+  configValue Json
+  description String?  @db.Text
+  updatedAt   DateTime @updatedAt
+
+  @@map("gamification_configs")
 }

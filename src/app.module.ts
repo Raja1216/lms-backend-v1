@@ -39,9 +39,13 @@ import { PublicModule } from './public/public.module';
 import { CategoryModule } from './category/category.module';
 import { GroupModule } from './group/group.module';
 import { CertificateModule } from './certificate/certificate.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { GamificationModule } from './gamification/gamification.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    EventEmitterModule.forRoot(),
     BullModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
@@ -85,7 +89,8 @@ import { CertificateModule } from './certificate/certificate.module';
     PublicModule,
     CategoryModule,
     GroupModule,
-    CertificateModule
+    CertificateModule,
+    GamificationModule,
   ],
   providers: [CertificateGeneratorService, CertificateIssuanceService],
 })

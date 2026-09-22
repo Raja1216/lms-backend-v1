@@ -13,12 +13,18 @@ import { QuizSubmissionFrequency } from 'src/generated/prisma/enums';
 import { CertificateIssuanceService } from 'src/services/certicate-issuance/certicate-issuance.service';
 import { SortOrder } from 'src/generated/prisma/internal/prismaNamespace';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { GamificationDomainEvent } from 'src/gamification/events/gamification.event';
+import { GamificationEventKey } from 'src/gamification/events/gamification-event.keys';
+import { XpSourceType } from 'src/generated/prisma/client';
+
 @Injectable()
 export class QuizService {
   constructor(
     private prisma: PrismaService,
     private readonly certificateIssuanceService: CertificateIssuanceService,
     private readonly activityLogService: ActivityLogService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async create(createQuizDto: CreateQuizDto) {
@@ -1039,6 +1045,88 @@ export class QuizService {
       );
     } catch (err) {
       console.error('Failed to log Quiz Submitted activity', err);
+    }
+
+    //  Gamification Integration
+    try {
+      const courseIds = await this.getCourseIdsForQuiz(quiz);
+      const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
+      const scorePct = totalMarks > 0 ? (obtainedMarks / totalMarks) * 100 : 0;
+
+      // 1. Emit QUIZ_ATTEMPTED (Engagement XP: +5 EX)
+      this.eventEmitter.emit(
+        'gamification.event',
+        new GamificationDomainEvent({
+          userId,
+          eventKey: GamificationEventKey.QUIZ_ATTEMPTED,
+          sourceType: XpSourceType.QUIZ,
+          sourceId: quizId,
+          courseId: primaryCourseId,
+          idempotencyKey: `QUIZ_ATTEMPT:${userId}:${quizId}:${attempt.id}`,
+        }),
+      );
+
+      // Check all attempts by user for this quiz
+      const allAttempts = await this.prisma.quizAttempt.findMany({
+        where: { quizId, userId },
+      });
+      const isFirstAttempt = allAttempts.length <= 1;
+
+      if (obtainedMarks >= quiz.passMarks) {
+        // 2. Emit QUIZ_PASSED_LESSON (Performance XP: +15 PX)
+        this.eventEmitter.emit(
+          'gamification.event',
+          new GamificationDomainEvent({
+            userId,
+            eventKey: GamificationEventKey.QUIZ_PASSED_LESSON,
+            sourceType: XpSourceType.QUIZ,
+            sourceId: quizId,
+            courseId: primaryCourseId,
+            idempotencyKey: `QUIZ_PASS:${userId}:${quizId}:${attempt.id}`,
+          }),
+        );
+
+        // 3. First Attempt Pass Bonus (+25 PX)
+        if (isFirstAttempt) {
+          this.eventEmitter.emit(
+            'gamification.event',
+            new GamificationDomainEvent({
+              userId,
+              eventKey: GamificationEventKey.QUIZ_FIRST_ATTEMPT_PASS,
+              sourceType: XpSourceType.QUIZ,
+              sourceId: quizId,
+              courseId: primaryCourseId,
+              idempotencyKey: `QUIZ_FIRST_PASS:${userId}:${quizId}`,
+            }),
+          );
+        }
+
+        // 4. Score Bonuses (Non-stacking highest bonus: 100% -> +75 PX, 90% -> +40 PX, 80% -> +20 PX)
+        let scoreBonusKey: GamificationEventKey | null = null;
+        if (scorePct >= 100) {
+          scoreBonusKey = GamificationEventKey.QUIZ_SCORE_100;
+        } else if (scorePct >= 90) {
+          scoreBonusKey = GamificationEventKey.QUIZ_SCORE_90;
+        } else if (scorePct >= 80) {
+          scoreBonusKey = GamificationEventKey.QUIZ_SCORE_80;
+        }
+
+        if (scoreBonusKey) {
+          this.eventEmitter.emit(
+            'gamification.event',
+            new GamificationDomainEvent({
+              userId,
+              eventKey: scoreBonusKey,
+              sourceType: XpSourceType.QUIZ,
+              sourceId: quizId,
+              courseId: primaryCourseId,
+              idempotencyKey: `QUIZ_SCORE_BONUS:${userId}:${quizId}:${attempt.id}`,
+            }),
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Failed to emit gamification events for quiz submission', err);
     }
 
     /* 🎯 XP ONLY IF QUIZ IS ATTACHED TO LESSON */

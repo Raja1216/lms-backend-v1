@@ -1273,6 +1273,66 @@ export class CourseService {
     };
   }
 
+  async getBatchCourseProgress(courseIds: number[], user: User) {
+    let targetCourseIds = Array.isArray(courseIds) ? [...courseIds] : [];
+
+    // If no course IDs supplied, automatically look up all courses user is enrolled in
+    if (!targetCourseIds || targetCourseIds.length === 0) {
+      const enrollments = await this.prisma.userEnrolledCourse.findMany({
+        where: { userId: user.id },
+        select: { courseId: true },
+      });
+
+      const institutionMembers = await this.prisma.institutionMember.findMany({
+        where: { userId: user.id, status: true },
+        select: { institutionId: true },
+      });
+
+      const instCourses = institutionMembers.length
+        ? await this.prisma.institutionCourse.findMany({
+            where: {
+              institutionId: {
+                in: institutionMembers.map((m) => m.institutionId),
+              },
+            },
+            select: { courseId: true },
+          })
+        : [];
+
+      const allIds = new Set<number>([
+        ...enrollments.map((e) => e.courseId),
+        ...instCourses.map((c) => c.courseId),
+      ]);
+      targetCourseIds = [...allIds];
+    }
+
+    const progressList = await Promise.all(
+      targetCourseIds.map(async (id) => {
+        try {
+          return await this.getCourseProgress(String(id), user);
+        } catch (err) {
+          return null;
+        }
+      }),
+    );
+
+    const validResults = progressList.filter(
+      (item): item is NonNullable<typeof item> => item !== null,
+    );
+
+    const progressMap: Record<number, any> = {};
+    for (const item of validResults) {
+      if (item && item.courseId) {
+        progressMap[item.courseId] = item;
+      }
+    }
+
+    return {
+      courses: validResults,
+      progressMap,
+    };
+  }
+
   async update(id: number, updateCourseDto: UpdateCourseDto) {
     const existing = await this.findOne(id);
 

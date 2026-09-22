@@ -242,6 +242,93 @@ export class CourseController {
     }
   }
 
+  @Get('progress/batch')
+  async getBatchProgress(
+    @Query('courseIds') courseIdsQuery: string,
+    @Next() next: NextFunction,
+    @Res() res: Response,
+    @Req() req: { user: User },
+  ) {
+    try {
+      const parsedIds = courseIdsQuery
+        ? courseIdsQuery
+            .split(',')
+            .map((id) => Number(id.trim()))
+            .filter((id) => !isNaN(id))
+        : [];
+      const result = await this.courseService.getBatchCourseProgress(
+        parsedIds,
+        req.user,
+      );
+      return successResponse(
+        res,
+        200,
+        'Batch course progress fetched successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+
+  @Post('progress/batch')
+  async postBatchProgress(
+    @Body('courseIds') courseIds: number[],
+    @Next() next: NextFunction,
+    @Res() res: Response,
+    @Req() req: { user: User },
+  ) {
+    try {
+      const parsedIds = Array.isArray(courseIds)
+        ? courseIds.map((id) => Number(id)).filter((id) => !isNaN(id))
+        : [];
+      const result = await this.courseService.getBatchCourseProgress(
+        parsedIds,
+        req.user,
+      );
+      return successResponse(
+        res,
+        200,
+        'Batch course progress fetched successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'Internal Server Error',
+          error.status ? error.status : 500,
+        ),
+      );
+    }
+  }
+
+  @Get('batch-progress')
+  async getBatchProgressAlias(
+    @Query('courseIds') courseIdsQuery: string,
+    @Next() next: NextFunction,
+    @Res() res: Response,
+    @Req() req: { user: User },
+  ) {
+    return this.getBatchProgress(courseIdsQuery, next, res, req);
+  }
+
+  @Post('batch-progress')
+  async postBatchProgressAlias(
+    @Body('courseIds') courseIds: number[],
+    @Next() next: NextFunction,
+    @Res() res: Response,
+    @Req() req: { user: User },
+  ) {
+    return this.postBatchProgress(courseIds, next, res, req);
+  }
+
   @Get(':slug/progress')
   async getCourseProgress(
     @Param('slug') slug: string,

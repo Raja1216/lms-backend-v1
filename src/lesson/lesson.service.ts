@@ -16,6 +16,11 @@ import { UploadService } from 'src/upload/upload.service';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
 import { CertificateIssuanceService } from 'src/services/certicate-issuance/certicate-issuance.service';
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { GamificationDomainEvent } from 'src/gamification/events/gamification.event';
+import { GamificationEventKey } from 'src/gamification/events/gamification-event.keys';
+import { XpSourceType } from 'src/generated/prisma/client';
+
 @Injectable()
 export class LessonService {
   constructor(
@@ -23,6 +28,7 @@ export class LessonService {
     private uploadService: UploadService,
     private readonly certificateIssuanceService: CertificateIssuanceService,
     private readonly activityLogService: ActivityLogService,
+    private readonly eventEmitter: EventEmitter2,
   ) { }
 
   async create(createLessonDto: CreateLessonDto) {
@@ -507,6 +513,8 @@ export class LessonService {
       select: {
         id: true,
         noOfXpPoints: true,
+        title: true,
+        type: true,
       },
     });
 
@@ -578,6 +586,33 @@ export class LessonService {
 
     const courseIds = await this.getCourseIdsForLesson(lessonId);
     const primaryCourseId = courseIds.length > 0 ? courseIds[0] : undefined;
+
+    // Emit Gamification Domain Event
+    try {
+      let eventKey = GamificationEventKey.LESSON_VIDEO_COMPLETED;
+      if (lesson.type === 'document') {
+        eventKey = GamificationEventKey.LESSON_DOCUMENT_COMPLETED;
+      } else if (lesson.type === 'quiz') {
+        eventKey = GamificationEventKey.QUIZ_PASSED_LESSON;
+      }
+
+      this.eventEmitter.emit(
+        'gamification.event',
+        new GamificationDomainEvent({
+          userId: user.id,
+          eventKey,
+          sourceType: XpSourceType.LESSON,
+          sourceId: lesson.id,
+          courseId: primaryCourseId,
+          metadata: {
+            lessonTitle: lesson.title,
+            lessonType: lesson.type,
+          },
+        }),
+      );
+    } catch (err) {
+      console.error('Failed to emit gamification event for completeLesson', err);
+    }
 
     // Log XP Earned if XP is awarded
     if (xpToAdd > 0) {

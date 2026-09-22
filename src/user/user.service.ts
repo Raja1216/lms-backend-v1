@@ -469,6 +469,11 @@ export class UserService {
             createdAt: 'desc',
           },
         },
+        xpWallet: {
+          include: {
+            currentLevel: true,
+          },
+        },
         payments: {
           select: {
             id: true,
@@ -490,14 +495,22 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    // Calculate total XP and level
-    const totalXP = user.xpEarned.reduce((sum, xp) => sum + xp.xpPoints, 0);
-    const level = Math.floor(totalXP / 1000) + 1;
+    // Calculate total XP, EX, PX and level from wallet or fallback to legacy
+    const wallet = user.xpWallet;
+    const legacyXp = user.xpEarned?.reduce((sum, xp) => sum + xp.xpPoints, 0) || 0;
+    const totalXP = wallet ? wallet.totalXp : legacyXp;
+    const engagementXp = wallet ? wallet.engagementXp : Math.floor(totalXP * 0.4);
+    const performanceXp = wallet ? wallet.performanceXp : Math.floor(totalXP * 0.6);
+    const level = wallet?.currentLevel?.levelNumber || Math.floor(totalXP / 1000) + 1;
+    const levelTitle = wallet?.currentLevel?.title || 'Beginner';
 
     return {
       ...user,
       totalXP,
+      engagementXp,
+      performanceXp,
       level,
+      levelTitle,
     };
   }
 
