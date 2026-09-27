@@ -175,6 +175,7 @@ model User {
   rollNo                     String?
   section                    String?
   password                   String
+  come_from                  String?
   status                     Boolean                     @default(true)
   createdAt                  DateTime                    @default(now())
   updatedAt                  DateTime                    @updatedAt
@@ -264,6 +265,7 @@ model Course {
   duration                   String
   price                      Decimal                     @db.Decimal(10, 2)
   discountedPrice            Decimal                     @db.Decimal(10, 2)
+  currentPrice               Decimal?                    @db.Decimal(10, 2)
   description                String                      @db.Text
   isFeatured                 Boolean                     @default(false)
   isLaunch                   Boolean                     @default(false)                      
