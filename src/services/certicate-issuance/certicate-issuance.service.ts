@@ -198,11 +198,40 @@ export class CertificateIssuanceService {
       certificateId,
     };
 
-    const { filePath, fileUrl } =
-      await this.generator.generateCourseCertificate(args);
+    const mode = await this.getCertificateMode();
+    let fileResult: { filePath: string; fileUrl: string };
+
+    if (mode === 'dynamic') {
+      const template = await this.resolveTemplate('course', courseId);
+      if (template) {
+        const dynamicData = {
+          studentName: user.name ?? 'Student',
+          courseName: course.title,
+          completionDate: new Date().toISOString().split('T')[0],
+          certificateId,
+          schoolName:
+            user.schoolName || '',
+          className: user.classGrade ?? course.grade ?? '',
+          grade: course.grade ?? '',
+          teacherRemarks: '',
+          institutionName: '',
+        };
+        fileResult = await this.generator.generateDynamicCertificate(
+          dynamicData,
+          template,
+        );
+      } else {
+        fileResult = await this.generator.generateCourseCertificate(args);
+      }
+    } else {
+      fileResult = await this.generator.generateCourseCertificate(args);
+    }
+
+    const { filePath, fileUrl } = fileResult;
 
     await this.prisma.userCompletionCertificate.create({
       data: {
+        certificateNumber: certificateId,
         userId,
         courseId,
         filePath,
@@ -217,8 +246,93 @@ export class CertificateIssuanceService {
     }
 
     this.logger.log(
-      `Course completion certificate issued [user=${userId} course=${courseId}]`,
+      `Course completion certificate issued [user=${userId} course=${courseId}] (mode=${mode})`,
     );
+  }
+
+  private async getCertificateMode(): Promise<'static' | 'dynamic'> {
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'certificate_generation_mode' },
+      });
+      return setting?.value === 'static' ? 'static' : 'dynamic';
+    } catch {
+      return 'dynamic';
+    }
+  }
+
+  private async resolveTemplate(
+    targetType: 'course' | 'quiz' | 'project',
+    targetId?: number,
+  ) {
+    if (targetId) {
+      if (targetType === 'course') {
+        const specific = await this.prisma.certificateTemplate.findFirst({
+          where: { courseId: targetId, status: true },
+        });
+        if (specific) return specific;
+      } else if (targetType === 'quiz') {
+        const specific = await this.prisma.certificateTemplate.findFirst({
+          where: { quizId: targetId, status: true },
+        });
+        if (specific) return specific;
+      } else if (targetType === 'project') {
+        const specific = await this.prisma.certificateTemplate.findFirst({
+          where: { projectId: targetId, status: true },
+        });
+        if (specific) return specific;
+      }
+    }
+
+    // Default template for targetType
+    const typeDefault = await this.prisma.certificateTemplate.findFirst({
+      where: {
+        type: targetType,
+        isDefault: true,
+        status: true,
+        courseId: null,
+        quizId: null,
+        projectId: null,
+      },
+    });
+    if (typeDefault) return typeDefault;
+
+    // Any active template for targetType
+    const anyType = await this.prisma.certificateTemplate.findFirst({
+      where: {
+        type: targetType,
+        status: true,
+        courseId: null,
+        quizId: null,
+        projectId: null,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (anyType) return anyType;
+
+    // Default template for 'all'
+    const allDefault = await this.prisma.certificateTemplate.findFirst({
+      where: { type: 'all', isDefault: true, status: true },
+    });
+    if (allDefault) return allDefault;
+
+    // Any active template for 'all'
+    const anyAll = await this.prisma.certificateTemplate.findFirst({
+      where: { type: 'all', status: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (anyAll) return anyAll;
+
+    // Global default
+    const globalDefault = await this.prisma.certificateTemplate.findFirst({
+      where: { isDefault: true, status: true },
+    });
+    if (globalDefault) return globalDefault;
+
+    return await this.prisma.certificateTemplate.findFirst({
+      where: { status: true },
+      orderBy: { updatedAt: 'desc' },
+    });
   }
 
   private getGradeByMarks(obtainedMarks: number, totalMarks: number) {
@@ -455,8 +569,43 @@ export class CertificateIssuanceService {
       ),
     };
 
-    const { filePath, fileUrl } =
-      await this.generator.generateQuizCertificate(args);
+    const mode = await this.getCertificateMode();
+    let fileResult: { filePath: string; fileUrl: string };
+
+    if (mode === 'dynamic') {
+      const template = await this.resolveTemplate('quiz', quizId);
+      if (template) {
+        const dynamicData = {
+          studentName: user.name ?? 'Student',
+          examName: attempt.quiz.title,
+          courseName: courseTitle,
+          marks: `${Number(attempt.obtainedMarks)}/${Number(attempt.totalMarks)}`,
+          completionDate: new Date().toISOString().split('T')[0],
+          certificateId,
+          schoolName:
+            user.institutionMembers?.[0]?.institution?.name ||
+            user.schoolName ||
+            '',
+          className: user.classGrade ?? courseGrade,
+          grade: this.getGradeByMarks(
+            Number(attempt.obtainedMarks),
+            Number(attempt.totalMarks),
+          ),
+          teacherRemarks: '',
+          institutionName: user.institutionMembers?.[0]?.institution?.name || '',
+        };
+        fileResult = await this.generator.generateDynamicCertificate(
+          dynamicData,
+          template,
+        );
+      } else {
+        fileResult = await this.generator.generateQuizCertificate(args);
+      }
+    } else {
+      fileResult = await this.generator.generateQuizCertificate(args);
+    }
+
+    const { filePath, fileUrl } = fileResult;
 
     await this.prisma.userCompletionCertificate.create({
       data: {
@@ -478,7 +627,7 @@ export class CertificateIssuanceService {
     }
 
     this.logger.log(
-      `Quiz certificate issued [user=${userId} quiz=${quizId} attempt=${quizAttemptId}]`,
+      `Quiz certificate issued [user=${userId} quiz=${quizId} attempt=${quizAttemptId}] (mode=${mode})`,
     );
   }
 

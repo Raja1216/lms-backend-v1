@@ -20,6 +20,9 @@ import {
   UpdateCertificateTemplateDto,
   PreviewCertificateTemplateDto,
   AssignCourseTemplateDto,
+  AssignQuizTemplateDto,
+  AssignProjectTemplateDto,
+  UpdateCertificateSettingsDto,
   CertificateTemplateQueryDto,
 } from './dto/certificate-template.dto';
 import { successResponse } from 'src/utils/success-response';
@@ -62,6 +65,159 @@ export class AdminCertificateTemplateController {
     }
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Get('settings')
+  async getCertificateSettings(
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const settings = await this.templateService.getCertificateSettings();
+      return successResponse(
+        res,
+        200,
+        'Certificate settings retrieved successfully',
+        settings,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'An unexpected error occurred',
+          error.status || 500,
+        ),
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('settings')
+  async updateCertificateSettings(
+    @Body() dto: UpdateCertificateSettingsDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.templateService.updateCertificateSettings(dto.mode);
+      return successResponse(
+        res,
+        200,
+        'Certificate settings updated successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'An unexpected error occurred',
+          error.status || 500,
+        ),
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('assign-course')
+  async assignCourseTemplate(
+    @Body() dto: AssignCourseTemplateDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.templateService.assignCourseTemplate(dto);
+      return successResponse(
+        res,
+        200,
+        'Course certificate template updated successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'An unexpected error occurred',
+          error.status || 500,
+        ),
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('assign-quiz')
+  async assignQuizTemplate(
+    @Body() dto: AssignQuizTemplateDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.templateService.assignQuizTemplate(dto);
+      return successResponse(
+        res,
+        200,
+        'Quiz certificate template updated successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'An unexpected error occurred',
+          error.status || 500,
+        ),
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put('assign-project')
+  async assignProjectTemplate(
+    @Body() dto: AssignProjectTemplateDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const result = await this.templateService.assignProjectTemplate(dto);
+      return successResponse(
+        res,
+        200,
+        'Project certificate template updated successfully',
+        result,
+        null,
+      );
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'An unexpected error occurred',
+          error.status || 500,
+        ),
+      );
+    }
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('preview-pdf')
+  async previewTemplatePdf(
+    @Body() dto: PreviewCertificateTemplateDto,
+    @Res() res: Response,
+    @Next() next: NextFunction,
+  ) {
+    try {
+      const pdfBuffer = await this.templateService.previewTemplatePdf(dto);
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'inline; filename="certificate-preview.pdf"',
+        'Content-Length': pdfBuffer.length,
+      });
+      return res.end(pdfBuffer);
+    } catch (error: any) {
+      return next(
+        new ErrorHandler(
+          error instanceof Error ? error.message : 'An unexpected error occurred',
+          error.status || 500,
+        ),
+      );
+    }
+  }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
@@ -184,57 +340,6 @@ export class AdminCertificateTemplateController {
         result,
         null,
       );
-    } catch (error: any) {
-      return next(
-        new ErrorHandler(
-          error instanceof Error ? error.message : 'An unexpected error occurred',
-          error.status || 500,
-        ),
-      );
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Put('assign-course')
-  async assignCourseTemplate(
-    @Body() dto: AssignCourseTemplateDto,
-    @Res() res: Response,
-    @Next() next: NextFunction,
-  ) {
-    try {
-      const result = await this.templateService.assignCourseTemplate(dto);
-      return successResponse(
-        res,
-        200,
-        'Course certificate template updated successfully',
-        result,
-        null,
-      );
-    } catch (error: any) {
-      return next(
-        new ErrorHandler(
-          error instanceof Error ? error.message : 'An unexpected error occurred',
-          error.status || 500,
-        ),
-      );
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Post('preview-pdf')
-  async previewTemplatePdf(
-    @Body() dto: PreviewCertificateTemplateDto,
-    @Res() res: Response,
-    @Next() next: NextFunction,
-  ) {
-    try {
-      const pdfBuffer = await this.templateService.previewTemplatePdf(dto);
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': 'inline; filename="certificate-preview.pdf"',
-        'Content-Length': pdfBuffer.length,
-      });
-      return res.end(pdfBuffer);
     } catch (error: any) {
       return next(
         new ErrorHandler(

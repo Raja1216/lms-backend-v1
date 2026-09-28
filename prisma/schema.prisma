@@ -548,6 +548,7 @@ model Quiz {
   quizAttempts               QuizAttempt[]
   userXPEarneds              UserXPEarned[]
   userCompletionCretificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
+  certificateTemplates       CertificateTemplate[]       @relation("QuizCertificateTemplates")
 
   @@map("quizzes")
 }
@@ -870,8 +871,9 @@ model Project {
 
   creator User @relation("TeacherProjects", fields: [createdBy], references: [id])
 
-  rubrics     ProjectRubric[]     @relation("ProjectRubrics")
-  submissions ProjectSubmission[] @relation("ProjectSubmissions")
+  rubrics              ProjectRubric[]             @relation("ProjectRubrics")
+  submissions          ProjectSubmission[]         @relation("ProjectSubmissions")
+  certificateTemplates CertificateTemplate[]       @relation("ProjectCertificateTemplates")
 
   @@index([courseId])
   @@index([subjectId])
@@ -1481,6 +1483,8 @@ model CertificateTemplate {
   
   institutionId     Int?
   courseId          Int?
+  quizId            Int?
+  projectId         Int?
   isDefault         Boolean  @default(false)
   status            Boolean  @default(true)
   
@@ -1489,9 +1493,13 @@ model CertificateTemplate {
 
   institution       Institution? @relation("InstitutionCertificateTemplates", fields: [institutionId], references: [id], onDelete: Cascade)
   course            Course?      @relation("CourseCertificateTemplates", fields: [courseId], references: [id], onDelete: SetNull)
+  quiz              Quiz?        @relation("QuizCertificateTemplates", fields: [quizId], references: [id], onDelete: SetNull)
+  project           Project?     @relation("ProjectCertificateTemplates", fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([institutionId])
   @@index([courseId])
+  @@index([quizId])
+  @@index([projectId])
   @@map("certificate_templates")
 }
 
@@ -1836,4 +1844,15 @@ model GamificationConfig {
   updatedAt   DateTime @updatedAt
 
   @@map("gamification_configs")
+}
+
+model SystemSetting {
+  id          Int      @id @default(autoincrement())
+  key         String   @unique @db.VarChar(100)
+  value       String   @db.Text
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("system_settings")
 }

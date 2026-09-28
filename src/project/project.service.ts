@@ -205,11 +205,20 @@ export class ProjectService {
 
       level,
       status,
-    } = query;
+      keyword,
+      search,
+    } = query as any;
 
     const skip = (Number(page) - 1) * Number(limit);
 
     const where: any = {};
+
+    const searchTerm = keyword || search;
+    if (searchTerm) {
+      where.title = {
+        contains: searchTerm,
+      };
+    }
 
     if (courseId) {
       where.courseId = courseId;
@@ -562,6 +571,7 @@ export class ProjectService {
           },
           project: {
             select: {
+              id: true,
               title: true,
               course: {
                 select: {
@@ -603,19 +613,49 @@ export class ProjectService {
         year: 'numeric',
       }); // e.g. "17 May 2025"
 
-      // Generate PDF
-      const { filePath, fileUrl } =
-        await this.certificateGenerator.generateProjectCertificate({
-          studentName: student.name ?? 'Student',
-          schoolName: student.schoolName ?? '', // school = course name line in template
-          projectName: project.title,
-          courseName: course.title,
-          grade: letterGrade,
-          teacherRemarks: grade.feedback ?? '',
-          completedDate,
-          certificateId: certNumber,
-          className: student.classGrade ?? course.grade ?? '',
-        });
+      const certArgs = {
+        studentName: student.name ?? 'Student',
+        schoolName: student.schoolName ?? '', // school = course name line in template
+        projectName: project.title,
+        courseName: course.title,
+        grade: letterGrade,
+        teacherRemarks: grade.feedback ?? '',
+        completedDate,
+        certificateId: certNumber,
+        className: student.classGrade ?? course.grade ?? '',
+      };
+
+      const mode = await this.getCertificateMode();
+      let fileResult: { filePath: string; fileUrl: string };
+
+      if (mode === 'dynamic') {
+        const template = await this.resolveProjectTemplate(project.id);
+        if (template) {
+          const dynamicData = {
+            studentName: student.name ?? 'Student',
+            projectName: project.title,
+            courseName: course.title,
+            grade: letterGrade,
+            teacherRemarks: grade.feedback ?? '',
+            completionDate: new Date().toISOString().split('T')[0],
+            certificateId: certNumber,
+            className: student.classGrade ?? course.grade ?? '',
+            schoolName: student.schoolName ?? '',
+          };
+          fileResult = await this.certificateGenerator.generateDynamicCertificate(
+            dynamicData,
+            template,
+          );
+        } else {
+          fileResult =
+            await this.certificateGenerator.generateProjectCertificate(certArgs);
+        }
+      } else {
+        fileResult =
+          await this.certificateGenerator.generateProjectCertificate(certArgs);
+      }
+
+      const { filePath, fileUrl } = fileResult;
       if (!alreadyIssued) {
         // Save to certificates table
         await this.prisma.certificate.create({
@@ -891,5 +931,74 @@ export class ProjectService {
       default:
         throw new BadRequestException('Invalid project level');
     }
+  }
+
+  private async getCertificateMode(): Promise<'static' | 'dynamic'> {
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'certificate_generation_mode' },
+      });
+      return setting?.value === 'static' ? 'static' : 'dynamic';
+    } catch {
+      return 'dynamic';
+    }
+  }
+
+  private async resolveProjectTemplate(projectId: number) {
+    // 1. Specific project template
+    const specific = await this.prisma.certificateTemplate.findFirst({
+      where: { projectId, status: true },
+    });
+    if (specific) return specific;
+
+    // 2. Default project template
+    const typeDefault = await this.prisma.certificateTemplate.findFirst({
+      where: {
+        type: 'project',
+        isDefault: true,
+        status: true,
+        courseId: null,
+        quizId: null,
+        projectId: null,
+      },
+    });
+    if (typeDefault) return typeDefault;
+
+    // 3. Any active project template
+    const anyProject = await this.prisma.certificateTemplate.findFirst({
+      where: {
+        type: 'project',
+        status: true,
+        courseId: null,
+        quizId: null,
+        projectId: null,
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (anyProject) return anyProject;
+
+    // 4. Default for 'all'
+    const allDefault = await this.prisma.certificateTemplate.findFirst({
+      where: { type: 'all', isDefault: true, status: true },
+    });
+    if (allDefault) return allDefault;
+
+    // 5. Any active template for 'all'
+    const anyAll = await this.prisma.certificateTemplate.findFirst({
+      where: { type: 'all', status: true },
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (anyAll) return anyAll;
+
+    // 6. Global default
+    const globalDefault = await this.prisma.certificateTemplate.findFirst({
+      where: { isDefault: true, status: true },
+    });
+    if (globalDefault) return globalDefault;
+
+    return await this.prisma.certificateTemplate.findFirst({
+      where: { status: true },
+      orderBy: { updatedAt: 'desc' },
+    });
   }
 }
