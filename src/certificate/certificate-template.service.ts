@@ -10,7 +10,16 @@ import {
   UpdateCertificateTemplateDto,
   PreviewCertificateTemplateDto,
   AssignCourseTemplateDto,
+  AssignQuizTemplateDto,
+  AssignProjectTemplateDto,
 } from './dto/certificate-template.dto';
+
+const TEMPLATE_INCLUDE = {
+  course: { select: { id: true, title: true, slug: true } },
+  quiz: { select: { id: true, title: true, slug: true } },
+  project: { select: { id: true, title: true, slug: true } },
+  institution: { select: { id: true, name: true, slug: true } },
+};
 
 @Injectable()
 export class CertificateTemplateService {
@@ -50,13 +59,18 @@ export class CertificateTemplateService {
       where.courseId = Number(query.courseId);
     }
 
+    if (query?.quizId) {
+      where.quizId = Number(query.quizId);
+    }
+
+    if (query?.projectId) {
+      where.projectId = Number(query.projectId);
+    }
+
     const [data, total] = await Promise.all([
       this.prisma.certificateTemplate.findMany({
         where,
-        include: {
-          course: { select: { id: true, title: true, slug: true } },
-          institution: { select: { id: true, name: true, slug: true } },
-        },
+        include: TEMPLATE_INCLUDE,
         skip,
         take: limit,
         orderBy: [{ isDefault: 'desc' }, { updatedAt: 'desc' }],
@@ -67,14 +81,10 @@ export class CertificateTemplateService {
     return { data, total, page, limit };
   }
 
-
   async getTemplateById(id: number) {
     const template = await this.prisma.certificateTemplate.findUnique({
       where: { id },
-      include: {
-        course: { select: { id: true, title: true, slug: true } },
-        institution: { select: { id: true, name: true, slug: true } },
-      },
+      include: TEMPLATE_INCLUDE,
     });
     if (!template) {
       throw new NotFoundException(`Certificate template #${id} not found`);
@@ -83,10 +93,12 @@ export class CertificateTemplateService {
   }
 
   async createTemplate(dto: CreateCertificateTemplateDto) {
-    // If set to default, unset other defaults
+    const type = dto.type || 'course';
+
+    // If set to default, unset other defaults of the same type
     if (dto.isDefault) {
       await this.prisma.certificateTemplate.updateMany({
-        where: { isDefault: true },
+        where: { type, isDefault: true },
         data: { isDefault: false },
       });
     }
@@ -95,7 +107,7 @@ export class CertificateTemplateService {
       data: {
         title: dto.title,
         description: dto.description,
-        type: dto.type || 'course',
+        type,
         backgroundUrl: dto.backgroundUrl,
         logoUrl: dto.logoUrl,
         secondaryLogoUrl: dto.secondaryLogoUrl,
@@ -116,15 +128,14 @@ export class CertificateTemplateService {
         showIssueDate: dto.showIssueDate ?? true,
         showCertificateId: dto.showCertificateId ?? true,
         customHtml: dto.customHtml,
-        courseId: dto.courseId,
-        institutionId: dto.institutionId,
+        courseId: dto.courseId || null,
+        quizId: dto.quizId || null,
+        projectId: dto.projectId || null,
+        institutionId: dto.institutionId || null,
         isDefault: dto.isDefault ?? false,
         status: dto.status ?? true,
       },
-      include: {
-        course: { select: { id: true, title: true, slug: true } },
-        institution: { select: { id: true, name: true, slug: true } },
-      },
+      include: TEMPLATE_INCLUDE,
     });
   }
 
@@ -136,9 +147,11 @@ export class CertificateTemplateService {
       throw new NotFoundException(`Certificate template #${id} not found`);
     }
 
+    const type = dto.type !== undefined ? dto.type : existing.type;
+
     if (dto.isDefault) {
       await this.prisma.certificateTemplate.updateMany({
-        where: { isDefault: true, id: { not: id } },
+        where: { type, isDefault: true, id: { not: id } },
         data: { isDefault: false },
       });
     }
@@ -170,14 +183,13 @@ export class CertificateTemplateService {
         ...(dto.showCertificateId !== undefined && { showCertificateId: dto.showCertificateId }),
         ...(dto.customHtml !== undefined && { customHtml: dto.customHtml }),
         ...(dto.courseId !== undefined && { courseId: dto.courseId }),
+        ...(dto.quizId !== undefined && { quizId: dto.quizId }),
+        ...(dto.projectId !== undefined && { projectId: dto.projectId }),
         ...(dto.institutionId !== undefined && { institutionId: dto.institutionId }),
         ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
         ...(dto.status !== undefined && { status: dto.status }),
       },
-      include: {
-        course: { select: { id: true, title: true, slug: true } },
-        institution: { select: { id: true, name: true, slug: true } },
-      },
+      include: TEMPLATE_INCLUDE,
     });
   }
 
@@ -206,7 +218,7 @@ export class CertificateTemplateService {
 
     await this.prisma.$transaction([
       this.prisma.certificateTemplate.updateMany({
-        where: { isDefault: true },
+        where: { type: existing.type, isDefault: true },
         data: { isDefault: false },
       }),
       this.prisma.certificateTemplate.update({
@@ -215,7 +227,7 @@ export class CertificateTemplateService {
       }),
     ]);
 
-    return { success: true, message: 'Default certificate template updated' };
+    return { success: true, message: `Default ${existing.type} certificate template updated` };
   }
 
   async assignCourseTemplate(dto: AssignCourseTemplateDto) {
@@ -246,6 +258,233 @@ export class CertificateTemplateService {
     }
 
     return { success: true, message: 'Course certificate template assignment updated' };
+  }
+
+  async assignQuizTemplate(dto: AssignQuizTemplateDto) {
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id: dto.quizId },
+    });
+    if (!quiz) {
+      throw new NotFoundException('Quiz not found');
+    }
+
+    if (dto.templateId) {
+      const template = await this.prisma.certificateTemplate.findUnique({
+        where: { id: dto.templateId },
+      });
+      if (!template) {
+        throw new NotFoundException('Certificate template not found');
+      }
+
+      await this.prisma.certificateTemplate.update({
+        where: { id: dto.templateId },
+        data: { quizId: dto.quizId },
+      });
+    } else {
+      await this.prisma.certificateTemplate.updateMany({
+        where: { quizId: dto.quizId },
+        data: { quizId: null },
+      });
+    }
+
+    return { success: true, message: 'Quiz certificate template assignment updated' };
+  }
+
+  async assignProjectTemplate(dto: AssignProjectTemplateDto) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: dto.projectId },
+    });
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    if (dto.templateId) {
+      const template = await this.prisma.certificateTemplate.findUnique({
+        where: { id: dto.templateId },
+      });
+      if (!template) {
+        throw new NotFoundException('Certificate template not found');
+      }
+
+      await this.prisma.certificateTemplate.update({
+        where: { id: dto.templateId },
+        data: { projectId: dto.projectId },
+      });
+    } else {
+      await this.prisma.certificateTemplate.updateMany({
+        where: { projectId: dto.projectId },
+        data: { projectId: null },
+      });
+    }
+
+    return { success: true, message: 'Project certificate template assignment updated' };
+  }
+
+  /**
+   * Resolve template with hierarchy:
+   * 1. Specific courseId / quizId / projectId
+   * 2. Default for specific type ('course' | 'quiz' | 'project')
+   * 3. Any active template for specific type
+   * 4. Default for 'all'
+   * 5. Any active template for 'all'
+   * 6. Global default or active template
+   */
+  async resolveTemplate(
+    targetType: 'course' | 'quiz' | 'project',
+    targetId?: number,
+  ) {
+    // 1. Specific Target Template
+    if (targetId) {
+      if (targetType === 'course') {
+        const specific = await this.prisma.certificateTemplate.findFirst({
+          where: { courseId: targetId, status: true },
+          include: TEMPLATE_INCLUDE,
+        });
+        if (specific) return specific;
+      } else if (targetType === 'quiz') {
+        const specific = await this.prisma.certificateTemplate.findFirst({
+          where: { quizId: targetId, status: true },
+          include: TEMPLATE_INCLUDE,
+        });
+        if (specific) return specific;
+      } else if (targetType === 'project') {
+        const specific = await this.prisma.certificateTemplate.findFirst({
+          where: { projectId: targetId, status: true },
+          include: TEMPLATE_INCLUDE,
+        });
+        if (specific) return specific;
+      }
+    }
+
+    // 2. Default template for targetType
+    const typeDefault = await this.prisma.certificateTemplate.findFirst({
+      where: {
+        type: targetType,
+        isDefault: true,
+        status: true,
+        courseId: null,
+        quizId: null,
+        projectId: null,
+      },
+      include: TEMPLATE_INCLUDE,
+    });
+    if (typeDefault) return typeDefault;
+
+    // 3. Any active template for targetType (not assigned to specific other entity)
+    const anyType = await this.prisma.certificateTemplate.findFirst({
+      where: {
+        type: targetType,
+        status: true,
+        courseId: null,
+        quizId: null,
+        projectId: null,
+      },
+      include: TEMPLATE_INCLUDE,
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (anyType) return anyType;
+
+    // 4. Default template for 'all'
+    const allDefault = await this.prisma.certificateTemplate.findFirst({
+      where: { type: 'all', isDefault: true, status: true },
+      include: TEMPLATE_INCLUDE,
+    });
+    if (allDefault) return allDefault;
+
+    // 5. Any active template for 'all'
+    const anyAll = await this.prisma.certificateTemplate.findFirst({
+      where: { type: 'all', status: true },
+      include: TEMPLATE_INCLUDE,
+      orderBy: { updatedAt: 'desc' },
+    });
+    if (anyAll) return anyAll;
+
+    // 6. Global fallback to any active default template
+    const globalDefault = await this.prisma.certificateTemplate.findFirst({
+      where: { isDefault: true, status: true },
+      include: TEMPLATE_INCLUDE,
+    });
+    if (globalDefault) return globalDefault;
+
+    // 7. Last resort: any active template
+    return await this.prisma.certificateTemplate.findFirst({
+      where: { status: true },
+      include: TEMPLATE_INCLUDE,
+      orderBy: { updatedAt: 'desc' },
+    });
+  }
+
+  /**
+   * Certificate Settings (Static vs Dynamic mode)
+   */
+  async getCertificateMode(): Promise<'static' | 'dynamic'> {
+    try {
+      const setting = await this.prisma.systemSetting.findUnique({
+        where: { key: 'certificate_generation_mode' },
+      });
+      if (setting && setting.value === 'static') {
+        return 'static';
+      }
+      return 'dynamic';
+    } catch {
+      return 'dynamic';
+    }
+  }
+
+  async getCertificateSettings() {
+    const mode = await this.getCertificateMode();
+
+    const [
+      defaultCourseTemplate,
+      defaultQuizTemplate,
+      defaultProjectTemplate,
+      defaultAllTemplate,
+    ] = await Promise.all([
+      this.prisma.certificateTemplate.findFirst({
+        where: { type: 'course', isDefault: true },
+        select: { id: true, title: true, type: true },
+      }),
+      this.prisma.certificateTemplate.findFirst({
+        where: { type: 'quiz', isDefault: true },
+        select: { id: true, title: true, type: true },
+      }),
+      this.prisma.certificateTemplate.findFirst({
+        where: { type: 'project', isDefault: true },
+        select: { id: true, title: true, type: true },
+      }),
+      this.prisma.certificateTemplate.findFirst({
+        where: { type: 'all', isDefault: true },
+        select: { id: true, title: true, type: true },
+      }),
+    ]);
+
+    return {
+      mode,
+      defaults: {
+        course: defaultCourseTemplate,
+        quiz: defaultQuizTemplate,
+        project: defaultProjectTemplate,
+        all: defaultAllTemplate,
+      },
+    };
+  }
+
+  async updateCertificateSettings(mode: 'static' | 'dynamic') {
+    if (mode !== 'static' && mode !== 'dynamic') {
+      throw new BadRequestException('Mode must be either "static" or "dynamic"');
+    }
+
+    await this.prisma.systemSetting.upsert({
+      where: { key: 'certificate_generation_mode' },
+      update: { value: mode },
+      create: {
+        key: 'certificate_generation_mode',
+        value: mode,
+        description: 'Certificate generation engine mode (static or dynamic)',
+      },
+    });
+
+    return await this.getCertificateSettings();
   }
 
   async previewTemplatePdf(dto: PreviewCertificateTemplateDto): Promise<Buffer> {

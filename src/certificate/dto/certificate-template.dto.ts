@@ -106,6 +106,14 @@ export class CreateCertificateTemplateDto {
 
   @IsOptional()
   @IsNumber()
+  quizId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  projectId?: number;
+
+  @IsOptional()
+  @IsNumber()
   institutionId?: number;
 
   @IsOptional()
@@ -150,6 +158,29 @@ export class AssignCourseTemplateDto {
   templateId?: number | null;
 }
 
+export class AssignQuizTemplateDto {
+  @IsNumber()
+  quizId: number;
+
+  @IsOptional()
+  @IsNumber()
+  templateId?: number | null;
+}
+
+export class AssignProjectTemplateDto {
+  @IsNumber()
+  projectId: number;
+
+  @IsOptional()
+  @IsNumber()
+  templateId?: number | null;
+}
+
+export class UpdateCertificateSettingsDto {
+  @IsString()
+  mode: 'static' | 'dynamic';
+}
+
 import { PaginationDto } from '../../shared/dto/pagination-dto';
 
 export class CertificateTemplateQueryDto extends PaginationDto {
@@ -160,5 +191,17 @@ export class CertificateTemplateQueryDto extends PaginationDto {
   @IsOptional()
   @IsBoolean()
   status?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  courseId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  quizId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  projectId?: number;
 }
 
