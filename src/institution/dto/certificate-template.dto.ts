@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsNumber,
@@ -113,6 +114,10 @@ export class CreateCertificateTemplateDto {
   courseId?: number;
 
   @IsOptional()
+  @IsArray()
+  courseIds?: number[];
+
+  @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
 
@@ -136,7 +141,9 @@ export class PreviewCertificateTemplateDto {
     examName?: string;
     projectName?: string;
     completionDate?: string;
+    date?: string;
     certificateId?: string;
+    certificateNumber?: string;
     schoolName?: string;
     className?: string;
     grade?: string;
@@ -146,8 +153,13 @@ export class PreviewCertificateTemplateDto {
 }
 
 export class AssignCourseTemplateDto {
+  @IsOptional()
   @IsNumber()
-  courseId: number;
+  courseId?: number;
+
+  @IsOptional()
+  @IsArray()
+  courseIds?: number[];
 
   @IsOptional()
   @IsNumber()

@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsNumber,
   IsOptional,
@@ -105,12 +106,24 @@ export class CreateCertificateTemplateDto {
   courseId?: number;
 
   @IsOptional()
+  @IsArray()
+  courseIds?: number[];
+
+  @IsOptional()
   @IsNumber()
   quizId?: number;
 
   @IsOptional()
+  @IsArray()
+  quizIds?: number[];
+
+  @IsOptional()
   @IsNumber()
   projectId?: number;
+
+  @IsOptional()
+  @IsArray()
+  projectIds?: number[];
 
   @IsOptional()
   @IsNumber()
@@ -140,7 +153,9 @@ export class PreviewCertificateTemplateDto {
     examName?: string;
     projectName?: string;
     completionDate?: string;
+    date?: string;
     certificateId?: string;
+    certificateNumber?: string;
     schoolName?: string;
     className?: string;
     grade?: string;
@@ -150,8 +165,13 @@ export class PreviewCertificateTemplateDto {
 }
 
 export class AssignCourseTemplateDto {
+  @IsOptional()
   @IsNumber()
-  courseId: number;
+  courseId?: number;
+
+  @IsOptional()
+  @IsArray()
+  courseIds?: number[];
 
   @IsOptional()
   @IsNumber()
@@ -159,8 +179,13 @@ export class AssignCourseTemplateDto {
 }
 
 export class AssignQuizTemplateDto {
+  @IsOptional()
   @IsNumber()
-  quizId: number;
+  quizId?: number;
+
+  @IsOptional()
+  @IsArray()
+  quizIds?: number[];
 
   @IsOptional()
   @IsNumber()
@@ -168,8 +193,13 @@ export class AssignQuizTemplateDto {
 }
 
 export class AssignProjectTemplateDto {
+  @IsOptional()
   @IsNumber()
-  projectId: number;
+  projectId?: number;
+
+  @IsOptional()
+  @IsArray()
+  projectIds?: number[];
 
   @IsOptional()
   @IsNumber()
