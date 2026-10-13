@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CertificateGeneratorService } from '../services/certicate-generator/certicate-generator.service';
@@ -22,13 +23,92 @@ const TEMPLATE_INCLUDE = {
 };
 
 @Injectable()
-export class CertificateTemplateService {
+export class CertificateTemplateService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly certGenerator: CertificateGeneratorService,
   ) {}
 
+  async onModuleInit() {
+    await this.deduplicateExistingTemplates();
+  }
+
+  /**
+   * Code-level enforcement: guarantees that for any (type, targetId),
+   * exactly 1 certificate template exists. Older duplicates are purged.
+   */
+  async deduplicateExistingTemplates() {
+    try {
+      // 1. Deduplicate Course templates
+      const courseTemplates = await this.prisma.certificateTemplate.findMany({
+        where: { type: 'course', courseId: { not: null } },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      });
+      const seenCourses = new Set<number>();
+      const toDeleteCourseIds: number[] = [];
+      for (const t of courseTemplates) {
+        if (t.courseId) {
+          if (seenCourses.has(t.courseId)) {
+            toDeleteCourseIds.push(t.id);
+          } else {
+            seenCourses.add(t.courseId);
+          }
+        }
+      }
+
+      // 2. Deduplicate Quiz templates
+      const quizTemplates = await this.prisma.certificateTemplate.findMany({
+        where: { type: 'quiz', quizId: { not: null } },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      });
+      const seenQuizzes = new Set<number>();
+      const toDeleteQuizIds: number[] = [];
+      for (const t of quizTemplates) {
+        if (t.quizId) {
+          if (seenQuizzes.has(t.quizId)) {
+            toDeleteQuizIds.push(t.id);
+          } else {
+            seenQuizzes.add(t.quizId);
+          }
+        }
+      }
+
+      // 3. Deduplicate Project templates
+      const projectTemplates = await this.prisma.certificateTemplate.findMany({
+        where: { type: 'project', projectId: { not: null } },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
+      });
+      const seenProjects = new Set<number>();
+      const toDeleteProjectIds: number[] = [];
+      for (const t of projectTemplates) {
+        if (t.projectId) {
+          if (seenProjects.has(t.projectId)) {
+            toDeleteProjectIds.push(t.id);
+          } else {
+            seenProjects.add(t.projectId);
+          }
+        }
+      }
+
+      const allToDelete = [
+        ...toDeleteCourseIds,
+        ...toDeleteQuizIds,
+        ...toDeleteProjectIds,
+      ];
+
+      if (allToDelete.length > 0) {
+        await this.prisma.certificateTemplate.deleteMany({
+          where: { id: { in: allToDelete } },
+        });
+      }
+    } catch (err) {
+      console.error('Error during certificate template deduplication:', err);
+    }
+  }
+
   async getAllTemplates(query?: any) {
+    // Purge any duplicates before retrieving templates
+    await this.deduplicateExistingTemplates();
     const page = Number(query?.page) > 0 ? Number(query.page) : 1;
     const limit = Number(query?.limit) > 0 ? Number(query.limit) : 10;
     const skip = (page - 1) * limit;
@@ -95,21 +175,23 @@ export class CertificateTemplateService {
   async createTemplate(dto: CreateCertificateTemplateDto) {
     const type = dto.type || 'course';
 
-    // Extract target IDs strictly according to type
-    let targetIds: number[] = [];
+    // Extract target IDs strictly according to type and deduplicate them
+    let rawTargetIds: number[] = [];
     if (type === 'course') {
-      targetIds = Array.isArray(dto.courseIds) && dto.courseIds.length > 0
+      rawTargetIds = Array.isArray(dto.courseIds) && dto.courseIds.length > 0
         ? dto.courseIds.map(Number).filter(Boolean)
         : (dto.courseId ? [Number(dto.courseId)] : []);
     } else if (type === 'quiz') {
-      targetIds = Array.isArray(dto.quizIds) && dto.quizIds.length > 0
+      rawTargetIds = Array.isArray(dto.quizIds) && dto.quizIds.length > 0
         ? dto.quizIds.map(Number).filter(Boolean)
         : (dto.quizId ? [Number(dto.quizId)] : []);
     } else if (type === 'project') {
-      targetIds = Array.isArray(dto.projectIds) && dto.projectIds.length > 0
+      rawTargetIds = Array.isArray(dto.projectIds) && dto.projectIds.length > 0
         ? dto.projectIds.map(Number).filter(Boolean)
         : (dto.projectId ? [Number(dto.projectId)] : []);
     }
+
+    const targetIds = Array.from(new Set(rawTargetIds));
 
     // If set to default, unset other defaults of the same type
     if (dto.isDefault) {
@@ -148,23 +230,60 @@ export class CertificateTemplateService {
       status: dto.status ?? true,
     };
 
-    // If multiple targets selected, create multiple rows
+    // If targets are selected:
+    // Manage at code level: with type & id, EXIST EXACTLY 1!
+    // If a template already exists for that (type, targetId), REPLACE (update) it!
     if (targetIds.length > 0) {
-      const createdTemplates: any[] = [];
+      const results: any[] = [];
+      const idField = type === 'course' ? 'courseId' : type === 'quiz' ? 'quizId' : 'projectId';
+
       for (const targetId of targetIds) {
-        // Enforce type & ID in code level: strictly set corresponding ID and nullify the others
-        const created = await this.prisma.certificateTemplate.create({
-          data: {
-            ...baseData,
-            courseId: type === 'course' ? targetId : null,
-            quizId: type === 'quiz' ? targetId : null,
-            projectId: type === 'project' ? targetId : null,
+        // Find existing template(s) with this type & targetId
+        const existingList = await this.prisma.certificateTemplate.findMany({
+          where: {
+            type,
+            [idField]: targetId,
           },
-          include: TEMPLATE_INCLUDE,
+          orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         });
-        createdTemplates.push(created);
+
+        if (existingList.length > 0) {
+          // Replace / update the first existing record
+          const primaryExisting = existingList[0];
+          const updated = await this.prisma.certificateTemplate.update({
+            where: { id: primaryExisting.id },
+            data: {
+              ...baseData,
+              courseId: type === 'course' ? targetId : null,
+              quizId: type === 'quiz' ? targetId : null,
+              projectId: type === 'project' ? targetId : null,
+            },
+            include: TEMPLATE_INCLUDE,
+          });
+          results.push(updated);
+
+          // If there were any duplicate records for this same target, delete them so only 1 exists!
+          if (existingList.length > 1) {
+            const duplicateIds = existingList.slice(1).map((x) => x.id);
+            await this.prisma.certificateTemplate.deleteMany({
+              where: { id: { in: duplicateIds } },
+            });
+          }
+        } else {
+          // No template exists yet for this target: create 1
+          const created = await this.prisma.certificateTemplate.create({
+            data: {
+              ...baseData,
+              courseId: type === 'course' ? targetId : null,
+              quizId: type === 'quiz' ? targetId : null,
+              projectId: type === 'project' ? targetId : null,
+            },
+            include: TEMPLATE_INCLUDE,
+          });
+          results.push(created);
+        }
       }
-      return createdTemplates[0];
+      return results[0];
     }
 
     // Default / Unassigned template: single row with null IDs
@@ -196,51 +315,57 @@ export class CertificateTemplateService {
       });
     }
 
-    // Extract target IDs strictly according to type
-    let targetIds: number[] | null = null;
+    // Extract target IDs strictly according to type and deduplicate
+    let rawTargetIds: number[] | null = null;
     if (type === 'course') {
       if (dto.courseIds !== undefined) {
-        targetIds = Array.isArray(dto.courseIds) ? dto.courseIds.map(Number).filter(Boolean) : [];
+        rawTargetIds = Array.isArray(dto.courseIds) ? dto.courseIds.map(Number).filter(Boolean) : [];
       } else if (dto.courseId !== undefined) {
-        targetIds = dto.courseId ? [Number(dto.courseId)] : [];
+        rawTargetIds = dto.courseId ? [Number(dto.courseId)] : [];
       }
     } else if (type === 'quiz') {
       if (dto.quizIds !== undefined) {
-        targetIds = Array.isArray(dto.quizIds) ? dto.quizIds.map(Number).filter(Boolean) : [];
+        rawTargetIds = Array.isArray(dto.quizIds) ? dto.quizIds.map(Number).filter(Boolean) : [];
       } else if (dto.quizId !== undefined) {
-        targetIds = dto.quizId ? [Number(dto.quizId)] : [];
+        rawTargetIds = dto.quizId ? [Number(dto.quizId)] : [];
       }
     } else if (type === 'project') {
       if (dto.projectIds !== undefined) {
-        targetIds = Array.isArray(dto.projectIds) ? dto.projectIds.map(Number).filter(Boolean) : [];
+        rawTargetIds = Array.isArray(dto.projectIds) ? dto.projectIds.map(Number).filter(Boolean) : [];
       } else if (dto.projectId !== undefined) {
-        targetIds = dto.projectId ? [Number(dto.projectId)] : [];
+        rawTargetIds = dto.projectId ? [Number(dto.projectId)] : [];
       }
     } else if (type === 'all') {
-      targetIds = [];
+      rawTargetIds = [];
     }
 
-    // Enforce type & ID strictly at code level
-    let primaryCourseId: number | null = null;
-    let primaryQuizId: number | null = null;
-    let primaryProjectId: number | null = null;
+    const targetIds = rawTargetIds !== null ? Array.from(new Set(rawTargetIds)) : null;
+    const idField = type === 'course' ? 'courseId' : type === 'quiz' ? 'quizId' : 'projectId';
 
-    if (type === 'course') {
-      primaryCourseId = targetIds !== null ? (targetIds[0] || null) : existing.courseId;
-      primaryQuizId = null;
-      primaryProjectId = null;
-    } else if (type === 'quiz') {
-      primaryQuizId = targetIds !== null ? (targetIds[0] || null) : existing.quizId;
-      primaryCourseId = null;
-      primaryProjectId = null;
-    } else if (type === 'project') {
-      primaryProjectId = targetIds !== null ? (targetIds[0] || null) : existing.projectId;
-      primaryCourseId = null;
-      primaryQuizId = null;
-    } else if (type === 'all') {
-      primaryCourseId = null;
-      primaryQuizId = null;
-      primaryProjectId = null;
+    // Primary target ID to assign to template `id`
+    let primaryTargetId: number | null = null;
+    if (targetIds !== null) {
+      primaryTargetId = targetIds.length > 0 ? targetIds[0] : null;
+    } else {
+      primaryTargetId =
+        type === 'course'
+          ? existing.courseId
+          : type === 'quiz'
+          ? existing.quizId
+          : type === 'project'
+          ? existing.projectId
+          : null;
+    }
+
+    // Ensure type & id exist 1: purge any other template record claiming primaryTargetId
+    if (primaryTargetId) {
+      await this.prisma.certificateTemplate.deleteMany({
+        where: {
+          type,
+          [idField]: primaryTargetId,
+          id: { not: id },
+        },
+      });
     }
 
     const updated = await this.prisma.certificateTemplate.update({
@@ -273,50 +398,88 @@ export class CertificateTemplateService {
         ...(dto.isDefault !== undefined && { isDefault: dto.isDefault }),
         ...(dto.status !== undefined && { status: dto.status }),
         // Strictly sanitized type & IDs at code level
-        courseId: primaryCourseId,
-        quizId: primaryQuizId,
-        projectId: primaryProjectId,
+        courseId: type === 'course' ? primaryTargetId : null,
+        quizId: type === 'quiz' ? primaryTargetId : null,
+        projectId: type === 'project' ? primaryTargetId : null,
       },
       include: TEMPLATE_INCLUDE,
     });
 
-    // If multiple target IDs are specified, create multiple rows for the additional targets
+    // If multiple target IDs are specified:
+    // For each additional target ID, ensure type & id exist 1:
+    // If a template exists for that targetId, REPLACE it!
+    // If not, CREATE it!
     if (targetIds && targetIds.length > 1) {
       const additionalTargetIds = targetIds.slice(1);
+      const payloadFromUpdated = {
+        title: updated.title,
+        description: updated.description,
+        type: updated.type,
+        backgroundUrl: updated.backgroundUrl,
+        logoUrl: updated.logoUrl,
+        secondaryLogoUrl: updated.secondaryLogoUrl,
+        signatureUrl: updated.signatureUrl,
+        signatoryName: updated.signatoryName,
+        signatoryTitle: updated.signatoryTitle,
+        primaryColor: updated.primaryColor,
+        secondaryColor: updated.secondaryColor,
+        textColor: updated.textColor,
+        fontFamily: updated.fontFamily,
+        headerText: updated.headerText,
+        subHeaderText: updated.subHeaderText,
+        bodyText: updated.bodyText,
+        footerText: updated.footerText,
+        showQrCode: updated.showQrCode,
+        showGrade: updated.showGrade,
+        showScore: updated.showScore,
+        showIssueDate: updated.showIssueDate,
+        showCertificateId: updated.showCertificateId,
+        customHtml: updated.customHtml,
+        institutionId: updated.institutionId,
+        isDefault: false,
+        status: updated.status,
+      };
+
       for (const addId of additionalTargetIds) {
-        await this.prisma.certificateTemplate.create({
-          data: {
-            title: updated.title,
-            description: updated.description,
-            type: updated.type,
-            backgroundUrl: updated.backgroundUrl,
-            logoUrl: updated.logoUrl,
-            secondaryLogoUrl: updated.secondaryLogoUrl,
-            signatureUrl: updated.signatureUrl,
-            signatoryName: updated.signatoryName,
-            signatoryTitle: updated.signatoryTitle,
-            primaryColor: updated.primaryColor,
-            secondaryColor: updated.secondaryColor,
-            textColor: updated.textColor,
-            fontFamily: updated.fontFamily,
-            headerText: updated.headerText,
-            subHeaderText: updated.subHeaderText,
-            bodyText: updated.bodyText,
-            footerText: updated.footerText,
-            showQrCode: updated.showQrCode,
-            showGrade: updated.showGrade,
-            showScore: updated.showScore,
-            showIssueDate: updated.showIssueDate,
-            showCertificateId: updated.showCertificateId,
-            customHtml: updated.customHtml,
-            institutionId: updated.institutionId,
-            isDefault: false,
-            status: updated.status,
-            courseId: type === 'course' ? addId : null,
-            quizId: type === 'quiz' ? addId : null,
-            projectId: type === 'project' ? addId : null,
+        const existingSubList = await this.prisma.certificateTemplate.findMany({
+          where: {
+            type,
+            [idField]: addId,
+            id: { not: id },
           },
+          orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
         });
+
+        if (existingSubList.length > 0) {
+          // Replace / update the first existing template
+          await this.prisma.certificateTemplate.update({
+            where: { id: existingSubList[0].id },
+            data: {
+              ...payloadFromUpdated,
+              courseId: type === 'course' ? addId : null,
+              quizId: type === 'quiz' ? addId : null,
+              projectId: type === 'project' ? addId : null,
+            },
+          });
+
+          // Delete any extra duplicates so only 1 exists
+          if (existingSubList.length > 1) {
+            const extraIds = existingSubList.slice(1).map((x) => x.id);
+            await this.prisma.certificateTemplate.deleteMany({
+              where: { id: { in: extraIds } },
+            });
+          }
+        } else {
+          // Create 1 row for this target
+          await this.prisma.certificateTemplate.create({
+            data: {
+              ...payloadFromUpdated,
+              courseId: type === 'course' ? addId : null,
+              quizId: type === 'quiz' ? addId : null,
+              projectId: type === 'project' ? addId : null,
+            },
+          });
+        }
       }
     }
 
@@ -361,9 +524,10 @@ export class CertificateTemplateService {
   }
 
   async assignCourseTemplate(dto: AssignCourseTemplateDto) {
-    const courseIds = Array.isArray(dto.courseIds) && dto.courseIds.length > 0
+    const rawCourseIds = Array.isArray(dto.courseIds) && dto.courseIds.length > 0
       ? dto.courseIds.map(Number).filter(Boolean)
       : (dto.courseId ? [Number(dto.courseId)] : []);
+    const courseIds = Array.from(new Set(rawCourseIds));
 
     if (courseIds.length === 0) {
       throw new BadRequestException('At least one course ID must be provided');
@@ -384,6 +548,15 @@ export class CertificateTemplateService {
       throw new NotFoundException('Certificate template not found');
     }
 
+    // Delete any other template claimed for courseIds[0] so only 1 exists
+    await this.prisma.certificateTemplate.deleteMany({
+      where: {
+        type: 'course',
+        courseId: courseIds[0],
+        id: { not: dto.templateId },
+      },
+    });
+
     // Assign the template row to the first course
     await this.prisma.certificateTemplate.update({
       where: { id: dto.templateId },
@@ -395,51 +568,76 @@ export class CertificateTemplateService {
       },
     });
 
-    // For every additional course, create a multiple row with strict type & ID
+    // For every additional course, ensure type & id exist 1: replace or create
     for (let i = 1; i < courseIds.length; i++) {
       const cid = courseIds[i];
-      await this.prisma.certificateTemplate.create({
-        data: {
-          title: template.title,
-          description: template.description,
+      const existingList = await this.prisma.certificateTemplate.findMany({
+        where: {
           type: 'course',
-          backgroundUrl: template.backgroundUrl,
-          logoUrl: template.logoUrl,
-          secondaryLogoUrl: template.secondaryLogoUrl,
-          signatureUrl: template.signatureUrl,
-          signatoryName: template.signatoryName,
-          signatoryTitle: template.signatoryTitle,
-          primaryColor: template.primaryColor,
-          secondaryColor: template.secondaryColor,
-          textColor: template.textColor,
-          fontFamily: template.fontFamily,
-          headerText: template.headerText,
-          subHeaderText: template.subHeaderText,
-          bodyText: template.bodyText,
-          footerText: template.footerText,
-          showQrCode: template.showQrCode,
-          showGrade: template.showGrade,
-          showScore: template.showScore,
-          showIssueDate: template.showIssueDate,
-          showCertificateId: template.showCertificateId,
-          customHtml: template.customHtml,
-          institutionId: template.institutionId,
-          isDefault: false,
-          status: template.status,
           courseId: cid,
-          quizId: null,
-          projectId: null,
+          id: { not: dto.templateId },
         },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       });
+
+      const copyData = {
+        title: template.title,
+        description: template.description,
+        type: 'course',
+        backgroundUrl: template.backgroundUrl,
+        logoUrl: template.logoUrl,
+        secondaryLogoUrl: template.secondaryLogoUrl,
+        signatureUrl: template.signatureUrl,
+        signatoryName: template.signatoryName,
+        signatoryTitle: template.signatoryTitle,
+        primaryColor: template.primaryColor,
+        secondaryColor: template.secondaryColor,
+        textColor: template.textColor,
+        fontFamily: template.fontFamily,
+        headerText: template.headerText,
+        subHeaderText: template.subHeaderText,
+        bodyText: template.bodyText,
+        footerText: template.footerText,
+        showQrCode: template.showQrCode,
+        showGrade: template.showGrade,
+        showScore: template.showScore,
+        showIssueDate: template.showIssueDate,
+        showCertificateId: template.showCertificateId,
+        customHtml: template.customHtml,
+        institutionId: template.institutionId,
+        isDefault: false,
+        status: template.status,
+        courseId: cid,
+        quizId: null,
+        projectId: null,
+      };
+
+      if (existingList.length > 0) {
+        await this.prisma.certificateTemplate.update({
+          where: { id: existingList[0].id },
+          data: copyData,
+        });
+        if (existingList.length > 1) {
+          const duplicateIds = existingList.slice(1).map((x) => x.id);
+          await this.prisma.certificateTemplate.deleteMany({
+            where: { id: { in: duplicateIds } },
+          });
+        }
+      } else {
+        await this.prisma.certificateTemplate.create({
+          data: copyData,
+        });
+      }
     }
 
     return { success: true, message: 'Course certificate template assignment updated' };
   }
 
   async assignQuizTemplate(dto: AssignQuizTemplateDto) {
-    const quizIds = Array.isArray(dto.quizIds) && dto.quizIds.length > 0
+    const rawQuizIds = Array.isArray(dto.quizIds) && dto.quizIds.length > 0
       ? dto.quizIds.map(Number).filter(Boolean)
       : (dto.quizId ? [Number(dto.quizId)] : []);
+    const quizIds = Array.from(new Set(rawQuizIds));
 
     if (quizIds.length === 0) {
       throw new BadRequestException('At least one quiz ID must be provided');
@@ -460,6 +658,15 @@ export class CertificateTemplateService {
       throw new NotFoundException('Certificate template not found');
     }
 
+    // Delete any other template claimed for quizIds[0] so only 1 exists
+    await this.prisma.certificateTemplate.deleteMany({
+      where: {
+        type: 'quiz',
+        quizId: quizIds[0],
+        id: { not: dto.templateId },
+      },
+    });
+
     // Assign the template row to the first quiz
     await this.prisma.certificateTemplate.update({
       where: { id: dto.templateId },
@@ -471,51 +678,76 @@ export class CertificateTemplateService {
       },
     });
 
-    // For every additional quiz, create a multiple row with strict type & ID
+    // For every additional quiz, ensure type & id exist 1: replace or create
     for (let i = 1; i < quizIds.length; i++) {
       const qid = quizIds[i];
-      await this.prisma.certificateTemplate.create({
-        data: {
-          title: template.title,
-          description: template.description,
+      const existingList = await this.prisma.certificateTemplate.findMany({
+        where: {
           type: 'quiz',
-          backgroundUrl: template.backgroundUrl,
-          logoUrl: template.logoUrl,
-          secondaryLogoUrl: template.secondaryLogoUrl,
-          signatureUrl: template.signatureUrl,
-          signatoryName: template.signatoryName,
-          signatoryTitle: template.signatoryTitle,
-          primaryColor: template.primaryColor,
-          secondaryColor: template.secondaryColor,
-          textColor: template.textColor,
-          fontFamily: template.fontFamily,
-          headerText: template.headerText,
-          subHeaderText: template.subHeaderText,
-          bodyText: template.bodyText,
-          footerText: template.footerText,
-          showQrCode: template.showQrCode,
-          showGrade: template.showGrade,
-          showScore: template.showScore,
-          showIssueDate: template.showIssueDate,
-          showCertificateId: template.showCertificateId,
-          customHtml: template.customHtml,
-          institutionId: template.institutionId,
-          isDefault: false,
-          status: template.status,
-          courseId: null,
           quizId: qid,
-          projectId: null,
+          id: { not: dto.templateId },
         },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       });
+
+      const copyData = {
+        title: template.title,
+        description: template.description,
+        type: 'quiz',
+        backgroundUrl: template.backgroundUrl,
+        logoUrl: template.logoUrl,
+        secondaryLogoUrl: template.secondaryLogoUrl,
+        signatureUrl: template.signatureUrl,
+        signatoryName: template.signatoryName,
+        signatoryTitle: template.signatoryTitle,
+        primaryColor: template.primaryColor,
+        secondaryColor: template.secondaryColor,
+        textColor: template.textColor,
+        fontFamily: template.fontFamily,
+        headerText: template.headerText,
+        subHeaderText: template.subHeaderText,
+        bodyText: template.bodyText,
+        footerText: template.footerText,
+        showQrCode: template.showQrCode,
+        showGrade: template.showGrade,
+        showScore: template.showScore,
+        showIssueDate: template.showIssueDate,
+        showCertificateId: template.showCertificateId,
+        customHtml: template.customHtml,
+        institutionId: template.institutionId,
+        isDefault: false,
+        status: template.status,
+        courseId: null,
+        quizId: qid,
+        projectId: null,
+      };
+
+      if (existingList.length > 0) {
+        await this.prisma.certificateTemplate.update({
+          where: { id: existingList[0].id },
+          data: copyData,
+        });
+        if (existingList.length > 1) {
+          const duplicateIds = existingList.slice(1).map((x) => x.id);
+          await this.prisma.certificateTemplate.deleteMany({
+            where: { id: { in: duplicateIds } },
+          });
+        }
+      } else {
+        await this.prisma.certificateTemplate.create({
+          data: copyData,
+        });
+      }
     }
 
     return { success: true, message: 'Quiz certificate template assignment updated' };
   }
 
   async assignProjectTemplate(dto: AssignProjectTemplateDto) {
-    const projectIds = Array.isArray(dto.projectIds) && dto.projectIds.length > 0
+    const rawProjectIds = Array.isArray(dto.projectIds) && dto.projectIds.length > 0
       ? dto.projectIds.map(Number).filter(Boolean)
       : (dto.projectId ? [Number(dto.projectId)] : []);
+    const projectIds = Array.from(new Set(rawProjectIds));
 
     if (projectIds.length === 0) {
       throw new BadRequestException('At least one project ID must be provided');
@@ -536,6 +768,15 @@ export class CertificateTemplateService {
       throw new NotFoundException('Certificate template not found');
     }
 
+    // Delete any other template claimed for projectIds[0] so only 1 exists
+    await this.prisma.certificateTemplate.deleteMany({
+      where: {
+        type: 'project',
+        projectId: projectIds[0],
+        id: { not: dto.templateId },
+      },
+    });
+
     // Assign the template row to the first project
     await this.prisma.certificateTemplate.update({
       where: { id: dto.templateId },
@@ -547,42 +788,66 @@ export class CertificateTemplateService {
       },
     });
 
-    // For every additional project, create a multiple row with strict type & ID
+    // For every additional project, ensure type & id exist 1: replace or create
     for (let i = 1; i < projectIds.length; i++) {
       const pid = projectIds[i];
-      await this.prisma.certificateTemplate.create({
-        data: {
-          title: template.title,
-          description: template.description,
+      const existingList = await this.prisma.certificateTemplate.findMany({
+        where: {
           type: 'project',
-          backgroundUrl: template.backgroundUrl,
-          logoUrl: template.logoUrl,
-          secondaryLogoUrl: template.secondaryLogoUrl,
-          signatureUrl: template.signatureUrl,
-          signatoryName: template.signatoryName,
-          signatoryTitle: template.signatoryTitle,
-          primaryColor: template.primaryColor,
-          secondaryColor: template.secondaryColor,
-          textColor: template.textColor,
-          fontFamily: template.fontFamily,
-          headerText: template.headerText,
-          subHeaderText: template.subHeaderText,
-          bodyText: template.bodyText,
-          footerText: template.footerText,
-          showQrCode: template.showQrCode,
-          showGrade: template.showGrade,
-          showScore: template.showScore,
-          showIssueDate: template.showIssueDate,
-          showCertificateId: template.showCertificateId,
-          customHtml: template.customHtml,
-          institutionId: template.institutionId,
-          isDefault: false,
-          status: template.status,
-          courseId: null,
-          quizId: null,
           projectId: pid,
+          id: { not: dto.templateId },
         },
+        orderBy: [{ updatedAt: 'desc' }, { id: 'desc' }],
       });
+
+      const copyData = {
+        title: template.title,
+        description: template.description,
+        type: 'project',
+        backgroundUrl: template.backgroundUrl,
+        logoUrl: template.logoUrl,
+        secondaryLogoUrl: template.secondaryLogoUrl,
+        signatureUrl: template.signatureUrl,
+        signatoryName: template.signatoryName,
+        signatoryTitle: template.signatoryTitle,
+        primaryColor: template.primaryColor,
+        secondaryColor: template.secondaryColor,
+        textColor: template.textColor,
+        fontFamily: template.fontFamily,
+        headerText: template.headerText,
+        subHeaderText: template.subHeaderText,
+        bodyText: template.bodyText,
+        footerText: template.footerText,
+        showQrCode: template.showQrCode,
+        showGrade: template.showGrade,
+        showScore: template.showScore,
+        showIssueDate: template.showIssueDate,
+        showCertificateId: template.showCertificateId,
+        customHtml: template.customHtml,
+        institutionId: template.institutionId,
+        isDefault: false,
+        status: template.status,
+        courseId: null,
+        quizId: null,
+        projectId: pid,
+      };
+
+      if (existingList.length > 0) {
+        await this.prisma.certificateTemplate.update({
+          where: { id: existingList[0].id },
+          data: copyData,
+        });
+        if (existingList.length > 1) {
+          const duplicateIds = existingList.slice(1).map((x) => x.id);
+          await this.prisma.certificateTemplate.deleteMany({
+            where: { id: { in: duplicateIds } },
+          });
+        }
+      } else {
+        await this.prisma.certificateTemplate.create({
+          data: copyData,
+        });
+      }
     }
 
     return { success: true, message: 'Project certificate template assignment updated' };
