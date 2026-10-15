@@ -192,16 +192,11 @@ export const dynamicCertificateTemplate = (
               ACADEMIC CERTIFICATE
             </div>
           `}
-          ${secondaryLogoSrc ? `
-            <img src="${secondaryLogoSrc}" alt="Secondary Logo" style="height: 40px; max-width: 150px; object-fit: contain;" />
-          ` : ''}
         </div>
 
-        <div style="text-align: right;">
-          ${showCertId ? `
-            <div style="font-family: monospace; font-size: 12px; color: #94a3b8; font-weight: 500; letter-spacing: 0.5px;">
-              ID: ${data.certificateId}
-            </div>
+        <div style="display: flex; align-items: center; gap: 14px; text-align: right;">
+          ${secondaryLogoSrc ? `
+            <img src="${secondaryLogoSrc}" alt="Secondary Logo" style="height: 40px; max-width: 150px; object-fit: contain;" />
           ` : ''}
         </div>
       </div>
@@ -292,19 +287,6 @@ export const dynamicCertificateTemplate = (
             </div>
           ` : ''}
 
-          ${data.className ? `
-            <div style="
-              border: 1.5px solid #cbd5e1;
-              color: #475569;
-              background: #f8fafc;
-              padding: 4px 18px;
-              border-radius: 9999px;
-              font-size: 13px;
-              font-weight: 700;
-            ">
-              Class: ${data.className}
-            </div>
-          ` : ''}
         </div>
       </div>
 
@@ -319,22 +301,18 @@ export const dynamicCertificateTemplate = (
         border-top: 1px solid #f1f5f9;
         text-align: left;
       ">
-        <!-- Left: Issue Date & Footer Disclaimer -->
-        <div style="min-width: 220px;">
+        <!-- Left: Issue Date & Certificate ID -->
+        <div style="min-width: 220px; display: flex; flex-direction: column; gap: 3px;">
           ${showDate ? `
-            <div style="font-size: 12px; color: #64748b; margin-bottom: 3px;">
+            <div style="font-size: 12px; color: #64748b;">
               Issued on: <strong style="color: #334155;">${data.completionDate}</strong>
             </div>
           ` : ''}
-          ${config.footerText ? `
-            <div style="font-size: 10px; color: #94a3b8; max-width: 250px; line-height: 1.35;">
-              ${interpolateCertificateTemplate(config.footerText, data, config)}
+          ${showCertId ? `
+            <div style="font-family: monospace; font-size: 11px; color: #94a3b8; font-weight: 500; letter-spacing: 0.5px;">
+              ID: ${data.certificateId}
             </div>
-          ` : `
-            <div style="font-size: 10px; color: #94a3b8; max-width: 250px;">
-              Authenticated & Verifiable Credential
-            </div>
-          `}
+          ` : ''}
         </div>
 
         <!-- Center: Verification QR Code -->
