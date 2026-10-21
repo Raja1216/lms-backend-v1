@@ -4,157 +4,85 @@ import { PrismaService } from 'src/prisma/prisma.service';
 @Injectable()
 export class StudentDashboardService {
   constructor(private readonly prisma: PrismaService) {}
+
   async getStudentAnalytics(studentId: number, courseId: number) {
-    const quizAttempts = await this.prisma.quizAttempt.findMany({
-      where: { userId: studentId },
-      include: {
-        quiz: {
-          include: {
-            questions: {
-              include: {
-                questionAttempts: {
-                  where: {
-                    quizAttempt: { userId: studentId },
-                  },
-                },
-              },
-            },
-            courseQuizzes: { where: { courseId } },
-            subjectQuizzes: {
-              include: {
-                subject: {
-                  include: {
-                    courses: { where: { courseId } },
-                  },
-                },
-              },
-            },
-            chapterQuizzes: {
-              orderBy: {
-                quiz: {
-                  sortOrder: 'asc',
-                },
-              },
-              include: {
-                chapter: {
-                  include: {
-                    subjects: {
-                      include: {
-                        subject: {
-                          include: { courses: { where: { courseId } } },
-                        },
-                      },
-                    },
-                  },
-                },
-              },
+    const createStats = () => ({
+      attempted: 0,
+      correct: 0,
+      notattempted: 0,
+    });
+
+    const createDifficultyStats = () => ({
+      easy: createStats(),
+      medium: createStats(),
+      hard: createStats(),
+    });
+
+    const createBloomStats = () => ({
+      remember: createStats(),
+      understand: createStats(),
+      apply: createStats(),
+      analyze: createStats(),
+      evaluate: createStats(),
+      create: createStats(),
+    });
+
+    // STEP 1: Get course and subject quizzes,
+    // plus chapter quizzes and lesson quizzes.
+    const [courseQuizzes, subjectQuizzes, courseSubjects] = await Promise.all([
+      this.prisma.courseQuiz.findMany({
+        where: { courseId },
+        select: { quizId: true },
+      }),
+
+      this.prisma.subjectQuiz.findMany({
+        where: {
+          subject: {
+            courses: {
+              some: { courseId },
             },
           },
         },
-        answers: {
-          include: {
-            question: true,
-          },
-        },
-      },
-    });
+        select: { quizId: true },
+      }),
 
-    // Filter only attempts for quizzes belonging to this course
-    const courseAttempts = quizAttempts.filter((attempt: any) => {
-      const q = attempt.quiz;
-      return (
-        q.courseQuizzes.length > 0 ||
-        q.subjectQuizzes.some((sq: any) => sq.subject.courses.length > 0) ||
-        q.chapterQuizzes.some((cq: any) =>
-          cq.chapter.subjects.some((sc: any) => sc.subject.courses.length > 0),
-        )
-      );
-    });
-    const difficultyStats = {
-      easy: { attempted: 0, correct: 0, notattempted: 0 },
-      medium: { attempted: 0, correct: 0, notattempted: 0 },
-      hard: { attempted: 0, correct: 0, notattempted: 0 },
-    };
-    courseAttempts.forEach((attempt) => {
-      const answeredQuestionIds = new Set(
-        attempt.answers.map((a) => a.questionId),
-      );
-
-      attempt.quiz.questions.forEach((q) => {
-        const diff = q.difficulty as 'easy' | 'medium' | 'hard';
-
-        if (answeredQuestionIds.has(q.id)) {
-          difficultyStats[diff].attempted++;
-
-          const ans = attempt.answers.find((a) => a.questionId === q.id);
-          if (ans?.isCorrect) {
-            difficultyStats[diff].correct++;
-          }
-        } else {
-          difficultyStats[diff].notattempted++;
-        }
-      });
-    });
-
-    const bloomStats: Record<
-      string,
-      { attempted: number; correct: number; notattempted: number }
-    > = {
-      remember: { attempted: 0, correct: 0, notattempted: 0 },
-      understand: { attempted: 0, correct: 0, notattempted: 0 },
-      apply: { attempted: 0, correct: 0, notattempted: 0 },
-      analyze: { attempted: 0, correct: 0, notattempted: 0 },
-      evaluate: { attempted: 0, correct: 0, notattempted: 0 },
-      create: { attempted: 0, correct: 0, notattempted: 0 },
-    };
-    courseAttempts.forEach((attempt) => {
-      const answeredQuestionIds = new Set(
-        attempt.answers.map((a) => a.questionId),
-      );
-
-      attempt.quiz.questions.forEach((q) => {
-        const level = q.bloomLevel;
-
-        if (answeredQuestionIds.has(q.id)) {
-          bloomStats[level].attempted++;
-
-          const ans = attempt.answers.find((a) => a.questionId === q.id);
-          if (ans?.isCorrect) {
-            bloomStats[level].correct++;
-          }
-        } else {
-          bloomStats[level].notattempted++;
-        }
-      });
-    });
-    const courseSubjects = await this.prisma.courseSubject.findMany({
-      where: { courseId },
-      include: {
-        subject: {
-          include: {
-            chapters: {
-              orderBy: {
-                chapter: {
-                  sortOrder: 'asc',
+      this.prisma.courseSubject.findMany({
+        where: { courseId },
+        select: {
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              chapters: {
+                orderBy: {
+                  chapter: { sortOrder: 'asc' },
                 },
-              },
-              include: {
-                chapter: {
-                  include: {
-                    chapterQuizzes: {
-                      orderBy: {
-                        quiz: {
-                          sortOrder: 'asc',
+                select: {
+                  chapter: {
+                    select: {
+                      id: true,
+                      title: true,
+
+                      // Direct chapter quizzes
+                      chapterQuizzes: {
+                        orderBy: {
+                          quiz: { sortOrder: 'asc' },
+                        },
+                        select: {
+                          quizId: true,
                         },
                       },
-                      include: {
-                        quiz: {
-                          include: {
-                            questions: true,
-                            quizAttempts: {
-                              where: { userId: studentId },
-                              include: {
-                                answers: { include: { question: true } },
+
+                      // NEW: Lesson quizzes within chapter
+                      lessons: {
+                        select: {
+                          lesson: {
+                            select: {
+                              id: true,
+                              quizzes: {
+                                select: {
+                                  quizId: true,
+                                },
                               },
                             },
                           },
@@ -167,71 +95,247 @@ export class StudentDashboardService {
             },
           },
         },
-      },
-    });
+      }),
+    ]);
 
-    const chapterReports: any = [];
+    // STEP 2: Prepare analytics structures.
+    const difficultyStats = createDifficultyStats();
+    const bloomStats = createBloomStats();
+
+    type ChapterReport = {
+      chapterId: number;
+      chapterName: string;
+      subjectId: number;
+      subjectName: string;
+      timeSpent: number;
+      questionsAttempted: number;
+      correctAnswers: number;
+      difficultyBreakdown: ReturnType<typeof createDifficultyStats>;
+    };
+
+    const chapterReports: ChapterReport[] = [];
+
+    const quizIds = new Set<number>();
+
+    // Identifies quizzes linked to lessons.
+    const lessonQuizIds = new Set<number>();
+
+    // A quiz may belong to multiple chapter reports.
+    const chaptersByQuizId = new Map<number, ChapterReport[]>();
+
+    const addChapterQuiz = (quizId: number, report: ChapterReport) => {
+      quizIds.add(quizId);
+
+      const reports = chaptersByQuizId.get(quizId) ?? [];
+
+      if (!reports.includes(report)) {
+        reports.push(report);
+      }
+
+      chaptersByQuizId.set(quizId, reports);
+    };
+
+    // Course quizzes
+    for (const cq of courseQuizzes) {
+      quizIds.add(cq.quizId);
+    }
+
+    // Subject quizzes
+    for (const sq of subjectQuizzes) {
+      quizIds.add(sq.quizId);
+    }
+
+    // Chapter and lesson quizzes
     for (const cs of courseSubjects) {
       for (const sc of cs.subject.chapters) {
-        const ch = sc.chapter;
-        let timeSpent = 0,
-          questionsAttempted = 0,
-          correctAnswers = 0;
-        const diffBreakdown = {
-          easy: { attempted: 0, correct: 0, notattempted: 0 },
-          medium: { attempted: 0, correct: 0, notattempted: 0 },
-          hard: { attempted: 0, correct: 0, notattempted: 0 },
-        };
+        const chapter = sc.chapter;
 
-        for (const cq of ch.chapterQuizzes) {
-          for (const attempt of cq.quiz.quizAttempts) {
-            timeSpent += attempt.timeTaken;
-
-            const answerMap = new Map(
-              attempt.answers.map((a) => [a.questionId, a]),
-            );
-
-            cq.quiz.questions.forEach((q) => {
-              const diff = q.difficulty as 'easy' | 'medium' | 'hard';
-              const ans = answerMap.get(q.id);
-
-              if (ans) {
-                questionsAttempted++;
-                diffBreakdown[diff].attempted++;
-
-                if (ans.isCorrect) {
-                  correctAnswers++;
-                  diffBreakdown[diff].correct++;
-                }
-              } else {
-                diffBreakdown[diff].notattempted++;
-              }
-            });
-          }
-        }
-
-        chapterReports.push({
-          chapterId: ch.id,
-          chapterName: ch.title,
+        const report: ChapterReport = {
+          chapterId: chapter.id,
+          chapterName: chapter.title,
           subjectId: cs.subject.id,
           subjectName: cs.subject.name,
-          timeSpent,
-          questionsAttempted,
-          correctAnswers,
-          difficultyBreakdown: diffBreakdown,
-        });
+          timeSpent: 0,
+          questionsAttempted: 0,
+          correctAnswers: 0,
+          difficultyBreakdown: createDifficultyStats(),
+        };
+
+        chapterReports.push(report);
+
+        // Existing chapter quizzes
+        for (const cq of chapter.chapterQuizzes) {
+          addChapterQuiz(cq.quizId, report);
+        }
+
+        // NEW: Lesson quizzes
+        for (const lc of chapter.lessons) {
+          for (const lq of lc.lesson.quizzes) {
+            lessonQuizIds.add(lq.quizId);
+
+            // Include lesson quiz in this chapter report
+            addChapterQuiz(lq.quizId, report);
+          }
+        }
       }
+    }
+
+    if (quizIds.size === 0) {
       return {
         difficultyStats,
         bloomStats,
         chapterReports,
-        totalTimeSpent: courseAttempts.reduce((s, a) => s + a.timeTaken, 0),
-        totalQuestions: courseAttempts.reduce(
-          (s, a) => s + a.totalQuestions,
-          0,
-        ),
-        totalCorrect: courseAttempts.reduce((s, a) => s + a.correctAnswers, 0),
+        totalTimeSpent: 0,
+        totalQuestions: 0,
+        totalCorrect: 0,
       };
     }
+
+    // STEP 3: Fetch only relevant student attempts.
+    const allAttempts = await this.prisma.quizAttempt.findMany({
+      where: {
+        userId: studentId,
+        quizId: {
+          in: [...quizIds],
+        },
+      },
+      select: {
+        id: true,
+        quizId: true,
+        obtainedMarks: true,
+        timeTaken: true,
+        totalQuestions: true,
+        correctAnswers: true,
+
+        answers: {
+          select: {
+            questionId: true,
+            isCorrect: true,
+          },
+        },
+
+        quiz: {
+          select: {
+            subMissionFrequency: true,
+            questions: {
+              select: {
+                id: true,
+                difficulty: true,
+                bloomLevel: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // STEP 4: Select highest obtainedMarks
+    // for each lesson quiz.
+    const bestLessonAttempts = new Map<number, (typeof allAttempts)[number]>();
+
+    for (const attempt of allAttempts) {
+      if (!lessonQuizIds.has(attempt.quizId)) {
+        continue;
+      }
+
+      const existing = bestLessonAttempts.get(attempt.quizId);
+
+      // Select highest marks.
+      // When marks are equal, use the latest attempt ID.
+      if (
+        !existing ||
+        attempt.obtainedMarks.gt(existing.obtainedMarks) ||
+        (attempt.obtainedMarks.equals(existing.obtainedMarks) &&
+          attempt.id > existing.id)
+      ) {
+        bestLessonAttempts.set(attempt.quizId, attempt);
+      }
+    }
+
+    // STEP 5: Final attempts used for analytics.
+    const selectedAttempts = allAttempts.filter((attempt) => {
+      // Regular quizzes: preserve all attempts
+      if (!lessonQuizIds.has(attempt.quizId)) {
+        return true;
+      }
+
+      // Lesson quizzes: take only the best attempt
+      return bestLessonAttempts.get(attempt.quizId)?.id === attempt.id;
+    });
+
+    // STEP 6: Calculate analytics.
+    let totalTimeSpent = 0;
+    let totalQuestions = 0;
+    let totalCorrect = 0;
+
+    for (const attempt of selectedAttempts) {
+      totalTimeSpent += attempt.timeTaken;
+      totalQuestions += attempt.totalQuestions;
+      totalCorrect += attempt.correctAnswers;
+
+      const answerMap = new Map(
+        attempt.answers.map((answer) => [answer.questionId, answer.isCorrect]),
+      );
+
+      const linkedChapters = chaptersByQuizId.get(attempt.quizId) ?? [];
+
+      for (const report of linkedChapters) {
+        report.timeSpent += attempt.timeTaken;
+      }
+
+      for (const question of attempt.quiz.questions) {
+        const difficulty = question.difficulty;
+        const bloomLevel = question.bloomLevel;
+
+        const isAnswered = answerMap.has(question.id);
+        const isCorrect = answerMap.get(question.id) === true;
+
+        const difficultyStat = difficultyStats[difficulty];
+
+        const bloomStat = bloomStats[bloomLevel];
+
+        if (isAnswered) {
+          difficultyStat.attempted++;
+          bloomStat.attempted++;
+
+          if (isCorrect) {
+            difficultyStat.correct++;
+            bloomStat.correct++;
+          }
+        } else {
+          difficultyStat.notattempted++;
+          bloomStat.notattempted++;
+        }
+
+        // Include lesson quizzes in chapter analytics.
+        for (const report of linkedChapters) {
+          const chapterDifficulty = report.difficultyBreakdown[difficulty];
+
+          if (isAnswered) {
+            report.questionsAttempted++;
+            chapterDifficulty.attempted++;
+
+            if (isCorrect) {
+              report.correctAnswers++;
+              chapterDifficulty.correct++;
+            }
+          } else {
+            chapterDifficulty.notattempted++;
+          }
+        }
+      }
+    }
+    console.log('All course quiz IDs:', [...quizIds]);
+
+    console.log('Is assessment quiz 5264 included?', quizIds.has(5264));
+
+    return {
+      difficultyStats,
+      bloomStats,
+      chapterReports,
+      totalTimeSpent,
+      totalQuestions,
+      totalCorrect,
+    };
   }
 }

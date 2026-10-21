@@ -9,10 +9,15 @@ import { LeaderboardService } from './services/leaderboard.service';
 import { GamificationEventListener } from './gamification.listener';
 import { GamificationController } from './gamification.controller';
 import { GamificationAdminController } from './gamification-admin.controller';
+import { BadgeController } from './badge.controller';
 
 @Module({
   imports: [PrismaModule],
-  controllers: [GamificationController, GamificationAdminController],
+  controllers: [
+    GamificationController,
+    GamificationAdminController,
+    BadgeController,
+  ],
   providers: [
     GamificationService,
     XpRuleEngineService,

@@ -414,6 +414,8 @@ model CourseSubject {
   course    Course   @relation("CourseSubjects", fields: [courseId], references: [id], onDelete: Cascade)
   subject   Subject  @relation("SubjectCourses", fields: [subjectId], references: [id])
 
+  @@index([courseId, subjectId])
+
   @@map("course_subjects")
 }
 
@@ -447,6 +449,8 @@ model SubjectChapter {
   updatedAt DateTime @updatedAt
   subject   Subject  @relation("SubjectChapters", fields: [subjectId], references: [id])
   chapter   Chapter  @relation("SubjectChapters", fields: [chapterId], references: [id])
+
+  @@index([subjectId, chapterId])
 
   @@map("subject_chapters")
 }
@@ -588,6 +592,8 @@ model QuizAttempt {
   answers                    QuestionAttempt[]           @relation("AttemptAnswers")
   userCompletionCretificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
 
+  @@index([userId, quizId])
+
   @@map("quiz_attempts")
 }
 
@@ -630,6 +636,8 @@ model Question {
   quiz             Quiz              @relation(fields: [quizId], references: [id], onDelete: Cascade)
   questionAttempts QuestionAttempt[]
   options          QuestionOption[]  @relation("QuestionOptions")
+
+  @@index([quizId])
 
   @@map("questions")
 }
@@ -1678,8 +1686,8 @@ model Badge {
   id                   Int           @id @default(autoincrement())
   name                 String        @db.VarChar(100)
   slug                 String        @unique @db.VarChar(100)
-  description          String        @db.Text
-  icon                 String        @db.VarChar(255)
+  description          String?        @db.Text
+  icon                 String        @db.Text
   category             BadgeCategory @default(LEARNING)
   rarity               BadgeRarity   @default(COMMON)
   conditionType        String        @db.VarChar(80)
@@ -1687,6 +1695,16 @@ model Badge {
   xpRewardEngagement   Int           @default(0)
   xpRewardPerformance  Int           @default(0)
   isActive             Boolean       @default(true)
+
+  // New fields
+  shortDescription     String?       @db.VarChar(255)
+  background           String?       @db.Text
+  targetScope          String        @default("ALL") @db.VarChar(30)
+  targetId             String?       @db.VarChar(100)
+  targetLabel          String?       @db.VarChar(255)
+  targetPath           Json?
+  threshold            Int?
+
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
 
@@ -1695,6 +1713,8 @@ model Badge {
 
   @@index([category])
   @@index([rarity])
+  @@index([conditionType])
+  @@index([isActive])
   @@map("badges")
 }
 
