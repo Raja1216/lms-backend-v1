@@ -1935,7 +1935,7 @@ model EventUsers {
   id                  Int          @id @default(autoincrement())
   user_id             Int       
   event_school_id     Int?
-  event_id            Int          @unique
+  event_id            Int          
   status              Boolean      @default(true)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
@@ -1944,7 +1944,7 @@ model EventUsers {
   ExternalEvent ExternalEvents @relation("ExternalEventUser",fields: [event_id],references: [id],onDelete: Cascade)
   User User @relation("EventUsers",fields: [user_id],references: [id],onDelete: Cascade)
 
-  @@index([user_id])
+  @@unique([user_id, event_id])
   @@index([event_school_id])
   @@index([event_id])
 
