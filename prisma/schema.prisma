@@ -1934,13 +1934,13 @@ model EventSchoolCourses {
 model EventUsers {
   id                  Int          @id @default(autoincrement())
   user_id             Int       
-  event_school_id     Int
+  event_school_id     Int?
   event_id            Int          @unique
   status              Boolean      @default(true)
   createdAt           DateTime     @default(now())
   updatedAt           DateTime     @updatedAt
 
-  EventSchool EventSchools @relation("EventSchoolUser",fields: [event_school_id],references: [id],onDelete: Cascade)
+  EventSchool EventSchools? @relation("EventSchoolUser",fields: [event_school_id],references: [id],onDelete: Cascade)
   ExternalEvent ExternalEvents @relation("ExternalEventUser",fields: [event_id],references: [id],onDelete: Cascade)
   User User @relation("EventUsers",fields: [user_id],references: [id],onDelete: Cascade)
 
