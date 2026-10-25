@@ -1944,7 +1944,7 @@ model EventUsers {
   ExternalEvent ExternalEvents @relation("ExternalEventUser",fields: [event_id],references: [id],onDelete: Cascade)
   User User @relation("EventUsers",fields: [user_id],references: [id],onDelete: Cascade)
 
-  @@unique([user_id, event_id])
+  @@index([user_id])
   @@index([event_school_id])
   @@index([event_id])
 
