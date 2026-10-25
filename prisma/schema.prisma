@@ -201,6 +201,7 @@ model User {
   pendingRegistrations       PendingRegistration[]
   createdGroups              Group[]                     @relation("GroupCreator")
   groupMemberships           GroupUser[]               @relation("GroupUserMember")
+  eventUser                  EventUsers[]               @relation("EventUsers")
   xpWallet                   UserXpWallet?
   xpTransactions             XpTransaction[]
   userBadges                 UserBadge[]
@@ -289,6 +290,7 @@ model Course {
   projects                   Project[]                   @relation("CourseProjects")
   gradeScale                 GradeScale?                 @relation("CourseGradeScale")
   institutionCourses         InstitutionCourse[]         @relation("InstitutionCourses")
+  EventSchoolCourses         EventSchoolCourses[]         @relation("EventSchoolCourses")
   live_classes               live_classes[]
   userCompletionCertificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
   pendingRegistrations       PendingRegistration[]
@@ -1877,4 +1879,74 @@ model SystemSetting {
   updatedAt   DateTime @updatedAt
 
   @@map("system_settings")
+}
+
+
+model ExternalEvents {
+  id          Int          @id @default(autoincrement())
+  slug        String       @unique
+  name        String       
+  description String?
+  status      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  ExternalEventUsers EventUsers[] @relation("ExternalEventUser")
+
+  @@map("external_events")
+}
+
+model EventSchools {
+  id          Int          @id @default(autoincrement())
+  name        String       
+  description String?
+  state       String?
+  board       String?
+  district    String?
+  status      Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  EventSchoolCourses EventSchoolCourses[] @relation("EventSchoolCourse")
+  EventSchoolUser EventUsers[] @relation("EventSchoolUser")
+
+  @@map("event_schools")
+}
+
+model EventSchoolCourses {
+  id                  Int          @id @default(autoincrement())
+  class               String?
+  event_school_id     Int
+  course_id           Int          @unique
+  status              Boolean      @default(true)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  EventSchool EventSchools @relation("EventSchoolCourse",fields: [event_school_id],references: [id],onDelete: Cascade)
+  Course Course @relation("EventSchoolCourses",fields: [course_id],references: [id],onDelete: Cascade)
+
+  @@index([event_school_id])
+  @@index([course_id])
+
+  @@map("event_school_courses")
+}
+
+model EventUsers {
+  id                  Int          @id @default(autoincrement())
+  user_id             Int       
+  event_school_id     Int
+  event_id            Int          @unique
+  status              Boolean      @default(true)
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
+
+  EventSchool EventSchools @relation("EventSchoolUser",fields: [event_school_id],references: [id],onDelete: Cascade)
+  ExternalEvent ExternalEvents @relation("ExternalEventUser",fields: [event_id],references: [id],onDelete: Cascade)
+  User User @relation("EventUsers",fields: [user_id],references: [id],onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([event_school_id])
+  @@index([event_id])
+
+  @@map("event_users")
 }
