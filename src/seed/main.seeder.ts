@@ -35,9 +35,13 @@ async function main() {
       description: 'Ability to delete permissions',
     },
     {
-      name:"Admin Dashboard",
-      description:"Ability to access admin dashboard"
-    }
+      name: 'Admin Dashboard',
+      description: 'Ability to access admin dashboard',
+    },
+    { name: 'Badges Read', description: 'Ability to view badges' },
+    { name: 'Badges Create', description: 'Ability to create badges' },
+    { name: 'Badges Update', description: 'Ability to update badges' },
+    { name: 'Badges Delete', description: 'Ability to delete badges' },
   ];
 
   const permissions: any[] = [];

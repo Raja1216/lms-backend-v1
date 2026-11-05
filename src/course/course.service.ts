@@ -14,7 +14,11 @@ import { User } from 'src/generated/prisma/browser';
 import { generateUniqueCourseSlug } from 'src/shared/generate-unique-slug';
 import { CreateFullCourseDto } from './dto/create-full-course.dto';
 import { LessonType } from 'src/generated/prisma/enums';
-import { Prisma } from 'src/generated/prisma/client';
+import {
+  BadgeCategory,
+  BadgeTargetScope,
+  Prisma,
+} from 'src/generated/prisma/client';
 import { generateUniqueSlugForTable } from 'src/shared/generate-unique-slug-for-table';
 import { QuizService } from 'src/quiz/quiz.service';
 import { UploadService } from 'src/upload/upload.service';
@@ -1082,6 +1086,9 @@ export class CourseService {
     // Collect all lessonIds and quizIds
     const allLessonIds = new Set<number>();
     const allQuizIds = new Set<number>();
+    const allChapterIds = new Set<number>();
+    const allModuleIds = new Set<number>();
+    const allSubjectIds = new Set<number>();
 
     // Direct course quizzes
     course.courseQuizzes?.forEach((cq) => allQuizIds.add(cq.quizId));
@@ -1091,6 +1098,7 @@ export class CourseService {
     for (const cs of course.subjects ?? []) {
       const subject = cs.subject;
       if (!subject) continue;
+      allSubjectIds.add(subject.id);
 
       const subjectLessonIds = new Set<number>();
       const subjectQuizIds = new Set<number>();
@@ -1102,6 +1110,7 @@ export class CourseService {
 
       // Modules
       for (const mod of subject.modules ?? []) {
+        allModuleIds.add(mod.id);
         mod.moduleQuizzes?.forEach((mq) => {
           allQuizIds.add(mq.quizId);
           subjectQuizIds.add(mq.quizId);
@@ -1110,6 +1119,7 @@ export class CourseService {
         for (const mc of mod.chapters ?? []) {
           const ch = mc.chapter;
           if (!ch) continue;
+          allChapterIds.add(ch.id);
           ch.chapterQuizzes?.forEach((cq) => {
             allQuizIds.add(cq.quizId);
             subjectQuizIds.add(cq.quizId);
@@ -1131,6 +1141,7 @@ export class CourseService {
       for (const sc of subject.chapters ?? []) {
         const ch = sc.chapter;
         if (!ch) continue;
+        allChapterIds.add(ch.id);
         ch.chapterQuizzes?.forEach((cq) => {
           allQuizIds.add(cq.quizId);
           subjectQuizIds.add(cq.quizId);
@@ -1252,6 +1263,113 @@ export class CourseService {
       };
     });
 
+    // ── Badges Calculation ──────────────────────────────────────
+    const allActiveBadges = await this.prisma.badge.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        category: true,
+        conditionType: true,
+        targetScope: true,
+        targetId: true,
+        targetPath: true,
+      },
+    });
+
+    const courseBadgeIds: number[] = [];
+
+    for (const b of allActiveBadges) {
+      let matchesCourse = false;
+      const targetPath = b.targetPath as Record<string, unknown> | null;
+      const pathCourse = targetPath?.course ?? targetPath?.courseId;
+
+      if (pathCourse && String(pathCourse) === String(course.id)) {
+        matchesCourse = true;
+      } else {
+        const cond = (b.conditionType || '').toUpperCase();
+        const tid = b.targetId ? Number(b.targetId) : null;
+
+        if (b.targetScope === BadgeTargetScope.SPECIFIC) {
+          if (cond.includes('COURSE') && String(b.targetId) === String(course.id)) {
+            matchesCourse = true;
+          } else if (tid != null && !isNaN(tid)) {
+            if (cond.includes('LESSON') && allLessonIds.has(tid)) {
+              matchesCourse = true;
+            } else if (cond.includes('QUIZ') && allQuizIds.has(tid)) {
+              matchesCourse = true;
+            } else if (cond.includes('CHAPTER') && allChapterIds.has(tid)) {
+              matchesCourse = true;
+            } else if (cond.includes('MODULE') && allModuleIds.has(tid)) {
+              matchesCourse = true;
+            } else if (cond.includes('SUBJECT') && allSubjectIds.has(tid)) {
+              matchesCourse = true;
+            }
+          }
+        } else if (b.targetScope === BadgeTargetScope.ALL) {
+          if (cond.includes('COURSE')) {
+            matchesCourse = true;
+          } else if (
+            b.category === BadgeCategory.LEARNING ||
+            b.category === BadgeCategory.QUIZ
+          ) {
+            if (cond.includes('LESSON') && allLessonIds.size > 0) matchesCourse = true;
+            else if (cond.includes('QUIZ') && allQuizIds.size > 0) matchesCourse = true;
+            else if (cond.includes('CHAPTER') && allChapterIds.size > 0) matchesCourse = true;
+            else if (cond.includes('MODULE') && allModuleIds.size > 0) matchesCourse = true;
+            else if (cond.includes('SUBJECT') && allSubjectIds.size > 0) matchesCourse = true;
+          }
+        }
+      }
+
+      if (matchesCourse) {
+        courseBadgeIds.push(b.id);
+      }
+    }
+
+    const totalBadge = courseBadgeIds.length;
+    const totalEarnedBadge =
+      courseBadgeIds.length > 0
+        ? await this.prisma.userBadge.count({
+            where: {
+              userId: user.id,
+              badgeId: { in: courseBadgeIds },
+            },
+          })
+        : 0;
+
+    // ── Certificates Calculation ────────────────────────────────
+    const courseSpecificTemplates =
+      await this.prisma.certificateTemplate.count({
+        where: {
+          courseId: course.id,
+          status: true,
+        },
+      });
+
+    const defaultTemplates = await this.prisma.certificateTemplate.count({
+      where: {
+        type: 'course',
+        isDefault: true,
+        status: true,
+        courseId: null,
+      },
+    });
+
+    const totalCertificates =
+      courseSpecificTemplates > 0
+        ? courseSpecificTemplates
+        : defaultTemplates > 0
+          ? defaultTemplates
+          : 0;
+
+    const totalEarnedCertificates =
+      await this.prisma.userCompletionCertificate.count({
+        where: {
+          userId: user.id,
+          courseId: course.id,
+        },
+      });
+
     return {
       courseId: course.id,
       courseSlug: course.slug,
@@ -1265,8 +1383,23 @@ export class CourseService {
       completedItems,
       progressPercentage,
       isCompleted,
-      certificateIssued: !!certificate,
+      certificateIssued: !!certificate || totalEarnedCertificates > 0,
       certificateDetails: certificate || null,
+      totalBadge,
+      totalBadges: totalBadge,
+      totalEarnedBadge,
+      totalEarnedBadges: totalEarnedBadge,
+      totalCertificates,
+      totalCerticates: totalCertificates,
+      totalEarnedCertificates,
+      badges: {
+        earned: totalEarnedBadge,
+        total: totalBadge,
+      },
+      certificates: {
+        earned: totalEarnedCertificates,
+        total: totalCertificates,
+      },
       completedLessonIds,
       completedQuizIds,
       subjectsProgress: enrichedSubjectsProgress,

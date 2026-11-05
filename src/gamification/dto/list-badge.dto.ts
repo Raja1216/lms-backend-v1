@@ -1,44 +1,27 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { PaginationDto } from '../../shared/dto/pagination-dto';
 
-import {
-  IsBoolean,
-  IsEnum,
-  IsInt,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
-
-import { BadgeCategory } from '../../generated/prisma/client';
-
-export class ListBadgeDto {
+export class ListBadgeDto extends PaginationDto {
+  /**
+   * Filter by badge category or high-level group ("LEARNING", "ENGAGEMENT", or specific BadgeCategory)
+   */
   @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page: number = 1;
+  @IsString()
+  type?: string;
 
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit: number = 20;
-
-  @IsOptional()
-  @IsEnum(BadgeCategory)
-  type?: BadgeCategory;
-
+  /**
+   * Backward-compatibility alias for `keyword` search
+   */
   @IsOptional()
   @IsString()
   search?: string;
 
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (value === 'true' || value === true) return true;
     if (value === 'false' || value === false) return false;
-    return value;
+    return undefined;
   })
   @IsBoolean()
   isActive?: boolean;

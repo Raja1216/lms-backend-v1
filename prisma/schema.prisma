@@ -1559,6 +1559,11 @@ enum BadgeRarity {
   LEGENDARY
 }
 
+enum BadgeTargetScope {
+  ALL
+  SPECIFIC
+}
+
 enum SeasonType {
   WEEKLY
   MONTHLY
@@ -1701,7 +1706,7 @@ model Badge {
   // New fields
   shortDescription     String?       @db.VarChar(255)
   background           String?       @db.Text
-  targetScope          String        @default("ALL") @db.VarChar(30)
+  targetScope          BadgeTargetScope @default(ALL)
   targetId             String?       @db.VarChar(100)
   targetLabel          String?       @db.VarChar(255)
   targetPath           Json?

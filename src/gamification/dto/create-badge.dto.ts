@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEnum,
@@ -6,22 +7,42 @@ import {
   IsObject,
   IsOptional,
   IsString,
-  IsUrl,
   MaxLength,
   Min,
   ValidateIf,
 } from 'class-validator';
 
-import { BadgeCategory } from '../../generated/prisma/client';
+import { BadgeCategory, BadgeTargetScope } from '../../generated/prisma/client';
+
+export { BadgeTargetScope };
+export { BadgeTargetScope as TargetScope };
 
 export class CreateBadgeDto {
+  @Transform(
+    ({
+      value,
+      obj,
+    }: {
+      value: unknown;
+      obj?: Record<string, unknown>;
+    }): BadgeCategory => {
+      if (value === 'ENGAGEMENT') {
+        const trigger =
+          typeof obj?.trigger === 'string' ? obj.trigger.toUpperCase() : '';
+        if (trigger.includes('STREAK')) return BadgeCategory.STREAK;
+        if (trigger.includes('FORUM')) return BadgeCategory.COMMUNITY;
+        return BadgeCategory.LEARNING;
+      }
+      return value as BadgeCategory;
+    },
+  )
   @IsEnum(BadgeCategory)
-  type: BadgeCategory;
+  type!: BadgeCategory;
 
   @IsString()
   @IsNotEmpty()
   @MaxLength(100)
-  title: string;
+  title!: string;
 
   @IsOptional()
   @IsString()
@@ -30,10 +51,11 @@ export class CreateBadgeDto {
 
   @IsOptional()
   @IsString()
-  description: string | null;
+  description!: string | null;
 
-  @IsUrl({ require_tld: false })
-  imageUrl: string;
+  @IsOptional()
+  @IsString()
+  imageUrl?: string | null;
 
   @IsOptional()
   @IsString()
@@ -42,13 +64,18 @@ export class CreateBadgeDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(80)
-  trigger: string;
+  trigger!: string;
 
-  @IsString()
-  @IsNotEmpty()
-  targetScope: string;
+  @Transform(
+    ({ value }: { value: unknown }): BadgeTargetScope =>
+      value === 'ANY' ? BadgeTargetScope.ALL : (value as BadgeTargetScope),
+  )
+  @IsEnum(BadgeTargetScope)
+  targetScope!: BadgeTargetScope;
 
-  @ValidateIf((o) => o.targetId !== null && o.targetId !== undefined)
+  @ValidateIf(
+    (o: CreateBadgeDto) => o.targetId !== null && o.targetId !== undefined,
+  )
   @IsString()
   targetId?: string | null;
 
@@ -61,7 +88,9 @@ export class CreateBadgeDto {
   @IsObject()
   targetPath?: Record<string, unknown> | null;
 
-  @ValidateIf((o) => o.threshold !== null && o.threshold !== undefined)
+  @ValidateIf(
+    (o: CreateBadgeDto) => o.threshold !== null && o.threshold !== undefined,
+  )
   @IsInt()
   @Min(1)
   threshold?: number | null;

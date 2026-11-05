@@ -91,10 +91,23 @@ export class LevelService {
    * Get comprehensive level progress for user dashboard (PDF §34)
    */
   async getLevelProgress(userId: number): Promise<LevelProgressInfo> {
-    const wallet = await this.prisma.userXpWallet.findUnique({
+    let wallet = await this.prisma.userXpWallet.findUnique({
       where: { userId },
       include: { currentLevel: true },
     });
+
+    if (!wallet) {
+      wallet = await this.prisma.userXpWallet.create({
+        data: {
+          userId,
+          engagementXp: 0,
+          performanceXp: 0,
+          totalXp: 0,
+          currentLevelId: 1,
+        },
+        include: { currentLevel: true },
+      });
+    }
 
     const allLevels = await this.prisma.gamificationLevel.findMany({
       where: { isActive: true },

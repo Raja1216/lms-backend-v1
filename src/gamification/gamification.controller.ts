@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Req, UseGuards, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Req, UseGuards, ParseIntPipe, DefaultValuePipe } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { GamificationService } from './services/gamification.service';
 import { LeaderboardService } from './services/leaderboard.service';
@@ -74,6 +74,15 @@ export class GamificationController {
   async getStreak(@Req() req) {
     const userId = Number(req.user.id);
     return this.streakService.getUserStreak(userId);
+  }
+
+  /**
+   * Add / grant streak freeze tokens
+   */
+  @Post('streak/freeze')
+  async addFreezeToken(@Req() req, @Body('count') count?: number) {
+    const userId = Number(req.user.id);
+    return this.streakService.addFreezeTokens(userId, count && Number(count) > 0 ? Number(count) : 1);
   }
 
   /**

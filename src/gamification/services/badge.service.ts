@@ -1,6 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Badge, XpSourceType } from '../../generated/prisma/client';
+import {
+  Badge,
+  XpSourceType,
+  BadgeTargetScope,
+  BadgeCategory,
+} from '../../generated/prisma/client';
+import { createPagedResponse } from '../../shared/create-paged-response';
 
 import {
   BadRequestException,
@@ -19,6 +25,19 @@ import { ListBadgeDto } from '../dto/list-badge.dto';
 export interface EvaluatedBadgeAward {
   badge: Badge;
   isNew: boolean;
+}
+
+export interface TargetHierarchyResult {
+  trigger: string;
+  targetId: string;
+  targetLabel: string;
+  course?: { id: number; title: string } | null;
+  subject?: { id: number; title: string; name?: string } | null;
+  module?: { id: number; title: string } | null;
+  chapter?: { id: number; title: string } | null;
+  lesson?: { id: number; title: string } | null;
+  quiz?: { id: number; title: string } | null;
+  targetPath: Record<string, string>;
 }
 
 @Injectable()
@@ -84,7 +103,7 @@ export class BadgeService {
 
     if (dto.description !== undefined) data.description = dto.description;
 
-    if (dto.imageUrl !== undefined) data.icon = dto.imageUrl;
+    if (dto.imageUrl !== undefined) data.icon = dto.imageUrl ?? '';
 
     if (dto.background !== undefined) data.background = dto.background;
 
@@ -118,11 +137,14 @@ export class BadgeService {
   private validateBadgeTarget(dto: Partial<CreateBadgeDto>) {
     const scope = dto.targetScope;
 
-    if (scope !== undefined && !['ALL', 'SPECIFIC'].includes(scope)) {
+    if (
+      scope !== undefined &&
+      !Object.values(BadgeTargetScope).includes(scope)
+    ) {
       throw new BadRequestException('targetScope must be ALL or SPECIFIC');
     }
 
-    if (scope === 'SPECIFIC' && !dto.targetId) {
+    if (scope === BadgeTargetScope.SPECIFIC && !dto.targetId) {
       throw new BadRequestException(
         'targetId is required for SPECIFIC targetScope',
       );
@@ -141,45 +163,65 @@ export class BadgeService {
    * GET /badge
    */
   async listBadgesAdmin(query: ListBadgeDto) {
-    const page = query.page ?? 1;
-    const limit = query.limit ?? 20;
+    const page = Number(query.page) > 0 ? Number(query.page) : 1;
+    const limit = Number(query.limit) > 0 ? Number(query.limit) : 10;
+    const skip = (page - 1) * limit;
 
     const where: Prisma.BadgeWhereInput = {};
 
-    if (query.type) {
-      where.category = query.type;
+    if (query.type && query.type !== 'ALL') {
+      const typeUpper = query.type.toUpperCase();
+      if (typeUpper === 'ENGAGEMENT') {
+        where.category = {
+          in: [
+            BadgeCategory.STREAK,
+            BadgeCategory.COMMUNITY,
+            BadgeCategory.ATTENDANCE,
+          ],
+        };
+      } else if (typeUpper === 'LEARNING') {
+        where.category = {
+          in: [
+            BadgeCategory.LEARNING,
+            BadgeCategory.QUIZ,
+            BadgeCategory.PROJECT,
+            BadgeCategory.CERTIFICATE,
+            BadgeCategory.DOMAIN,
+          ],
+        };
+      } else if (
+        Object.values(BadgeCategory).includes(typeUpper as BadgeCategory)
+      ) {
+        where.category = typeUpper as BadgeCategory;
+      }
     }
 
     if (query.isActive !== undefined) {
       where.isActive = query.isActive;
     }
 
-    const search = query.search?.trim();
-
-    if (search) {
+    const searchKeyword = (query.keyword || query.search || '').trim();
+    if (searchKeyword) {
       where.OR = [
-        { name: { contains: search } },
-        { description: { contains: search } },
-        { shortDescription: { contains: search } },
+        { name: { contains: searchKeyword } },
+        { description: { contains: searchKeyword } },
+        { shortDescription: { contains: searchKeyword } },
+        { conditionType: { contains: searchKeyword } },
       ];
     }
 
     const [items, total] = await this.prisma.$transaction([
       this.prisma.badge.findMany({
         where,
-        skip: (page - 1) * limit,
+        skip,
         take: limit,
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
       }),
       this.prisma.badge.count({ where }),
     ]);
 
-    return {
-      items: items.map((badge) => this.formatBadge(badge)),
-      total,
-      page,
-      limit,
-    };
+    const formatted = items.map((badge) => this.formatBadge(badge));
+    return createPagedResponse(formatted, page, limit, total);
   }
 
   /**
@@ -203,14 +245,12 @@ export class BadgeService {
   async createBadgeAdmin(dto: CreateBadgeDto) {
     this.validateBadgeTarget(dto);
 
-    const data = this.mapBadgeInput(dto);
-
     const badge = await this.prisma.badge.create({
       data: {
         name: dto.title,
         slug: this.generateBadgeSlug(dto.title),
         description: dto.description,
-        icon: dto.imageUrl,
+        icon: dto.imageUrl ?? '',
         category: dto.type,
         conditionType: dto.trigger,
         targetScope: dto.targetScope,
@@ -478,5 +518,839 @@ export class BadgeService {
         earnedAt: earned?.earnedAt || null,
       };
     });
+  }
+
+  /**
+   * 1. Target hierarchy for Course trigger (COURSE_COMPLETE)
+   */
+  async getCourseTargetHierarchy(id: number): Promise<TargetHierarchyResult> {
+    const course = await this.prisma.course.findUnique({
+      where: { id },
+      select: { id: true, title: true },
+    });
+    if (!course) {
+      throw new NotFoundException(`Course with ID ${id} not found`);
+    }
+
+    return {
+      trigger: 'COURSE_COMPLETE',
+      targetId: String(course.id),
+      targetLabel: course.title,
+      course: { id: course.id, title: course.title },
+      targetPath: {
+        course: String(course.id),
+      },
+    };
+  }
+
+  /**
+   * 2. Target hierarchy for Subject trigger (SUBJECT_COMPLETE)
+   */
+  async getSubjectTargetHierarchy(id: number): Promise<TargetHierarchyResult> {
+    const subject = await this.prisma.subject.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        courses: {
+          select: {
+            course: { select: { id: true, title: true } },
+          },
+          take: 1,
+        },
+      },
+    });
+    if (!subject) {
+      throw new NotFoundException(`Subject with ID ${id} not found`);
+    }
+
+    const course = subject.courses[0]?.course ?? null;
+    const targetPath: Record<string, string> = {};
+    if (course) targetPath.course = String(course.id);
+    targetPath.subject = String(subject.id);
+
+    return {
+      trigger: 'SUBJECT_COMPLETE',
+      targetId: String(subject.id),
+      targetLabel: subject.name,
+      course: course ? { id: course.id, title: course.title } : null,
+      subject: { id: subject.id, title: subject.name, name: subject.name },
+      targetPath,
+    };
+  }
+
+  /**
+   * 3. Target hierarchy for Module trigger (MODULE_COMPLETE)
+   */
+  async getModuleTargetHierarchy(id: number): Promise<TargetHierarchyResult> {
+    const moduleItem = await this.prisma.module.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        subject: {
+          select: {
+            id: true,
+            name: true,
+            courses: {
+              select: {
+                course: { select: { id: true, title: true } },
+              },
+              take: 1,
+            },
+          },
+        },
+      },
+    });
+    if (!moduleItem) {
+      throw new NotFoundException(`Module with ID ${id} not found`);
+    }
+
+    const subject = moduleItem.subject ?? null;
+    const course = subject?.courses[0]?.course ?? null;
+
+    const targetPath: Record<string, string> = {};
+    if (course) targetPath.course = String(course.id);
+    if (subject) targetPath.subject = String(subject.id);
+    targetPath.module = String(moduleItem.id);
+
+    return {
+      trigger: 'MODULE_COMPLETE',
+      targetId: String(moduleItem.id),
+      targetLabel: moduleItem.title,
+      course: course ? { id: course.id, title: course.title } : null,
+      subject: subject
+        ? { id: subject.id, title: subject.name, name: subject.name }
+        : null,
+      module: { id: moduleItem.id, title: moduleItem.title },
+      targetPath,
+    };
+  }
+
+  /**
+   * 4. Target hierarchy for Chapter trigger (CHAPTER_COMPLETE)
+   */
+  async getChapterTargetHierarchy(id: number): Promise<TargetHierarchyResult> {
+    const chapter = await this.prisma.chapter.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        modules: {
+          select: {
+            module: {
+              select: {
+                id: true,
+                title: true,
+                subject: {
+                  select: {
+                    id: true,
+                    name: true,
+                    courses: {
+                      select: {
+                        course: { select: { id: true, title: true } },
+                      },
+                      take: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          take: 1,
+        },
+        subjects: {
+          select: {
+            subject: {
+              select: {
+                id: true,
+                name: true,
+                courses: {
+                  select: {
+                    course: { select: { id: true, title: true } },
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+          take: 1,
+        },
+      },
+    });
+    if (!chapter) {
+      throw new NotFoundException(`Chapter with ID ${id} not found`);
+    }
+
+    const moduleItem = chapter.modules[0]?.module ?? null;
+    const subject = moduleItem?.subject ?? chapter.subjects[0]?.subject ?? null;
+    const course = subject?.courses[0]?.course ?? null;
+
+    const targetPath: Record<string, string> = {};
+    if (course) targetPath.course = String(course.id);
+    if (subject) targetPath.subject = String(subject.id);
+    if (moduleItem) targetPath.module = String(moduleItem.id);
+    targetPath.chapter = String(chapter.id);
+
+    return {
+      trigger: 'CHAPTER_COMPLETE',
+      targetId: String(chapter.id),
+      targetLabel: chapter.title,
+      course: course ? { id: course.id, title: course.title } : null,
+      subject: subject
+        ? { id: subject.id, title: subject.name, name: subject.name }
+        : null,
+      module: moduleItem
+        ? { id: moduleItem.id, title: moduleItem.title }
+        : null,
+      chapter: { id: chapter.id, title: chapter.title },
+      targetPath,
+    };
+  }
+
+  /**
+   * 5. Target hierarchy for Lesson trigger (LESSON_COMPLETE)
+   */
+  async getLessonTargetHierarchy(id: number): Promise<TargetHierarchyResult> {
+    const lesson = await this.prisma.lesson.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        chapters: {
+          select: {
+            chapter: {
+              select: {
+                id: true,
+                title: true,
+                modules: {
+                  select: {
+                    module: {
+                      select: {
+                        id: true,
+                        title: true,
+                        subject: {
+                          select: {
+                            id: true,
+                            name: true,
+                            courses: {
+                              select: {
+                                course: { select: { id: true, title: true } },
+                              },
+                              take: 1,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  take: 1,
+                },
+                subjects: {
+                  select: {
+                    subject: {
+                      select: {
+                        id: true,
+                        name: true,
+                        courses: {
+                          select: {
+                            course: { select: { id: true, title: true } },
+                          },
+                          take: 1,
+                        },
+                      },
+                    },
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+          take: 1,
+        },
+      },
+    });
+    if (!lesson) {
+      throw new NotFoundException(`Lesson with ID ${id} not found`);
+    }
+
+    const chapter = lesson.chapters[0]?.chapter ?? null;
+    const moduleItem = chapter?.modules[0]?.module ?? null;
+    const subject =
+      moduleItem?.subject ?? chapter?.subjects[0]?.subject ?? null;
+    const course = subject?.courses[0]?.course ?? null;
+
+    const targetPath: Record<string, string> = {};
+    if (course) targetPath.course = String(course.id);
+    if (subject) targetPath.subject = String(subject.id);
+    if (moduleItem) targetPath.module = String(moduleItem.id);
+    if (chapter) targetPath.chapter = String(chapter.id);
+    targetPath.lesson = String(lesson.id);
+
+    return {
+      trigger: 'LESSON_COMPLETE',
+      targetId: String(lesson.id),
+      targetLabel: lesson.title,
+      course: course ? { id: course.id, title: course.title } : null,
+      subject: subject
+        ? { id: subject.id, title: subject.name, name: subject.name }
+        : null,
+      module: moduleItem
+        ? { id: moduleItem.id, title: moduleItem.title }
+        : null,
+      chapter: chapter ? { id: chapter.id, title: chapter.title } : null,
+      lesson: { id: lesson.id, title: lesson.title },
+      targetPath,
+    };
+  }
+
+  /**
+   * 6. Target hierarchy for Quiz trigger (QUIZ_COMPLETE)
+   */
+  async getQuizTargetHierarchy(id: number): Promise<TargetHierarchyResult> {
+    const quiz = await this.prisma.quiz.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        lessons: {
+          select: {
+            lesson: {
+              select: {
+                id: true,
+                title: true,
+                chapters: {
+                  select: {
+                    chapter: {
+                      select: {
+                        id: true,
+                        title: true,
+                        modules: {
+                          select: {
+                            module: {
+                              select: {
+                                id: true,
+                                title: true,
+                                subject: {
+                                  select: {
+                                    id: true,
+                                    name: true,
+                                    courses: {
+                                      select: {
+                                        course: {
+                                          select: { id: true, title: true },
+                                        },
+                                      },
+                                      take: 1,
+                                    },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                          take: 1,
+                        },
+                        subjects: {
+                          select: {
+                            subject: {
+                              select: {
+                                id: true,
+                                name: true,
+                                courses: {
+                                  select: {
+                                    course: {
+                                      select: { id: true, title: true },
+                                    },
+                                  },
+                                  take: 1,
+                                },
+                              },
+                            },
+                          },
+                          take: 1,
+                        },
+                      },
+                    },
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+          take: 1,
+        },
+        chapterQuizzes: {
+          select: {
+            chapter: {
+              select: {
+                id: true,
+                title: true,
+                modules: {
+                  select: {
+                    module: {
+                      select: {
+                        id: true,
+                        title: true,
+                        subject: {
+                          select: {
+                            id: true,
+                            name: true,
+                            courses: {
+                              select: {
+                                course: {
+                                  select: { id: true, title: true },
+                                },
+                              },
+                              take: 1,
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                  take: 1,
+                },
+                subjects: {
+                  select: {
+                    subject: {
+                      select: {
+                        id: true,
+                        name: true,
+                        courses: {
+                          select: {
+                            course: {
+                              select: { id: true, title: true },
+                            },
+                          },
+                          take: 1,
+                        },
+                      },
+                    },
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+          take: 1,
+        },
+        moduleQuizzes: {
+          select: {
+            module: {
+              select: {
+                id: true,
+                title: true,
+                subject: {
+                  select: {
+                    id: true,
+                    name: true,
+                    courses: {
+                      select: {
+                        course: { select: { id: true, title: true } },
+                      },
+                      take: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          take: 1,
+        },
+        subjectQuizzes: {
+          select: {
+            subject: {
+              select: {
+                id: true,
+                name: true,
+                courses: {
+                  select: {
+                    course: { select: { id: true, title: true } },
+                  },
+                  take: 1,
+                },
+              },
+            },
+          },
+          take: 1,
+        },
+        courseQuizzes: {
+          select: {
+            course: { select: { id: true, title: true } },
+          },
+          take: 1,
+        },
+      },
+    });
+    if (!quiz) {
+      throw new NotFoundException(`Quiz with ID ${id} not found`);
+    }
+
+    const lesson = quiz.lessons[0]?.lesson ?? null;
+    const chapter =
+      lesson?.chapters[0]?.chapter ?? quiz.chapterQuizzes[0]?.chapter ?? null;
+    const moduleItem =
+      chapter?.modules[0]?.module ?? quiz.moduleQuizzes[0]?.module ?? null;
+    const subject =
+      moduleItem?.subject ??
+      chapter?.subjects[0]?.subject ??
+      quiz.subjectQuizzes[0]?.subject ??
+      null;
+    const course =
+      subject?.courses[0]?.course ?? quiz.courseQuizzes[0]?.course ?? null;
+
+    const targetPath: Record<string, string> = {};
+    if (course) targetPath.course = String(course.id);
+    if (subject) targetPath.subject = String(subject.id);
+    if (moduleItem) targetPath.module = String(moduleItem.id);
+    if (chapter) targetPath.chapter = String(chapter.id);
+    if (lesson) targetPath.lesson = String(lesson.id);
+    targetPath.quiz = String(quiz.id);
+
+    return {
+      trigger: 'QUIZ_COMPLETE',
+      targetId: String(quiz.id),
+      targetLabel: quiz.title,
+      course: course ? { id: course.id, title: course.title } : null,
+      subject: subject
+        ? { id: subject.id, title: subject.name, name: subject.name }
+        : null,
+      module: moduleItem
+        ? { id: moduleItem.id, title: moduleItem.title }
+        : null,
+      chapter: chapter ? { id: chapter.id, title: chapter.title } : null,
+      lesson: lesson ? { id: lesson.id, title: lesson.title } : null,
+      quiz: { id: quiz.id, title: quiz.title },
+      targetPath,
+    };
+  }
+
+  /**
+   * Unified resolver routing to each specific trigger hierarchy method.
+   */
+  async resolveTargetHierarchy(
+    trigger: string,
+    targetId: string,
+  ): Promise<TargetHierarchyResult> {
+    const id = parseInt(targetId, 10);
+    if (isNaN(id)) {
+      throw new BadRequestException(`Invalid targetId: ${targetId}`);
+    }
+
+    const t = (trigger || '').toUpperCase();
+    if (t === 'COURSE_COMPLETE' || t === 'COURSE_COMPLETED') {
+      return this.getCourseTargetHierarchy(id);
+    }
+    if (t === 'SUBJECT_COMPLETE' || t === 'SUBJECT_COMPLETED') {
+      return this.getSubjectTargetHierarchy(id);
+    }
+    if (t === 'MODULE_COMPLETE' || t === 'MODULE_COMPLETED') {
+      return this.getModuleTargetHierarchy(id);
+    }
+    if (t === 'CHAPTER_COMPLETE' || t === 'CHAPTER_COMPLETED') {
+      return this.getChapterTargetHierarchy(id);
+    }
+    if (t === 'LESSON_COMPLETE' || t.startsWith('LESSON_')) {
+      return this.getLessonTargetHierarchy(id);
+    }
+    if (t === 'QUIZ_COMPLETE' || t.startsWith('QUIZ_')) {
+      return this.getQuizTargetHierarchy(id);
+    }
+
+    throw new BadRequestException(
+      `Unsupported trigger type for target hierarchy: ${trigger}`,
+    );
+  }
+
+  /**
+   * GET /badge/course-status/:courseId
+   * Computes badges & certificate metrics for a specific course and user.
+   */
+  async getCourseRewardsStatus(courseIdOrSlug: number | string, userId: number) {
+    const numId = Number(courseIdOrSlug);
+    const whereCourse = !isNaN(numId)
+      ? { id: numId }
+      : { slug: String(courseIdOrSlug) };
+
+    const course = await this.prisma.course.findFirst({
+      where: whereCourse,
+      include: {
+        courseQuizzes: { select: { quizId: true } },
+        subjects: {
+          include: {
+            subject: {
+              include: {
+                subjectQuizzes: { select: { quizId: true } },
+                modules: {
+                  include: {
+                    moduleQuizzes: { select: { quizId: true } },
+                    chapters: {
+                      include: {
+                        chapter: {
+                          include: {
+                            chapterQuizzes: { select: { quizId: true } },
+                            lessons: {
+                              include: {
+                                lesson: {
+                                  include: {
+                                    quizzes: { select: { quizId: true } },
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+                chapters: {
+                  include: {
+                    chapter: {
+                      include: {
+                        chapterQuizzes: { select: { quizId: true } },
+                        lessons: {
+                          include: {
+                            lesson: {
+                              include: {
+                                quizzes: { select: { quizId: true } },
+                              },
+                            },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!course) {
+      throw new NotFoundException(`Course ${courseIdOrSlug} not found`);
+    }
+    const courseId = course.id;
+
+    const allLessonIds = new Set<number>();
+    const allQuizIds = new Set<number>();
+    const allChapterIds = new Set<number>();
+    const allModuleIds = new Set<number>();
+    const allSubjectIds = new Set<number>();
+
+    course.courseQuizzes?.forEach((cq) => allQuizIds.add(cq.quizId));
+
+    for (const cs of course.subjects ?? []) {
+      const subject = cs.subject;
+      if (!subject) continue;
+      allSubjectIds.add(subject.id);
+      subject.subjectQuizzes?.forEach((sq) => allQuizIds.add(sq.quizId));
+
+      for (const mod of subject.modules ?? []) {
+        allModuleIds.add(mod.id);
+        mod.moduleQuizzes?.forEach((mq) => allQuizIds.add(mq.quizId));
+
+        for (const mc of mod.chapters ?? []) {
+          const ch = mc.chapter;
+          if (!ch) continue;
+          allChapterIds.add(ch.id);
+          ch.chapterQuizzes?.forEach((cq) => allQuizIds.add(cq.quizId));
+          for (const ltc of ch.lessons ?? []) {
+            if (ltc.lesson) {
+              allLessonIds.add(ltc.lesson.id);
+              ltc.lesson.quizzes?.forEach((lq) => allQuizIds.add(lq.quizId));
+            }
+          }
+        }
+      }
+
+      for (const sc of subject.chapters ?? []) {
+        const ch = sc.chapter;
+        if (!ch) continue;
+        allChapterIds.add(ch.id);
+        ch.chapterQuizzes?.forEach((cq) => allQuizIds.add(cq.quizId));
+        for (const ltc of ch.lessons ?? []) {
+          if (ltc.lesson) {
+            allLessonIds.add(ltc.lesson.id);
+            ltc.lesson.quizzes?.forEach((lq) => allQuizIds.add(lq.quizId));
+          }
+        }
+      }
+    }
+
+    const allActiveBadges = await this.prisma.badge.findMany({
+      where: { isActive: true },
+      select: {
+        id: true,
+        category: true,
+        conditionType: true,
+        targetScope: true,
+        targetId: true,
+        targetPath: true,
+      },
+    });
+
+    const courseBadgeIds: number[] = [];
+
+    for (const b of allActiveBadges) {
+      let matchesCourse = false;
+      const targetPath = b.targetPath as Record<string, unknown> | null;
+      const rawPathCourse = targetPath?.course ?? targetPath?.courseId;
+      const pathCourse =
+        typeof rawPathCourse === 'string' || typeof rawPathCourse === 'number'
+          ? String(rawPathCourse)
+          : null;
+
+      if (pathCourse && pathCourse === String(courseId)) {
+        matchesCourse = true;
+      } else {
+        const cond = (b.conditionType || '').toUpperCase();
+        const tid = b.targetId ? Number(b.targetId) : null;
+
+        if (b.targetScope === BadgeTargetScope.SPECIFIC) {
+          if (
+            cond.includes('COURSE') &&
+            String(b.targetId) === String(courseId)
+          ) {
+            matchesCourse = true;
+          } else if (tid != null && !isNaN(tid)) {
+            if (cond.includes('LESSON') && allLessonIds.has(tid)) {
+              matchesCourse = true;
+            } else if (cond.includes('QUIZ') && allQuizIds.has(tid)) {
+              matchesCourse = true;
+            } else if (cond.includes('CHAPTER') && allChapterIds.has(tid)) {
+              matchesCourse = true;
+            } else if (cond.includes('MODULE') && allModuleIds.has(tid)) {
+              matchesCourse = true;
+            } else if (cond.includes('SUBJECT') && allSubjectIds.has(tid)) {
+              matchesCourse = true;
+            }
+          }
+        } else if (b.targetScope === BadgeTargetScope.ALL) {
+          if (cond.includes('COURSE')) {
+            matchesCourse = true;
+          } else if (
+            b.category === BadgeCategory.LEARNING ||
+            b.category === BadgeCategory.QUIZ
+          ) {
+            if (cond.includes('LESSON') && allLessonIds.size > 0)
+              matchesCourse = true;
+            else if (cond.includes('QUIZ') && allQuizIds.size > 0)
+              matchesCourse = true;
+            else if (cond.includes('CHAPTER') && allChapterIds.size > 0)
+              matchesCourse = true;
+            else if (cond.includes('MODULE') && allModuleIds.size > 0)
+              matchesCourse = true;
+            else if (cond.includes('SUBJECT') && allSubjectIds.size > 0)
+              matchesCourse = true;
+          }
+        }
+      }
+
+      if (matchesCourse) {
+        courseBadgeIds.push(b.id);
+      }
+    }
+
+    const totalBadge = courseBadgeIds.length;
+
+    // Fetch full badge records and user earned state for these course badges
+    const courseBadges =
+      courseBadgeIds.length > 0
+        ? await this.prisma.badge.findMany({
+            where: { id: { in: courseBadgeIds }, isActive: true },
+            orderBy: [{ category: 'asc' }, { rarity: 'asc' }],
+          })
+        : [];
+
+    const userBadges =
+      courseBadgeIds.length > 0
+        ? await this.prisma.userBadge.findMany({
+            where: {
+              userId,
+              badgeId: { in: courseBadgeIds },
+            },
+          })
+        : [];
+
+    const earnedMap = new Map(userBadges.map((ub) => [ub.badgeId, ub]));
+    const totalEarnedBadge = userBadges.length;
+
+    const items = courseBadges.map((badge) => {
+      const earned = earnedMap.get(badge.id);
+      return {
+        id: badge.id,
+        name: badge.name,
+        slug: badge.slug,
+        description: badge.description || badge.shortDescription || '',
+        shortDescription: badge.shortDescription,
+        icon: badge.icon,
+        background: badge.background,
+        category: badge.category,
+        rarity: badge.rarity,
+        conditionType: badge.conditionType,
+        targetScope: badge.targetScope,
+        targetLabel: badge.targetLabel,
+        xpReward: badge.xpRewardEngagement,
+        isEarned: !!earned,
+        earnedAt: earned?.earnedAt || null,
+      };
+    });
+
+    const courseSpecificTemplates = await this.prisma.certificateTemplate.count(
+      {
+        where: {
+          courseId,
+          status: true,
+        },
+      },
+    );
+
+    const defaultTemplates = await this.prisma.certificateTemplate.count({
+      where: {
+        type: 'course',
+        isDefault: true,
+        status: true,
+        courseId: null,
+      },
+    });
+
+    const totalCertificates =
+      courseSpecificTemplates > 0
+        ? courseSpecificTemplates
+        : defaultTemplates > 0
+          ? defaultTemplates
+          : 0;
+
+    const totalEarnedCertificates =
+      await this.prisma.userCompletionCertificate.count({
+        where: {
+          userId,
+          courseId,
+        },
+      });
+
+    return {
+      courseId,
+      totalBadge,
+      totalBadges: totalBadge,
+      totalEarnedBadge,
+      totalEarnedBadges: totalEarnedBadge,
+      totalCertificates,
+      totalCerticates: totalCertificates,
+      totalEarnedCertificates,
+      badges: {
+        earned: totalEarnedBadge,
+        total: totalBadge,
+      },
+      certificates: {
+        earned: totalEarnedCertificates,
+        total: totalCertificates,
+      },
+      items,
+      badgesList: items,
+    };
   }
 }

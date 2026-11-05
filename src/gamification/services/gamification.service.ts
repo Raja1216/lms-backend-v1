@@ -278,6 +278,9 @@ export class GamificationService {
         currentDays: streakInfo.currentStreak,
         longestDays: streakInfo.longestStreak,
         completedToday: streakInfo.completedToday,
+        lastActivityDate: streakInfo.lastQualifiedActivityDate,
+        freezeTokensAvailable: streakInfo.freezeTokensAvailable,
+        isFrozen: streakInfo.isFrozen ?? false,
       },
       badges: {
         totalEarned: badges.filter((b) => b.isEarned).length,
@@ -287,9 +290,10 @@ export class GamificationService {
     };
   }
 
-  async getOrCreateWallet(userId: number): Promise<UserXpWallet> {
+  async getOrCreateWallet(userId: number): Promise<any> {
     let wallet = await this.prisma.userXpWallet.findUnique({
       where: { userId },
+      include: { currentLevel: true },
     });
 
     if (!wallet) {
@@ -301,6 +305,7 @@ export class GamificationService {
           totalXp: 0,
           currentLevelId: 1,
         },
+        include: { currentLevel: true },
       });
     }
 

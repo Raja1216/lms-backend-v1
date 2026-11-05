@@ -7,6 +7,10 @@ import {
 } from '../certicate-generator/certicate-generator.service';
 
 import { ActivityLogService } from 'src/activity-log/activity-log.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { GamificationDomainEvent } from '../../gamification/events/gamification.event';
+import { GamificationEventKey } from '../../gamification/events/gamification-event.keys';
+import { XpSourceType } from '../../generated/prisma/client';
 
 @Injectable()
 export class CertificateIssuanceService {
@@ -16,7 +20,8 @@ export class CertificateIssuanceService {
     private readonly prisma: PrismaService,
     private readonly generator: CertificateGeneratorService,
     private readonly activityLogService: ActivityLogService,
-  ) { }
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async checkAndIssueCourseCompletion(
     userId: number,
@@ -81,9 +86,9 @@ export class CertificateIssuanceService {
     userId: number,
     quizId: number,
     quizAttemptId: number,
-    passed: boolean,
+    _passed: boolean,
   ): Promise<void> {
-    // if (!passed) return; // Optionally only issue certs for passed attempts
+    void _passed;
     console.log(
       `Checking quiz cert issuance for user ${userId} on quiz ${quizId} attempt ${quizAttemptId}`,
     );
@@ -176,7 +181,12 @@ export class CertificateIssuanceService {
     const [user, course] = await Promise.all([
       this.prisma.user.findUnique({
         where: { id: userId },
-        select: { name: true, schoolName: true, classGrade: true, section: true },
+        select: {
+          name: true,
+          schoolName: true,
+          classGrade: true,
+          section: true,
+        },
       }),
       this.prisma.course.findUnique({
         where: { id: courseId },
@@ -209,8 +219,7 @@ export class CertificateIssuanceService {
           courseName: course.title,
           completionDate: new Date().toISOString().split('T')[0],
           certificateId,
-          schoolName:
-            user.schoolName || '',
+          schoolName: user.schoolName || '',
           className: user.classGrade ?? course.grade ?? '',
           grade: course.grade ?? '',
           teacherRemarks: '',
@@ -240,9 +249,39 @@ export class CertificateIssuanceService {
     });
 
     try {
-      await this.activityLogService.logActivity(userId, 'Certificate Generated', courseId);
+      await this.activityLogService.logActivity(
+        userId,
+        'Certificate Generated',
+        courseId,
+      );
     } catch (err) {
-      this.logger.error('Failed to log Certificate Generated activity for course', err);
+      this.logger.error(
+        'Failed to log Certificate Generated activity for course',
+        err,
+      );
+    }
+
+    try {
+      this.eventEmitter.emit(
+        'gamification.event',
+        new GamificationDomainEvent({
+          userId,
+          eventKey: GamificationEventKey.COURSE_COMPLETED,
+          sourceType: XpSourceType.COURSE,
+          sourceId: courseId,
+          courseId,
+          metadata: {
+            courseTitle: course.title,
+            certificateNumber: certificateId,
+          },
+        }),
+      );
+    } catch (err: unknown) {
+      const e = err instanceof Error ? err : new Error(String(err));
+      this.logger.error(
+        'Failed to emit COURSE_COMPLETED gamification event',
+        e.stack,
+      );
     }
 
     this.logger.log(
@@ -592,7 +631,8 @@ export class CertificateIssuanceService {
             Number(attempt.totalMarks),
           ),
           teacherRemarks: '',
-          institutionName: user.institutionMembers?.[0]?.institution?.name || '',
+          institutionName:
+            user.institutionMembers?.[0]?.institution?.name || '',
         };
         fileResult = await this.generator.generateDynamicCertificate(
           dynamicData,
@@ -619,11 +659,19 @@ export class CertificateIssuanceService {
     });
 
     try {
-      await this.activityLogService.logActivity(userId, 'Certificate Generated', courseId, {
-        quizSubmissionId: quizAttemptId,
-      });
+      await this.activityLogService.logActivity(
+        userId,
+        'Certificate Generated',
+        courseId,
+        {
+          quizSubmissionId: quizAttemptId,
+        },
+      );
     } catch (err) {
-      this.logger.error('Failed to log Certificate Generated activity for quiz', err);
+      this.logger.error(
+        'Failed to log Certificate Generated activity for quiz',
+        err,
+      );
     }
 
     this.logger.log(
@@ -669,9 +717,9 @@ export class CertificateIssuanceService {
       }),
       courseId
         ? this.prisma.course.findUnique({
-          where: { id: courseId },
-          select: { title: true, grade: true },
-        })
+            where: { id: courseId },
+            select: { title: true, grade: true },
+          })
         : null,
     ]);
 
@@ -685,7 +733,8 @@ export class CertificateIssuanceService {
 
     const dynamicData = {
       studentName: customData?.studentName || user.name || 'Student',
-      courseName: customData?.courseName || course?.title || 'Certification Course',
+      courseName:
+        customData?.courseName || course?.title || 'Certification Course',
       examName: customData?.examName || 'Assessment',
       projectName: customData?.projectName || '',
       completionDate: new Date().toISOString().split('T')[0],
@@ -695,7 +744,8 @@ export class CertificateIssuanceService {
         user.institutionMembers?.[0]?.institution?.name ||
         user.schoolName ||
         '',
-      className: customData?.className || user.classGrade || course?.grade || '',
+      className:
+        customData?.className || user.classGrade || course?.grade || '',
       grade: customData?.grade || '',
       marks: customData?.marks || '',
       teacherRemarks: customData?.teacherRemarks || '',

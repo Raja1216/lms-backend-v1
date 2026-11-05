@@ -323,17 +323,17 @@ export class ProjectService {
     userId: number,
     paginationDto: PaginationDto,
   ) {
-    const course = await this.prisma.course.findUnique({
-      where: { slug: courseSlug },
+    const isNumericId = !isNaN(Number(courseSlug));
+    const course = await this.prisma.course.findFirst({
+      where: {
+        OR: [
+          { slug: courseSlug },
+          ...(isNumericId ? [{ id: Number(courseSlug) }] : []),
+        ],
+        status: true,
+      },
     });
     if (!course) {
-      throw new NotFoundException('Course not found');
-    }
-    // If user is not enrolled in the course, they should not see any projects
-    const enrollment = await this.prisma.userEnrolledCourse.findFirst({
-      where: { courseId: course.id, userId },
-    });
-    if (!enrollment) {
       throw new NotFoundException('Course not found');
     }
     const { page = 1, limit = 10 } = paginationDto;
@@ -642,13 +642,16 @@ export class ProjectService {
             className: student.classGrade ?? course.grade ?? '',
             schoolName: student.schoolName ?? '',
           };
-          fileResult = await this.certificateGenerator.generateDynamicCertificate(
-            dynamicData,
-            template,
-          );
+          fileResult =
+            await this.certificateGenerator.generateDynamicCertificate(
+              dynamicData,
+              template,
+            );
         } else {
           fileResult =
-            await this.certificateGenerator.generateProjectCertificate(certArgs);
+            await this.certificateGenerator.generateProjectCertificate(
+              certArgs,
+            );
         }
       } else {
         fileResult =

@@ -28,10 +28,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     else if (exception instanceof HttpException) {
       statusCode = exception.getStatus();
       const response = exception.getResponse();
-      message =
-        typeof response === 'string'
-          ? response
-          : (response as any)?.message ?? message;
+      if (typeof response === 'string') {
+        message = response;
+      } else if (typeof response === 'object' && response !== null) {
+        const resObj = response as Record<string, unknown>;
+        if (typeof resObj.message === 'string') {
+          message = resObj.message;
+        } else if (Array.isArray(resObj.message)) {
+          message = resObj.message.join(', ');
+        } else if (resObj.status === 'validation_error') {
+          message = 'Validation failed';
+        } else {
+          message = exception.message || message;
+        }
+      } else {
+        message = exception.message || message;
+      }
     }
 
     // Prisma errors
@@ -53,12 +65,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // JWT errors
-    else if ((exception as any)?.name === 'JsonWebTokenError') {
-      statusCode = 401;
-      message = 'Invalid token';
-    } else if ((exception as any)?.name === 'TokenExpiredError') {
-      statusCode = 401;
-      message = 'Token expired';
+    else if (
+      typeof exception === 'object' &&
+      exception !== null &&
+      'name' in exception
+    ) {
+      const errName = (exception as { name?: string }).name;
+      if (errName === 'JsonWebTokenError') {
+        statusCode = 401;
+        message = 'Invalid token';
+      } else if (errName === 'TokenExpiredError') {
+        statusCode = 401;
+        message = 'Token expired';
+      }
     }
 
     if (process.env.NODE_ENV !== 'production') {

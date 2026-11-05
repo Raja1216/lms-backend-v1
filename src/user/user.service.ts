@@ -7,7 +7,9 @@ import {
 import { PrismaService } from 'src/prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { Course, User, UserType } from 'src/generated/prisma/browser';
+import { Prisma } from 'src/generated/prisma/client';
 import { PaginationDto } from 'src/shared/dto/pagination-dto';
+import { createPagedResponse, PagedResponse } from 'src/shared/create-paged-response';
 import { GetSubmissionCertificatesDto } from './dto/get-submission-certificates.dto';
 import * as ExcelJS from 'exceljs';
 import { take } from 'rxjs/internal/operators/take';
@@ -495,13 +497,13 @@ export class UserService {
       throw new NotFoundException('User not found');
     }
 
-    // Calculate total XP, EX, PX and level from wallet or fallback to legacy
+    // Calculate total XP, EX, PX and level from user_xp_wallets
     const wallet = user.xpWallet;
     const legacyXp = user.xpEarned?.reduce((sum, xp) => sum + xp.xpPoints, 0) || 0;
     const totalXP = wallet ? wallet.totalXp : legacyXp;
-    const engagementXp = wallet ? wallet.engagementXp : Math.floor(totalXP * 0.4);
-    const performanceXp = wallet ? wallet.performanceXp : Math.floor(totalXP * 0.6);
-    const level = wallet?.currentLevel?.levelNumber || Math.floor(totalXP / 1000) + 1;
+    const engagementXp = wallet ? wallet.engagementXp : 0;
+    const performanceXp = wallet ? wallet.performanceXp : 0;
+    const level = wallet?.currentLevel?.levelNumber || 1;
     const levelTitle = wallet?.currentLevel?.title || 'Beginner';
 
     return {
@@ -758,73 +760,41 @@ export class UserService {
     };
   }
 
-  async getUserBadges(userId: number) {
-    // Mock badges based on XP and achievements
-    const user = await this.getUserProfile(userId);
+  async getUserBadges(
+    userId: number,
+    paginationDto?: PaginationDto,
+  ): Promise<PagedResponse<any>> {
+    const page = paginationDto?.page ? Number(paginationDto.page) : 1;
+    const limit = paginationDto?.limit ? Number(paginationDto.limit) : 10;
+    const skip = (page - 1) * limit;
 
-    const badges: Badge[] = [];
+    const where: Prisma.UserBadgeWhereInput = {
+      userId,
+      ...(paginationDto?.keyword
+        ? {
+            badge: {
+              name: {
+                contains: paginationDto.keyword,
+              },
+            },
+          }
+        : {}),
+    };
 
-    // Award badges based on XP
-    if (user.totalXP >= 100) {
-      badges.push({
-        id: 'first-steps',
-        name: 'First Steps',
-        description: 'Earned 100 XP',
-        earnedAt: user.createdAt,
-      });
-    }
-    if (user.totalXP >= 500) {
-      badges.push({
-        id: 'quick-learner',
-        name: 'Quick Learner',
-        description: 'Earned 500 XP',
-        earnedAt: new Date(),
-      });
-    }
-    if (user.totalXP >= 1000) {
-      badges.push({
-        id: 'week-warrior',
-        name: 'Week Warrior',
-        description: 'Earned 1000 XP',
-        earnedAt: new Date(),
-      });
-    }
-    if (user.totalXP >= 2000) {
-      badges.push({
-        id: 'chapter-master',
-        name: 'Chapter Master',
-        description: 'Earned 2000 XP',
-        earnedAt: new Date(),
-      });
-    }
-    if (user.level >= 5) {
-      badges.push({
-        id: 'test-ace',
-        name: 'Test Ace',
-        description: 'Reached Level 5',
-        earnedAt: new Date(),
-      });
-    }
+    const [total, userBadges] = await Promise.all([
+      this.prisma.userBadge.count({ where }),
+      this.prisma.userBadge.findMany({
+        where,
+        include: {
+          badge: true,
+        },
+        orderBy: { earnedAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    // Get quiz attempts to count perfect scores
-    const quizAttempts = await this.prisma.quizAttempt.findMany({
-      where: { userId },
-    });
-
-    const perfectScores = quizAttempts.filter(
-      (attempt) => Number(attempt.obtainedMarks) === Number(attempt.totalMarks),
-    ).length;
-
-    if (perfectScores >= 3) {
-      badges.push({
-        id: 'perfect-score',
-        name: 'Perfect Score',
-        description: 'Achieved 3 perfect quiz scores',
-        earnedAt: new Date(),
-      });
-    }
-
-    return badges;
+    return createPagedResponse(userBadges, page, limit, total);
   }
 
   async getUserCertificates(userId: number) {

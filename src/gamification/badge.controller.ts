@@ -8,11 +8,13 @@ import {
   Patch,
   Post,
   Query,
+  Req,
   UseGuards,
 } from '@nestjs/common';
 
 import { AuthGuard } from '@nestjs/passport';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { User } from 'src/generated/prisma/browser';
 
 import { BadgeService } from './services/badge.service';
 
@@ -37,6 +39,129 @@ export class BadgeController {
   @Permissions('badges-read')
   async findAll(@Query() query: ListBadgeDto) {
     const data = await this.badgeService.listBadgesAdmin(query);
+
+    return {
+      status: true,
+      data,
+    };
+  }
+
+  /**
+   * GET /badge/course-status/:courseId
+   */
+  @Get('course-status/:courseId')
+  async getCourseRewardsStatus(
+    @Param('courseId') courseId: string,
+    @Req() req: { user: User },
+  ) {
+    const data = await this.badgeService.getCourseRewardsStatus(
+      courseId,
+      req.user.id,
+    );
+
+    return {
+      status: true,
+      data,
+    };
+  }
+
+  /**
+   * GET /badge/target/course/:id
+   */
+  @Get('target/course/:id')
+  @Permissions('badges-read')
+  async getCourseTargetHierarchy(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.badgeService.getCourseTargetHierarchy(id);
+
+    return {
+      status: true,
+      data,
+    };
+  }
+
+  /**
+   * GET /badge/target/subject/:id
+   */
+  @Get('target/subject/:id')
+  @Permissions('badges-read')
+  async getSubjectTargetHierarchy(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.badgeService.getSubjectTargetHierarchy(id);
+
+    return {
+      status: true,
+      data,
+    };
+  }
+
+  /**
+   * GET /badge/target/module/:id
+   */
+  @Get('target/module/:id')
+  @Permissions('badges-read')
+  async getModuleTargetHierarchy(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.badgeService.getModuleTargetHierarchy(id);
+
+    return {
+      status: true,
+      data,
+    };
+  }
+
+  /**
+   * GET /badge/target/chapter/:id
+   */
+  @Get('target/chapter/:id')
+  @Permissions('badges-read')
+  async getChapterTargetHierarchy(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.badgeService.getChapterTargetHierarchy(id);
+
+    return {
+      status: true,
+      data,
+    };
+  }
+
+  /**
+   * GET /badge/target/lesson/:id
+   */
+  @Get('target/lesson/:id')
+  @Permissions('badges-read')
+  async getLessonTargetHierarchy(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.badgeService.getLessonTargetHierarchy(id);
+
+    return {
+      status: true,
+      data,
+    };
+  }
+
+  /**
+   * GET /badge/target/quiz/:id
+   */
+  @Get('target/quiz/:id')
+  @Permissions('badges-read')
+  async getQuizTargetHierarchy(@Param('id', ParseIntPipe) id: number) {
+    const data = await this.badgeService.getQuizTargetHierarchy(id);
+
+    return {
+      status: true,
+      data,
+    };
+  }
+
+  /**
+   * GET /badge/target/resolve?trigger=...&targetId=...
+   */
+  @Get('target/resolve')
+  @Permissions('badges-read')
+  async resolveTargetHierarchy(
+    @Query('trigger') trigger: string,
+    @Query('targetId') targetId: string,
+  ) {
+    const data = await this.badgeService.resolveTargetHierarchy(
+      trigger,
+      targetId,
+    );
 
     return {
       status: true,

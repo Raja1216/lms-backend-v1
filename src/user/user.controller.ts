@@ -302,16 +302,17 @@ export class UserController {
   @ApiOperation({ summary: 'Get user badges' })
   async getBadges(
     @Request() req: any,
+    @Query() query: PaginationDto,
     @Res() res: Response,
     @Next() next: NextFunction,
   ) {
     try {
-      const badges = await this.svc.getUserBadges(req.user.id);
+      const pagedResponse = await this.svc.getUserBadges(req.user.id, query);
       return successResponse(
         res,
         200,
         'Badges retrieved successfully',
-        badges,
+        pagedResponse,
         null,
       );
     } catch (error) {
