@@ -200,8 +200,8 @@ model User {
   userCompletionCertificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
   pendingRegistrations       PendingRegistration[]
   createdGroups              Group[]                     @relation("GroupCreator")
-  groupMemberships           GroupUser[]               @relation("GroupUserMember")
-  eventUser                  EventUsers[]               @relation("EventUsers")
+  groupMemberships           GroupUser[]                 @relation("GroupUserMember")
+  eventUser                  EventUsers[]                @relation("EventUsers")
   xpWallet                   UserXpWallet?
   xpTransactions             XpTransaction[]
   userBadges                 UserBadge[]
@@ -269,14 +269,14 @@ model Course {
   currentPrice               Decimal?                    @db.Decimal(10, 2)
   description                String                      @db.Text
   isFeatured                 Boolean                     @default(false)
-  isLaunch                   Boolean                     @default(false)                      
-  launchDate                 DateTime?                                          
-  previewVideoUrl            String?                     @db.Text                      
-  previewImageUrl            String?                     @db.Text                         
-  shortTagline               String?                     @db.Text                         
-  language                   String?                     @default("English")                          
-  whatYouLearn               Json?                                          
-  requirements               Json?                                           
+  isLaunch                   Boolean                     @default(false)
+  launchDate                 DateTime?
+  previewVideoUrl            String?                     @db.Text
+  previewImageUrl            String?                     @db.Text
+  shortTagline               String?                     @db.Text
+  language                   String?                     @default("English")
+  whatYouLearn               Json?
+  requirements               Json?
   rating                     Float?                      @default(5)
   status                     Boolean                     @default(true)
   createdAt                  DateTime                    @default(now())
@@ -290,7 +290,7 @@ model Course {
   projects                   Project[]                   @relation("CourseProjects")
   gradeScale                 GradeScale?                 @relation("CourseGradeScale")
   institutionCourses         InstitutionCourse[]         @relation("InstitutionCourses")
-  EventSchoolCourses         EventSchoolCourses[]         @relation("EventSchoolCourses")
+  EventSchoolCourses         EventSchoolCourses[]        @relation("EventSchoolCourses")
   live_classes               live_classes[]
   userCompletionCertificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
   pendingRegistrations       PendingRegistration[]
@@ -299,11 +299,9 @@ model Course {
   create_institution_id      Int?
   createdInstitution         Institution?                @relation("InstitutionCreatedCourses", fields: [create_institution_id], references: [id], onDelete: SetNull)
 
-
   @@index([create_institution_id])
   @@map("courses")
 }
-
 
 model CourseCategory {
   id         Int @id @default(autoincrement())
@@ -319,16 +317,13 @@ model CourseCategory {
   @@unique([courseId, categoryId])
   @@index([courseId])
   @@index([categoryId])
-
   @@map("course_categories")
 }
 
-
 model PendingRegistration {
-
   id Int @id @default(autoincrement())
 
-  userId           Int?
+  userId Int?
 
   orderNumber String @unique
 
@@ -348,7 +343,7 @@ model PendingRegistration {
 
   classGrade String?
 
-  schoolName    String?
+  schoolName String?
 
   city String?
 
@@ -365,15 +360,12 @@ model PendingRegistration {
   updatedAt DateTime @updatedAt
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user             User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([email])
-
   @@index([mobile])
-
   @@map("pending_registrations")
 }
-
 
 model CourseTeacher {
   id        Int      @id @default(autoincrement())
@@ -417,7 +409,6 @@ model CourseSubject {
   subject   Subject  @relation("SubjectCourses", fields: [subjectId], references: [id])
 
   @@index([courseId, subjectId])
-
   @@map("course_subjects")
 }
 
@@ -453,7 +444,6 @@ model SubjectChapter {
   chapter   Chapter  @relation("SubjectChapters", fields: [chapterId], references: [id])
 
   @@index([subjectId, chapterId])
-
   @@map("subject_chapters")
 }
 
@@ -595,7 +585,6 @@ model QuizAttempt {
   userCompletionCretificates UserCompletionCertificate[] @relation("UserCompletionCertificates")
 
   @@index([userId, quizId])
-
   @@map("quiz_attempts")
 }
 
@@ -640,7 +629,6 @@ model Question {
   options          QuestionOption[]  @relation("QuestionOptions")
 
   @@index([quizId])
-
   @@map("questions")
 }
 
@@ -849,14 +837,14 @@ model ChapterQuiz {
 }
 
 model Project {
-  id             Int            @id @default(autoincrement())
-  courseId       Int
-  subjectId      Int?
-  moduleId       Int?
-  chapterId      Int?
-  lessonId       Int?
+  id        Int  @id @default(autoincrement())
+  courseId  Int
+  subjectId Int?
+  moduleId  Int?
+  chapterId Int?
+  lessonId  Int?
 
-  level          ProjectLevel   @default(course)
+  level ProjectLevel @default(course)
 
   createdBy      Int
   title          String
@@ -867,10 +855,10 @@ model Project {
   maxMarks       Int
   gradingMethod  GradingMethod  @default(manual)
 
-  weightPercent  Decimal        @default(0) @db.Decimal(5, 2)
-  allowLate      Boolean        @default(false)
-  maxFileSizeMb  Int            @default(50)
-  status         Boolean        @default(true)
+  weightPercent Decimal @default(0) @db.Decimal(5, 2)
+  allowLate     Boolean @default(false)
+  maxFileSizeMb Int     @default(50)
+  status        Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -883,9 +871,9 @@ model Project {
 
   creator User @relation("TeacherProjects", fields: [createdBy], references: [id])
 
-  rubrics              ProjectRubric[]             @relation("ProjectRubrics")
-  submissions          ProjectSubmission[]         @relation("ProjectSubmissions")
-  certificateTemplates CertificateTemplate[]       @relation("ProjectCertificateTemplates")
+  rubrics              ProjectRubric[]       @relation("ProjectRubrics")
+  submissions          ProjectSubmission[]   @relation("ProjectSubmissions")
+  certificateTemplates CertificateTemplate[] @relation("ProjectCertificateTemplates")
 
   @@index([courseId])
   @@index([subjectId])
@@ -893,7 +881,6 @@ model Project {
   @@index([chapterId])
   @@index([lessonId])
   @@index([level])
-
   @@map("projects")
 }
 
@@ -1046,7 +1033,7 @@ model Certificate {
   certificateNumber   String           @unique
   userId              Int
   submissionId        Int?             @unique
-  projectSubmissionId Int?             
+  projectSubmissionId Int?
   type                CertificateType
   filePath            String?
   fileUrl             String?
@@ -1086,19 +1073,18 @@ model Institution {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner              User                 @relation("InstitutionOwner", fields: [ownerId], references: [id], onDelete: Cascade)
-  members            InstitutionMember[]  @relation("InstitutionMembers")
-  institutionCourses InstitutionCourse[]  @relation("InstitutionCourses")
-  enrollments        UserEnrolledCourse[] @relation("InstitutionEnrollments")
-  privateGroups      Group[]              @relation("InstitutionPrivateGroups")
-  groupAssignments   GroupInstitution[]
-  groupUserSources   GroupUser[]          @relation("GroupUserSourceInstitution")
+  owner                User                  @relation("InstitutionOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members              InstitutionMember[]   @relation("InstitutionMembers")
+  institutionCourses   InstitutionCourse[]   @relation("InstitutionCourses")
+  enrollments          UserEnrolledCourse[]  @relation("InstitutionEnrollments")
+  privateGroups        Group[]               @relation("InstitutionPrivateGroups")
+  groupAssignments     GroupInstitution[]
+  groupUserSources     GroupUser[]           @relation("GroupUserSourceInstitution")
   certificateTemplates CertificateTemplate[] @relation("InstitutionCertificateTemplates")
-  createdCourses     Course[]             @relation("InstitutionCreatedCourses")
+  createdCourses       Course[]              @relation("InstitutionCreatedCourses")
 
   @@map("institutions")
 }
-
 
 model InstitutionMember {
   id            Int      @id @default(autoincrement())
@@ -1109,8 +1095,8 @@ model InstitutionMember {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  institution Institution @relation("InstitutionMembers", fields: [institutionId], references: [id], onDelete: Cascade)
-  user        User        @relation("InstitutionMemberships", fields: [userId], references: [id], onDelete: Cascade)
+  institution Institution           @relation("InstitutionMembers", fields: [institutionId], references: [id], onDelete: Cascade)
+  user        User                  @relation("InstitutionMemberships", fields: [userId], references: [id], onDelete: Cascade)
   role        InstitutionMemberRole @default(STUDENT)
 
   @@unique([institutionId, userId])
@@ -1274,7 +1260,6 @@ model ShopItemCategory {
   @@unique([shopItemId, categoryId])
   @@index([shopItemId])
   @@index([categoryId])
-
   @@map("shop_item_categories")
 }
 
@@ -1357,10 +1342,10 @@ model order_items {
 }
 
 model Category {
-  id          Int      @id @default(autoincrement())
+  id          Int     @id @default(autoincrement())
   name        String
-  slug        String   @unique
-  description String?  @db.Text
+  slug        String  @unique
+  description String? @db.Text
   image       String?
 
   parentId Int?
@@ -1380,31 +1365,30 @@ model Category {
   @@index([parentId])
   @@index([status])
   @@index([sortOrder])
-
   @@map("categories")
 }
 
 model Group {
-  id                          Int       @id @default(autoincrement())
-  uuid                        String    @unique @default(uuid())
-  name                        String
-  slug                        String    @unique
-  description                 String?   @db.Text
+  id          Int     @id @default(autoincrement())
+  uuid        String  @unique @default(uuid())
+  name        String
+  slug        String  @unique
+  description String? @db.Text
 
-  type                        GroupType @default(ADMIN_PUBLIC)
+  type GroupType @default(ADMIN_PUBLIC)
 
-  ownerInstitutionId          Int?
-  createdById                 Int
+  ownerInstitutionId Int?
+  createdById        Int
 
-  allowInstituteManageMembers Boolean   @default(true)
-  status                      Boolean   @default(true)
+  allowInstituteManageMembers Boolean @default(true)
+  status                      Boolean @default(true)
 
-  createdAt                   DateTime  @default(now())
-  updatedAt                   DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  createdBy User @relation("GroupCreator",fields: [createdById],references: [id],onDelete: Restrict)
+  createdBy User @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Restrict)
 
-  ownerInstitution Institution? @relation("InstitutionPrivateGroups",fields: [ownerInstitutionId],references: [id],onDelete: Cascade)
+  ownerInstitution Institution? @relation("InstitutionPrivateGroups", fields: [ownerInstitutionId], references: [id], onDelete: Cascade)
 
   institutions GroupInstitution[]
   users        GroupUser[]
@@ -1412,7 +1396,6 @@ model Group {
   @@index([type])
   @@index([ownerInstitutionId])
   @@index([status])
-
   @@map("groups")
 }
 
@@ -1423,90 +1406,87 @@ model GroupInstitution {
   addedById     Int?
   createdAt     DateTime @default(now())
 
-  group Group @relation(fields: [groupId],references: [id],onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
-  institution Institution @relation(fields: [institutionId],references: [id],onDelete: Cascade)
+  institution Institution @relation(fields: [institutionId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, institutionId])
   @@index([institutionId])
-
   @@map("group_institutions")
 }
 
 model GroupUser {
-  id                  Int             @id @default(autoincrement())
-  groupId             Int
-  userId              Int
+  id      Int @id @default(autoincrement())
+  groupId Int
+  userId  Int
 
   source              GroupUserSource
   sourceInstitutionId Int?
 
-  sourceKey           String          @db.VarChar(100)
-  addedById           Int?
+  sourceKey String @db.VarChar(100)
+  addedById Int?
 
-  createdAt           DateTime        @default(now())
+  createdAt DateTime @default(now())
 
-  group Group @relation(fields: [groupId],references: [id],onDelete: Cascade)
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
 
-  user User @relation("GroupUserMember",fields: [userId],references: [id],onDelete: Cascade)
+  user User @relation("GroupUserMember", fields: [userId], references: [id], onDelete: Cascade)
 
-  sourceInstitution Institution? @relation("GroupUserSourceInstitution",fields: [sourceInstitutionId],references: [id],onDelete: Cascade)
+  sourceInstitution Institution? @relation("GroupUserSourceInstitution", fields: [sourceInstitutionId], references: [id], onDelete: Cascade)
 
   @@unique([groupId, userId, sourceKey])
-
   @@index([groupId])
   @@index([userId])
   @@index([sourceInstitutionId])
-
   @@map("group_users")
 }
 
 model CertificateTemplate {
-  id                Int      @id @default(autoincrement())
-  uuid              String   @unique @default(uuid())
-  title             String
-  description       String?  @db.Text
-  type              String   @default("course") // "course" | "quiz" | "project" | "all"
-  
-  backgroundUrl     String?  @db.Text
-  logoUrl           String?  @db.Text
-  secondaryLogoUrl  String?  @db.Text
-  signatureUrl      String?  @db.Text
-  signatoryName     String?
-  signatoryTitle    String?
-  
-  primaryColor      String?  @default("#7a00ff")
-  secondaryColor    String?  @default("#ff5a00")
-  textColor         String?  @default("#1f2937")
-  fontFamily        String?  @default("Inter, Arial, sans-serif")
-  
-  headerText        String?  @default("CERTIFICATE OF COMPLETION")
-  subHeaderText     String?  @default("PROUDLY PRESENTED TO")
-  bodyText          String?  @db.Text
-  footerText        String?  @db.Text
-  
-  showQrCode        Boolean  @default(true)
-  showGrade         Boolean  @default(true)
-  showScore         Boolean  @default(true)
-  showIssueDate     Boolean  @default(true)
-  showCertificateId Boolean  @default(true)
-  
-  customHtml        String?  @db.Text
-  
-  institutionId     Int?
-  courseId          Int?
-  quizId            Int?
-  projectId         Int?
-  isDefault         Boolean  @default(false)
-  status            Boolean  @default(true)
-  
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id          Int     @id @default(autoincrement())
+  uuid        String  @unique @default(uuid())
+  title       String
+  description String? @db.Text
+  type        String  @default("course") // "course" | "quiz" | "project" | "all"
 
-  institution       Institution? @relation("InstitutionCertificateTemplates", fields: [institutionId], references: [id], onDelete: Cascade)
-  course            Course?      @relation("CourseCertificateTemplates", fields: [courseId], references: [id], onDelete: SetNull)
-  quiz              Quiz?        @relation("QuizCertificateTemplates", fields: [quizId], references: [id], onDelete: SetNull)
-  project           Project?     @relation("ProjectCertificateTemplates", fields: [projectId], references: [id], onDelete: SetNull)
+  backgroundUrl    String? @db.Text
+  logoUrl          String? @db.Text
+  secondaryLogoUrl String? @db.Text
+  signatureUrl     String? @db.Text
+  signatoryName    String?
+  signatoryTitle   String?
+
+  primaryColor   String? @default("#7a00ff")
+  secondaryColor String? @default("#ff5a00")
+  textColor      String? @default("#1f2937")
+  fontFamily     String? @default("Inter, Arial, sans-serif")
+
+  headerText    String? @default("CERTIFICATE OF COMPLETION")
+  subHeaderText String? @default("PROUDLY PRESENTED TO")
+  bodyText      String? @db.Text
+  footerText    String? @db.Text
+
+  showQrCode        Boolean @default(true)
+  showGrade         Boolean @default(true)
+  showScore         Boolean @default(true)
+  showIssueDate     Boolean @default(true)
+  showCertificateId Boolean @default(true)
+
+  customHtml String? @db.Text
+
+  institutionId Int?
+  courseId      Int?
+  quizId        Int?
+  projectId     Int?
+  isDefault     Boolean @default(false)
+  status        Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  institution Institution? @relation("InstitutionCertificateTemplates", fields: [institutionId], references: [id], onDelete: Cascade)
+  course      Course?      @relation("CourseCertificateTemplates", fields: [courseId], references: [id], onDelete: SetNull)
+  quiz        Quiz?        @relation("QuizCertificateTemplates", fields: [quizId], references: [id], onDelete: SetNull)
+  project     Project?     @relation("ProjectCertificateTemplates", fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([institutionId])
   @@index([courseId])
@@ -1676,42 +1656,42 @@ model UserLevelHistory {
   triggerTransactionId Int?
   achievedAt           DateTime @default(now())
 
-  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  fromLevel   GamificationLevel @relation("SourceLevel", fields: [fromLevelId], references: [id])
-  toLevel     GamificationLevel @relation("TargetLevel", fields: [toLevelId], references: [id])
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fromLevel GamificationLevel @relation("SourceLevel", fields: [fromLevelId], references: [id])
+  toLevel   GamificationLevel @relation("TargetLevel", fields: [toLevelId], references: [id])
 
   @@index([userId])
   @@map("user_level_histories")
 }
 
 model Badge {
-  id                   Int           @id @default(autoincrement())
-  name                 String        @db.VarChar(100)
-  slug                 String        @unique @db.VarChar(100)
-  description          String?        @db.Text
-  icon                 String        @db.Text
-  category             BadgeCategory @default(LEARNING)
-  rarity               BadgeRarity   @default(COMMON)
-  conditionType        String        @db.VarChar(80)
-  conditionConfig      Json?
-  xpRewardEngagement   Int           @default(0)
-  xpRewardPerformance  Int           @default(0)
-  isActive             Boolean       @default(true)
+  id                  Int           @id @default(autoincrement())
+  name                String        @db.VarChar(100)
+  slug                String        @unique @db.VarChar(100)
+  description         String?       @db.Text
+  icon                String        @db.Text
+  category            BadgeCategory @default(LEARNING)
+  rarity              BadgeRarity   @default(COMMON)
+  conditionType       String        @db.VarChar(80)
+  conditionConfig     Json?
+  xpRewardEngagement  Int           @default(0)
+  xpRewardPerformance Int           @default(0)
+  isActive            Boolean       @default(true)
 
   // New fields
-  shortDescription     String?       @db.VarChar(255)
-  background           String?       @db.Text
-  targetScope          String        @default("ALL") @db.VarChar(30)
-  targetId             String?       @db.VarChar(100)
-  targetLabel          String?       @db.VarChar(255)
-  targetPath           Json?
-  threshold            Int?
+  shortDescription String? @db.VarChar(255)
+  background       String? @db.Text
+  targetScope      String  @default("ALL") @db.VarChar(30)
+  targetId         String? @db.VarChar(100)
+  targetLabel      String? @db.VarChar(255)
+  targetPath       Json?
+  threshold        Int?
 
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  userBadges           UserBadge[]
-  achievements         Achievement[]
+  userBadges   UserBadge[]
+  achievements Achievement[]
 
   @@index([category])
   @@index([rarity])
@@ -1739,21 +1719,21 @@ model UserBadge {
 }
 
 model Achievement {
-  id                   Int           @id @default(autoincrement())
-  name                 String        @db.VarChar(100)
-  description          String        @db.Text
-  category             BadgeCategory @default(LEARNING)
-  conditionConfig      Json?
-  badgeId              Int?
-  engagementXpReward   Int           @default(0)
-  performanceXpReward  Int           @default(0)
-  isRepeatable         Boolean       @default(false)
-  isActive             Boolean       @default(true)
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  id                  Int           @id @default(autoincrement())
+  name                String        @db.VarChar(100)
+  description         String        @db.Text
+  category            BadgeCategory @default(LEARNING)
+  conditionConfig     Json?
+  badgeId             Int?
+  engagementXpReward  Int           @default(0)
+  performanceXpReward Int           @default(0)
+  isRepeatable        Boolean       @default(false)
+  isActive            Boolean       @default(true)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
-  badge                Badge?            @relation(fields: [badgeId], references: [id], onDelete: SetNull)
-  userAchievements     UserAchievement[]
+  badge            Badge?            @relation(fields: [badgeId], references: [id], onDelete: SetNull)
+  userAchievements UserAchievement[]
 
   @@map("achievements")
 }
@@ -1790,13 +1770,13 @@ model UserStreak {
 }
 
 model StreakHistory {
-  id                    Int      @id @default(autoincrement())
-  userId                Int
-  activityDate          DateTime @db.Date
-  qualifyingAction      String   @db.VarChar(80)
-  sourceId              String?  @db.VarChar(100)
-  awardedBonusXp        Int      @default(0)
-  createdAt             DateTime @default(now())
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  activityDate     DateTime @db.Date
+  qualifyingAction String   @db.VarChar(80)
+  sourceId         String?  @db.VarChar(100)
+  awardedBonusXp   Int      @default(0)
+  createdAt        DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1815,8 +1795,8 @@ model LeaderboardSeason {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
-  snapshots  LeaderboardSnapshot[]
-  leagues    UserLeagueState[]
+  snapshots LeaderboardSnapshot[]
+  leagues   UserLeagueState[]
 
   @@index([status])
   @@index([startDate, endDate])
@@ -1824,15 +1804,15 @@ model LeaderboardSeason {
 }
 
 model LeaderboardSnapshot {
-  id          Int               @id @default(autoincrement())
-  seasonId    Int
-  scopeType   String            @db.VarChar(50) // GLOBAL, INSTITUTION, COURSE, CLASS, BATCH
-  scopeId     Int?
-  metricType  String            @db.VarChar(50) // PERFORMANCE_XP, ENGAGEMENT_XP, TOTAL_XP, MOST_IMPROVED, WEIGHTED
-  rankings    Json              // Array of { rank, userId, score, prevRank }
-  snapshotAt  DateTime          @default(now())
+  id         Int      @id @default(autoincrement())
+  seasonId   Int
+  scopeType  String   @db.VarChar(50) // GLOBAL, INSTITUTION, COURSE, CLASS, BATCH
+  scopeId    Int?
+  metricType String   @db.VarChar(50) // PERFORMANCE_XP, ENGAGEMENT_XP, TOTAL_XP, MOST_IMPROVED, WEIGHTED
+  rankings   Json // Array of { rank, userId, score, prevRank }
+  snapshotAt DateTime @default(now())
 
-  season      LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
+  season LeaderboardSeason @relation(fields: [seasonId], references: [id], onDelete: Cascade)
 
   @@index([seasonId])
   @@index([scopeType, scopeId])
@@ -1881,15 +1861,14 @@ model SystemSetting {
   @@map("system_settings")
 }
 
-
 model ExternalEvents {
-  id          Int          @id @default(autoincrement())
-  slug        String       @unique
-  name        String       
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  name        String
   description String?
-  status      Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  status      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   ExternalEventUsers EventUsers[] @relation("ExternalEventUser")
 
@@ -1897,56 +1876,102 @@ model ExternalEvents {
 }
 
 model EventSchools {
-  id          Int          @id @default(autoincrement())
-  name        String       
+  id          Int     @id @default(autoincrement())
+  name        String
   description String?
-  state       String?
-  board       String?
-  district    String?
-  status      Boolean      @default(true)
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+
+  boardId    Int? @map("board_id")
+  stateId    Int? @map("state_id")
+  districtId Int? @map("district_id")
+
+  status    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  boardRelation EventSchoolBoard? @relation(fields: [boardId], references: [id], onDelete: Restrict)
+
+  stateRelation EventSchoolState? @relation(fields: [stateId], references: [id], onDelete: Restrict)
+
+  districtRelation EventSchoolDistrict? @relation(fields: [districtId], references: [id], onDelete: Restrict)
 
   EventSchoolCourses EventSchoolCourses[] @relation("EventSchoolCourse")
-  EventSchoolUser EventUsers[] @relation("EventSchoolUser")
+  EventSchoolUser    EventUsers[]         @relation("EventSchoolUser")
 
+  @@index([boardId])
+  @@index([stateId])
+  @@index([districtId])
   @@map("event_schools")
 }
 
 model EventSchoolCourses {
-  id                  Int          @id @default(autoincrement())
-  class               String?
-  event_school_id     Int
-  course_id           Int          @unique
-  status              Boolean      @default(true)
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  id              Int      @id @default(autoincrement())
+  class           String?
+  event_school_id Int
+  course_id       Int      @unique
+  status          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  EventSchool EventSchools @relation("EventSchoolCourse",fields: [event_school_id],references: [id],onDelete: Cascade)
-  Course Course @relation("EventSchoolCourses",fields: [course_id],references: [id],onDelete: Cascade)
+  EventSchool EventSchools @relation("EventSchoolCourse", fields: [event_school_id], references: [id], onDelete: Cascade)
+  Course      Course       @relation("EventSchoolCourses", fields: [course_id], references: [id], onDelete: Cascade)
 
   @@index([event_school_id])
   @@index([course_id])
-
   @@map("event_school_courses")
 }
 
 model EventUsers {
-  id                  Int          @id @default(autoincrement())
-  user_id             Int       
-  event_school_id     Int?
-  event_id            Int          
-  status              Boolean      @default(true)
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  id              Int      @id @default(autoincrement())
+  user_id         Int
+  event_school_id Int?
+  event_id        Int
+  status          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  EventSchool EventSchools? @relation("EventSchoolUser",fields: [event_school_id],references: [id],onDelete: Cascade)
-  ExternalEvent ExternalEvents @relation("ExternalEventUser",fields: [event_id],references: [id],onDelete: Cascade)
-  User User @relation("EventUsers",fields: [user_id],references: [id],onDelete: Cascade)
+  EventSchool   EventSchools?  @relation("EventSchoolUser", fields: [event_school_id], references: [id], onDelete: Cascade)
+  ExternalEvent ExternalEvents @relation("ExternalEventUser", fields: [event_id], references: [id], onDelete: Cascade)
+  User          User           @relation("EventUsers", fields: [user_id], references: [id], onDelete: Cascade)
 
   @@index([user_id])
   @@index([event_school_id])
   @@index([event_id])
-
   @@map("event_users")
+}
+
+model EventSchoolBoard {
+  id   Int    @id @default(autoincrement())
+  name String @unique @db.VarChar(150)
+
+  states  EventSchoolState[]
+  schools EventSchools[]
+
+  @@map("event_school_boards")
+}
+
+model EventSchoolState {
+  id      Int    @id @default(autoincrement())
+  name    String @db.VarChar(150)
+  boardId Int    @map("board_id")
+
+  board EventSchoolBoard @relation(fields: [boardId], references: [id], onDelete: Restrict)
+
+  districts EventSchoolDistrict[]
+  schools   EventSchools[]
+
+  @@unique([boardId, name])
+  @@map("event_school_states")
+}
+
+model EventSchoolDistrict {
+  id      Int    @id @default(autoincrement())
+  name    String @db.VarChar(150)
+  stateId Int    @map("state_id")
+
+  state EventSchoolState @relation(fields: [stateId], references: [id], onDelete: Restrict)
+
+  schools EventSchools[]
+
+  @@unique([stateId, name])
+  @@map("event_school_districts")
 }
