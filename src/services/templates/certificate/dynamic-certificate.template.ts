@@ -21,6 +21,22 @@ export interface DynamicCertificateTemplateConfig {
   signatureUrl?: string | null;
   signatoryName?: string | null;
   signatoryTitle?: string | null;
+
+  signature_1?: string | null;
+  signatory_name_1?: string | null;
+  signatory_title_1?: string | null;
+
+  signature_2?: string | null;
+  signatory_name_2?: string | null;
+  signatory_title_2?: string | null;
+
+  signature2Url?: string | null;
+  signatory2Name?: string | null;
+  signatory2Title?: string | null;
+  signature3Url?: string | null;
+  signatory3Name?: string | null;
+  signatory3Title?: string | null;
+
   primaryColor?: string | null;
   secondaryColor?: string | null;
   textColor?: string | null;
@@ -91,11 +107,56 @@ export const dynamicCertificateTemplate = (
   const rawBodyText = config.bodyText && config.bodyText.trim() ? config.bodyText : defaultBody;
   const interpolatedBody = interpolateCertificateTemplate(rawBodyText, data, config);
 
-  const logoSrc = config.logoUrl || defaultAssets?.logo || defaultAssets?.edudigm_logo || '';
-  const secondaryLogoSrc = config.secondaryLogoUrl || '';
-  const signatureSrc = config.signatureUrl || defaultAssets?.signature || '';
-  const signatoryName = config.signatoryName || 'Authorized Signatory';
-  const signatoryTitle = config.signatoryTitle || 'Dean of Academic Excellence';
+  const logoSrc = config.logoUrl && config.logoUrl.trim() ? config.logoUrl.trim() : '';
+  const secondaryLogoSrc = config.secondaryLogoUrl && config.secondaryLogoUrl.trim() ? config.secondaryLogoUrl.trim() : '';
+
+  // Up to 3 Signatures
+  const sig1Url = config.signatureUrl && config.signatureUrl.trim() ? config.signatureUrl.trim() : '';
+  const sig1Name = config.signatoryName && config.signatoryName.trim() ? config.signatoryName.trim() : '';
+  const sig1Title = config.signatoryTitle && config.signatoryTitle.trim() ? config.signatoryTitle.trim() : '';
+
+  const sig2Url = (config.signature_1 || config.signature2Url)?.trim() || '';
+  const sig2Name = (config.signatory_name_1 || config.signatory2Name)?.trim() || '';
+  const sig2Title = (config.signatory_title_1 || config.signatory2Title)?.trim() || '';
+
+  const sig3Url = (config.signature_2 || config.signature3Url)?.trim() || '';
+  const sig3Name = (config.signatory_name_2 || config.signatory3Name)?.trim() || '';
+  const sig3Title = (config.signatory_title_2 || config.signatory3Title)?.trim() || '';
+
+  const hasSig1 = !!(sig1Url || sig1Name || sig1Title);
+  const hasSig2 = !!(sig2Url || sig2Name || sig2Title);
+  const hasSig3 = !!(sig3Url || sig3Name || sig3Title);
+  const totalSignatures = (hasSig1 ? 1 : 0) + (hasSig2 ? 1 : 0) + (hasSig3 ? 1 : 0);
+
+  const renderSignatureItem = (url: string, name: string, title: string) => {
+    const titleLines = title ? title.split(/\r?\n/).map((t) => t.trim()).filter(Boolean) : [];
+    return `
+      <div style="flex: 1; max-width: 280px; min-width: 170px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+        <div style="height: 48px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 2px;">
+          ${url ? `
+            <img src="${url}" alt="Signature" style="max-height: 46px; max-width: 170px; object-fit: contain;" />
+          ` : name ? `
+            <div style="font-family: 'Great Vibes', cursive, serif; font-size: 26px; color: #1e293b; padding-bottom: 2px; text-align: center;">
+              ${name}
+            </div>
+          ` : `
+            <div style="height: 1px;"></div>
+          `}
+        </div>
+        <div style="width: 100%; max-width: 220px; height: 2px; background: ${secondaryColor || primaryColor || '#7a00ff'}; margin: 0 auto 5px auto;"></div>
+        ${name ? `
+          <div style="font-size: 13px; font-weight: 800; color: #0f172a; line-height: 1.3;">
+            ${name}
+          </div>
+        ` : ''}
+        ${titleLines.length > 0 ? `
+          <div style="font-size: 10.5px; color: #475569; font-weight: 500; line-height: 1.35; margin-top: 2px;">
+            ${titleLines.join('<br/>')}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  };
 
   const showQr = config.showQrCode ?? true;
   const showGrade = (config.showGrade ?? true) && !!data.grade;
@@ -186,12 +247,7 @@ export const dynamicCertificateTemplate = (
         <div style="display: flex; align-items: center; gap: 16px;">
           ${logoSrc ? `
             <img src="${logoSrc}" alt="Logo" style="height: 48px; max-width: 200px; object-fit: contain;" />
-          ` : `
-            <div style="display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 14px; letter-spacing: 0.5px; color: #1e293b;">
-              <div style="width: 28px; height: 28px; border-radius: 6px; background-color: ${primaryColor}; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 13px;">🎓</div>
-              ACADEMIC CERTIFICATE
-            </div>
-          `}
+          ` : ''}
         </div>
 
         <div style="display: flex; align-items: center; gap: 14px; text-align: right;">
@@ -290,76 +346,72 @@ export const dynamicCertificateTemplate = (
         </div>
       </div>
 
-      <!-- BOTTOM ROW: Date, Verification QR Code, Signature -->
-      <div style="
-        position: relative;
-        z-index: 10;
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        padding-top: 14px;
-        border-top: 1px solid #f1f5f9;
-        text-align: left;
-      ">
-        <!-- Left: Issue Date & Certificate ID -->
-        <div style="min-width: 220px; display: flex; flex-direction: column; gap: 3px;">
-          ${showDate ? `
-            <div style="font-size: 12px; color: #64748b;">
-              Issued on: <strong style="color: #334155;">${data.completionDate}</strong>
-            </div>
-          ` : ''}
-          ${showCertId ? `
-            <div style="font-family: monospace; font-size: 11px; color: #94a3b8; font-weight: 500; letter-spacing: 0.5px;">
-              ID: ${data.certificateId}
-            </div>
-          ` : ''}
+      <!-- BOTTOM SECTION: Metadata (Date & ID, QR) and Up to 3 Signatures -->
+      <div style="position: relative; z-index: 10; margin-top: auto; padding-top: 8px; border-top: 1px solid #f1f5f9;">
+        <!-- Meta Row: Date, ID, QR Code -->
+        <div style="
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding-bottom: 6px;
+        ">
+          <!-- Left: Issue Date & Certificate ID -->
+          <div style="display: flex; flex-direction: column; gap: 2px; text-align: left; min-width: 170px;">
+            ${showDate ? `
+              <div style="font-size: 11.5px; color: #64748b;">
+                Date: <strong style="color: #334155;">${data.completionDate}</strong>
+              </div>
+            ` : ''}
+            ${showCertId ? `
+              <div style="font-family: monospace; font-size: 11px; color: #94a3b8; font-weight: 600; letter-spacing: 0.5px;">
+                ID: ${data.certificateId}
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Center: Verification QR Code -->
+          <div style="display: flex; align-items: center; justify-content: center;">
+            ${showQr ? `
+              <div style="display: flex; flex-direction: column; align-items: center;">
+                <div style="
+                  width: 44px;
+                  height: 44px;
+                  padding: 3px;
+                  background: #ffffff;
+                  border: 1px solid #e2e8f0;
+                  border-radius: 6px;
+                  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                ">
+                  <svg width="36" height="36" viewBox="0 0 33 33" fill="#1e293b">
+                    <path d="M0 0h11v11H0V0zm2 2v7h7V2H2zm1 1h5v5H3V3zm18-3h11v11H22V0zm2 2v7h7V2h-7zm1 1h5v5h-5V3zM0 22h11v11H0V22zm2 2v7h7v-7H2zm1 1h5v5H3v-5zm13-24h3v3h-3V1zm4 0h3v3h-3V1zm-4 4h3v3h-3V5zm4 0h3v3h-3V5zm-4 4h3v3h-3V9zm4 0h3v3h-3V9zm-4 8h3v3h-3v-3zm4 0h3v3h-3v-3zm-8 4h3v3h-3v-3zm4 0h3v3h-3v-3zm4 0h3v3h-3v-3zm4 0h3v3h-3v-3zm-8 4h3v3h-3v-3zm4 0h3v3h-3v-3zm4 0h3v3h-3v-3zm-8 4h3v3h-3v-3zm4 0h3v3h-3v-3zm4 0h3v3h-3v-3z"/>
+                  </svg>
+                </div>
+                <span style="font-size: 7.5px; color: #94a3b8; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;">
+                  Verify
+                </span>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Right: Spacer for balance -->
+          <div style="min-width: 170px;"></div>
         </div>
 
-        <!-- Center: Verification QR Code -->
-        <div style="display: flex; align-items: center; justify-content: center;">
-          ${showQr ? `
-            <div style="display: flex; flex-direction: column; align-items: center;">
-              <div style="
-                width: 54px;
-                height: 54px;
-                padding: 4px;
-                background: #ffffff;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-              ">
-                <svg width="44" height="44" viewBox="0 0 33 33" fill="#1e293b">
-                  <path d="M0 0h11v11H0V0zm2 2v7h7V2H2zm1 1h5v5H3V3zm18-3h11v11H22V0zm2 2v7h7V2h-7zm1 1h5v5h-5V3zM0 22h11v11H0V22zm2 2v7h7v-7H2zm1 1h5v5H3v-5zm13-24h3v3h-3V1zm4 0h3v3h-3V1zm-4 4h3v3h-3V5zm4 0h3v3h-3V5zm-4 4h3v3h-3V9zm4 0h3v3h-3V9zm-4 8h3v3h-3v-3zm4 0h3v3h-3v-3zm-8 4h3v3h-3v-3zm4 0h3v3h-3v-3zm4 0h3v3h-3v-3zm4 0h3v3h-3v-3zm-8 4h3v3h-3v-3zm4 0h3v3h-3v-3zm4 0h3v3h-3v-3zm-8 4h3v3h-3v-3zm4 0h3v3h-3v-3zm4 0h3v3h-3v-3z"/>
-                </svg>
-              </div>
-              <span style="font-size: 8px; color: #94a3b8; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px;">
-                Verify
-              </span>
-            </div>
-          ` : ''}
-        </div>
-
-        <!-- Right: Signatory Line & Credentials -->
-        <div style="text-align: right; min-width: 220px;">
-          <div style="height: 44px; display: flex; align-items: flex-end; justify-content: flex-end; margin-bottom: 4px;">
-            ${signatureSrc ? `
-              <img src="${signatureSrc}" alt="Signature" style="max-height: 42px; max-width: 150px; object-fit: contain;" />
-            ` : `
-              <div style="font-family: 'Great Vibes', cursive, serif; font-size: 26px; color: #1e293b; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; min-width: 140px; text-align: center;">
-                ${signatoryName}
-              </div>
-            `}
-          </div>
-          ${signatureSrc ? `<div style="width: 170px; height: 1.5px; background: #cbd5e1; margin-left: auto; margin-bottom: 4px;"></div>` : ''}
-          <div style="font-size: 13px; font-weight: 800; color: #0f172a;">
-            ${signatoryName}
-          </div>
-          <div style="font-size: 11px; color: #64748b; font-weight: 500;">
-            ${signatoryTitle}
-          </div>
+        <!-- SIGNATURES ROW: UP TO 3 SIGNATURES ACROSS THE BOTTOM -->
+        <div style="
+          display: flex;
+          align-items: flex-end;
+          justify-content: ${totalSignatures > 1 ? 'space-between' : totalSignatures === 1 ? 'flex-end' : 'center'};
+          gap: 20px;
+          padding-top: 4px;
+          width: 100%;
+        ">
+          ${hasSig1 ? renderSignatureItem(sig1Url, sig1Name, sig1Title) : (totalSignatures > 1 ? '<div style="flex:1;"></div>' : '')}
+          ${hasSig2 ? renderSignatureItem(sig2Url, sig2Name, sig2Title) : ''}
+          ${hasSig3 ? renderSignatureItem(sig3Url, sig3Name, sig3Title) : ''}
         </div>
       </div>
     </div>

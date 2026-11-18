@@ -47,6 +47,71 @@ export class CreateCertificateTemplateDto {
 
   @IsOptional()
   @IsString()
+  signature_1?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory_name_1?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory_title_1?: string;
+
+  @IsOptional()
+  @IsString()
+  signature_2?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory_name_2?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory_title_2?: string;
+
+  // CamelCase Aliases
+  @IsOptional()
+  @IsString()
+  signature2Url?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory2Name?: string;
+
+  @IsOptional()
+  @IsString()
+  signatoryName1?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory2Title?: string;
+
+  @IsOptional()
+  @IsString()
+  signatoryTitle1?: string;
+
+  @IsOptional()
+  @IsString()
+  signature3Url?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory3Name?: string;
+
+  @IsOptional()
+  @IsString()
+  signatoryName2?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory3Title?: string;
+
+  @IsOptional()
+  @IsString()
+  signatoryTitle2?: string;
+
+  @IsOptional()
+  @IsString()
   primaryColor?: string;
 
   @IsOptional()

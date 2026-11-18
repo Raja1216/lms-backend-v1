@@ -55,6 +55,30 @@ export class CreateCertificateTemplateDto {
 
   @IsOptional()
   @IsString()
+  signature_1?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory_name_1?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory_title_1?: string;
+
+  @IsOptional()
+  @IsString()
+  signature_2?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory_name_2?: string;
+
+  @IsOptional()
+  @IsString()
+  signatory_title_2?: string;
+
+  @IsOptional()
+  @IsString()
   primaryColor?: string;
 
   @IsOptional()

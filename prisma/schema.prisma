@@ -1455,6 +1455,14 @@ model CertificateTemplate {
   signatoryName    String?
   signatoryTitle   String?
 
+  signature_1       String? @db.Text
+  signatory_name_1  String?
+  signatory_title_1 String?
+
+  signature_2       String? @db.Text
+  signatory_name_2  String?
+  signatory_title_2 String?
+
   primaryColor   String? @default("#7a00ff")
   secondaryColor String? @default("#ff5a00")
   textColor      String? @default("#1f2937")
